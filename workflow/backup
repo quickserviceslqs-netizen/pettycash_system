@@ -1,0 +1,9 @@
+from django.contrib import admin
+from .models import ApprovalThreshold
+
+@admin.register(ApprovalThreshold)
+class ApprovalThresholdAdmin(admin.ModelAdmin):
+    list_display = ('id', 'min_amount', 'max_amount', 'allow_urgent_fasttrack', 'requires_cfo')
+    list_filter = ('allow_urgent_fasttrack', 'requires_cfo')
+    search_fields = ('roles_sequence', 'description')
+    ordering = ('min_amount',)

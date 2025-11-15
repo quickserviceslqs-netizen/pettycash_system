@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Requisition - Petty Cash System{% endblock %}
+
+{% block content %}
+<div style="max-width:800px; margin:0 auto;">
+
+    <h2 style="text-align:center; margin-bottom:20px;">Create New Requisition</h2>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div style="color:red; margin-bottom:10px;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div style="display:grid; gap:15px;">
+            <!-- Origin Type -->
+            <div>
+                <label for="{{ form.origin_type.id_for_label }}">Origin Type</label><br>
+                {{ form.origin_type }}
+                {% if form.origin_type.errors %}
+                    <div style="color:red;">{{ form.origin_type.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Company -->
+            <div>
+                <label for="{{ form.company.id_for_label }}">Company</label><br>
+                {{ form.company }}
+                {% if form.company.errors %}
+                    <div style="color:red;">{{ form.company.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Region -->
+            <div>
+                <label for="{{ form.region.id_for_label }}">Region</label><br>
+                {{ form.region }}
+                {% if form.region.errors %}
+                    <div style="color:red;">{{ form.region.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Branch -->
+            <div>
+                <label for="{{ form.branch.id_for_label }}">Branch</label><br>
+                {{ form.branch }}
+                {% if form.branch.errors %}
+                    <div style="color:red;">{{ form.branch.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Department -->
+            <div>
+                <label for="{{ form.department.id_for_label }}">Department</label><br>
+                {{ form.department }}
+                {% if form.department.errors %}
+                    <div style="color:red;">{{ form.department.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Amount -->
+            <div>
+                <label for="{{ form.amount.id_for_label }}">Amount</label><br>
+                {{ form.amount }}
+                {% if form.amount.errors %}
+                    <div style="color:red;">{{ form.amount.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Purpose -->
+            <div>
+                <label for="{{ form.purpose.id_for_label }}">Purpose</label><br>
+                {{ form.purpose }}
+                {% if form.purpose.errors %}
+                    <div style="color:red;">{{ form.purpose.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Is Urgent -->
+            <div>
+                <label for="{{ form.is_urgent.id_for_label }}">Is Urgent?</label><br>
+                {{ form.is_urgent }}
+                {% if form.is_urgent.errors %}
+                    <div style="color:red;">{{ form.is_urgent.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Urgency Reason -->
+            <div>
+                <label for="{{ form.urgency_reason.id_for_label }}">Urgency Reason</label><br>
+                {{ form.urgency_reason }}
+                {% if form.urgency_reason.errors %}
+                    <div style="color:red;">{{ form.urgency_reason.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Submit Button -->
+            <div style="text-align:center; margin-top:20px;">
+                <button type="submit" 
+                        style="padding:10px 20px; background:#28a745; color:#fff; border:none; border-radius:5px;">
+                    Submit Requisition
+                </button>
+            </div>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

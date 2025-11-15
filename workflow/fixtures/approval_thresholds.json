@@ -1,0 +1,138 @@
+[
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 1,
+    "fields": {
+      "name": "Tier 1 Branch",
+      "origin_type": "BRANCH",
+      "min_amount": "0.00",
+      "max_amount": "10000.00",
+      "roles_sequence": ["branch_manager", "treasury"],
+      "allow_urgent_fasttrack": true,
+      "requires_cfo": false,
+      "priority": 1,
+      "is_active": true,
+      "created_at": "2025-10-18T14:11:07Z",
+      "updated_at": "2025-10-18T14:11:07Z"
+    }
+  },
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 2,
+    "fields": {
+      "name": "Tier 2 Branch",
+      "origin_type": "BRANCH",
+      "min_amount": "10001.00",
+      "max_amount": "50000.00",
+      "roles_sequence": ["branch_manager", "department_head", "treasury"],
+      "allow_urgent_fasttrack": true,
+      "requires_cfo": false,
+      "priority": 2,
+      "is_active": true,
+      "created_at": "2025-10-18T14:11:07Z",
+      "updated_at": "2025-10-18T14:11:07Z"
+    }
+  },
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 3,
+    "fields": {
+      "name": "Tier 3 Branch",
+      "origin_type": "BRANCH",
+      "min_amount": "50001.00",
+      "max_amount": "250000.00",
+      "roles_sequence": ["branch_manager", "regional_manager", "treasury", "fp&a"],
+      "allow_urgent_fasttrack": true,
+      "requires_cfo": false,
+      "priority": 3,
+      "is_active": true,
+      "created_at": "2025-10-18T14:11:07Z",
+      "updated_at": "2025-10-18T14:11:07Z"
+    }
+  },
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 4,
+    "fields": {
+      "name": "Tier 4 Branch",
+      "origin_type": "BRANCH",
+      "min_amount": "250001.00",
+      "max_amount": "999999999.00",
+      "roles_sequence": ["regional_manager", "treasury", "cfo", "fp&a"],
+      "allow_urgent_fasttrack": false,
+      "requires_cfo": true,
+      "priority": 4,
+      "is_active": true,
+      "created_at": "2025-10-18T14:11:07Z",
+      "updated_at": "2025-10-18T14:11:07Z"
+    }
+  },
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 5,
+    "fields": {
+      "name": "Tier 1 HQ",
+      "origin_type": "HQ",
+      "min_amount": "0.00",
+      "max_amount": "10000.00",
+      "roles_sequence": ["department_head", "treasury"],
+      "allow_urgent_fasttrack": true,
+      "requires_cfo": false,
+      "priority": 1,
+      "is_active": true,
+      "created_at": "2025-10-18T14:11:07Z",
+      "updated_at": "2025-10-18T14:11:07Z"
+    }
+  },
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 6,
+    "fields": {
+      "name": "Tier 2 HQ",
+      "origin_type": "HQ",
+      "min_amount": "10001.00",
+      "max_amount": "50000.00",
+      "roles_sequence": ["department_head", "group_finance_manager", "treasury"],
+      "allow_urgent_fasttrack": true,
+      "requires_cfo": false,
+      "priority": 2,
+      "is_active": true,
+      "created_at": "2025-10-18T14:11:07Z",
+      "updated_at": "2025-10-18T14:11:07Z"
+    }
+  },
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 7,
+    "fields": {
+      "name": "Tier 3 HQ",
+      "origin_type": "HQ",
+      "min_amount": "50001.00",
+      "max_amount": "250000.00",
+      "roles_sequence": ["department_head", "group_finance_manager", "treasury", "fp&a"],
+      "allow_urgent_fasttrack": true,
+      "requires_cfo": false,
+      "priority": 3,
+      "is_active": true,
+      "created_at": "2025-10-18T14:11:07Z",
+      "updated_at": "2025-10-18T14:11:07Z"
+    }
+  },
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 8,
+    "fields": {
+      "name": "Tier 4 HQ",
+      "origin_type": "HQ",
+      "min_amount": "250001.00",
+      "max_amount": "999999999.00",
+      "roles_sequence": ["group_finance_manager", "treasury", "cfo", "fp&a"],
+      "allow_urgent_fasttrack": false,
+      "requires_cfo": true,
+      "priority": 4,
+      "is_active": true,
+      "created_at": "2025-10-18T14:11:07Z",
+      "updated_at": "2025-10-18T14:11:07Z"
+    }
+  }
+]

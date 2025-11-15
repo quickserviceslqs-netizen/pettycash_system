@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Petty Cash System{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <header>
+        <nav style="display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#f0f0f0;">
+            <div class="nav-left">
+                <ul style="list-style:none; display:flex; gap:15px; margin:0; padding:0;">
+                    <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    {% block extra_nav %}{% endblock %}
+                </ul>
+            </div>
+
+            <div class="nav-right">
+                {% if user.is_authenticated %}
+                <form id="logout-form" method="post" action="{% url 'logout' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" style="padding:5px 10px; background:#dc3545; color:#fff; border:none; border-radius:5px; cursor:pointer;">
+                        Logout
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main style="padding:20px;">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer style="padding:10px 20px; background:#f0f0f0; text-align:center;">
+        <p>&copy; 2025 Petty Cash System</p>
+    </footer>
+</body>
+</html>

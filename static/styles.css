@@ -1,0 +1,162 @@
+/* ----------------------------------
+   Base Styling
+---------------------------------- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ----------------------------------
+   Header
+---------------------------------- */
+header {
+    padding: 15px 20px;
+    background-color: #fff;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header a {
+    color: #007bff;
+    margin-right: 15px;
+    font-weight: 500;
+}
+
+header a:hover {
+    text-decoration: underline;
+}
+
+/* ----------------------------------
+   Footer
+---------------------------------- */
+footer {
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    background-color: #fff;
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+}
+
+/* ----------------------------------
+   Main container
+---------------------------------- */
+main {
+    padding: 30px 20px;
+}
+
+/* ----------------------------------
+   Dashboard container
+---------------------------------- */
+.dashboard-container {
+    max-width: 900px;
+    margin: auto;
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+/* ----------------------------------
+   Headings
+---------------------------------- */
+.dashboard-container h1 {
+    margin-bottom: 5px;
+    font-size: 28px;
+}
+
+.dashboard-container h2 {
+    margin-bottom: 15px;
+    font-size: 22px;
+    color: #555;
+}
+
+/* ----------------------------------
+   Navigation buttons
+---------------------------------- */
+.dashboard-container ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.dashboard-container ul li a {
+    display: block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border-radius: 5px;
+    font-weight: 500;
+    text-align: center;
+    transition: background-color 0.3s;
+}
+
+.dashboard-container ul li a:hover {
+    background-color: #0056b3;
+}
+
+/* ----------------------------------
+   Pending cards
+---------------------------------- */
+.pending-cards {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.pending-cards div {
+    flex: 1;
+    min-width: 150px;
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.pending-cards div:hover {
+    transform: translateY(-3px);
+}
+
+.pending-cards h3 {
+    margin: 0 0 5px 0;
+    font-size: 22px;
+    color: #333;
+}
+
+.pending-cards p {
+    margin: 0;
+    color: #555;
+}
+
+/* ----------------------------------
+   Logout Button
+---------------------------------- */
+.btn-logout {
+    display: inline-block;
+    color: #fff;
+    background: #dc3545;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.3s;
+}
+
+.btn-logout:hover {
+    background-color: #a71d2a;
+}

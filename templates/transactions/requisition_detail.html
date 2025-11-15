@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Requisition Details - {{ requisition.transaction_id }}{% endblock %}
+
+{% block content %}
+<h2>Requisition Details</h2>
+
+<table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+    <tr>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Transaction ID</th>
+        <td style="padding:8px; border-bottom:1px solid #ccc;">{{ requisition.transaction_id }}</td>
+    </tr>
+    <tr>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Requested By</th>
+        <td style="padding:8px; border-bottom:1px solid #ccc;">{{ requisition.requested_by.username|title }}</td>
+    </tr>
+    <tr>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Amount</th>
+        <td style="padding:8px; border-bottom:1px solid #ccc;">{{ requisition.amount }}</td>
+    </tr>
+    <tr>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Status</th>
+        <td style="padding:8px; border-bottom:1px solid #ccc;">{{ requisition.status|title }}</td>
+    </tr>
+    <tr>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Next Approver</th>
+        <td style="padding:8px; border-bottom:1px solid #ccc;">
+            {% if requisition.next_approver %}
+                {{ requisition.next_approver.username|title }}
+            {% else %}
+                None
+            {% endif %}
+        </td>
+    </tr>
+    <tr>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Purpose</th>
+        <td style="padding:8px; border-bottom:1px solid #ccc;">{{ requisition.purpose }}</td>
+    </tr>
+</table>
+
+<!-- Banner: cannot approve your own requisition -->
+{% if user.id == requisition.requested_by.id %}
+    <div style="padding:15px; background:#ffeeba; border:1px solid #ffc107; border-radius:5px; margin-bottom:20px;">
+        You cannot approve your own requisition — it will be routed to 
+        {% if requisition.next_approver %}
+            {{ requisition.next_approver.username|title }}
+        {% else %}
+            the next approver
+        {% endif %}.
+    </div>
+{% endif %}
+
+<!-- Approve/Reject buttons: only visible if user can act -->
+{% if can_act %}
+    <form method="post" action="{% url 'approve-requisition' requisition.transaction_id %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" style="padding:10px 15px; background:#28a745; color:#fff; border:none; border-radius:5px; cursor:pointer;">
+            Approve
+        </button>
+    </form>
+
+    <form method="post" action="{% url 'reject-requisition' requisition.transaction_id %}" style="display:inline; margin-left:10px;">
+        {% csrf_token %}
+        <button type="submit" style="padding:10px 15px; background:#dc3545; color:#fff; border:none; border-radius:5px; cursor:pointer;">
+            Reject
+        </button>
+    </form>
+{% endif %}
+
+{% endblock %}
