@@ -1,0 +1,499 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Fund Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="bi bi-piggy-bank"></i> Fund Management
+            </h1>
+            <small class="text-muted">Monitor and manage petty cash funds across locations</small>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if user.groups|stringformat:'s'|slice:':9' == 'treasury' or user.is_staff %}
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#replenishModal">
+                <i class="bi bi-plus-circle"></i> Request Replenishment
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter" onchange="applyFilters()">
+                        <option value="">All Status</option>
+                        <option value="OK">OK</option>
+                        <option value="WARNING">Warning</option>
+                        <option value="CRITICAL">Critical</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Company</label>
+                    <select class="form-select" id="companyFilter" onchange="applyFilters()">
+                        <option value="">All Companies</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Region</label>
+                    <select class="form-select" id="regionFilter" onchange="applyFilters()">
+                        <option value="">All Regions</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sort By</label>
+                    <select class="form-select" id="sortFilter" onchange="applyFilters()">
+                        <option value="name">Name</option>
+                        <option value="-current_balance">Balance (High to Low)</option>
+                        <option value="current_balance">Balance (Low to High)</option>
+                        <option value="-utilization_pct">Utilization (High to Low)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Funds Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Active Funds</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fund Name</th>
+                        <th>Location</th>
+                        <th>Current Balance</th>
+                        <th>Reorder Level</th>
+                        <th>Utilization</th>
+                        <th>Status</th>
+                        <th>Last Updated</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="fundsTableBody">
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <span class="spinner-border spinner-border-sm me-2"></span> Loading funds...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Fund Details Modal -->
+<div class="modal fade" id="fundDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fundDetailsTitle">Fund Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Fund ID</small>
+                        <p id="detailsFundId"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Status</small>
+                        <p id="detailsStatus"></p>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Current Balance</small>
+                        <h5 id="detailsBalance"></h5>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Reorder Level</small>
+                        <h5 id="detailsReorderLevel"></h5>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted">Utilization Rate</small>
+                    <div class="progress" style="height: 25px;">
+                        <div id="detailsUtilizationBar" class="progress-bar" style="width: 0%">
+                            <span id="detailsUtilizationPct"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h6 class="mb-3">Transaction History (Last 10)</h6>
+                <div id="transactionHistory" style="max-height: 300px; overflow-y: auto;">
+                    <div class="text-center text-muted py-3">Loading...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Replenishment Modal -->
+<div class="modal fade" id="replenishModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request Fund Replenishment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="replenishForm" onsubmit="submitReplenishment(event)">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="replenishFund" class="form-label">Select Fund <span class="text-danger">*</span></label>
+                        <select class="form-select" id="replenishFund" required>
+                            <option value="">-- Choose Fund --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="replenishAmount" class="form-label">Replenishment Amount <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" class="form-control" id="replenishAmount" 
+                                   placeholder="0.00" min="0" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="replenishNotes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="replenishNotes" rows="3" 
+                                  placeholder="Reason for replenishment..."></textarea>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <small>Replenishment requests require approval from Finance Manager.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let allFunds = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadFunds();
+    loadFilterOptions();
+});
+
+function loadFunds() {
+    fetch('/api/treasury/funds/', {
+        headers: { 'Authorization': 'Token ' + getCookie('auth_token') }
+    })
+    .then(r => r.json())
+    .then(data => {
+        allFunds = data.results || data;
+        applyFilters();
+    })
+    .catch(err => {
+        console.error('Error loading funds:', err);
+        document.getElementById('fundsTableBody').innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-danger py-4">
+                    Error loading funds. Please try again.
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function loadFilterOptions() {
+    // Load companies and regions for filters
+    Promise.all([
+        fetch('/api/organization/companies/', {
+            headers: { 'Authorization': 'Token ' + getCookie('auth_token') }
+        }).then(r => r.json()),
+        fetch('/api/organization/regions/', {
+            headers: { 'Authorization': 'Token ' + getCookie('auth_token') }
+        }).then(r => r.json())
+    ]).then(([companies, regions]) => {
+        // Populate company filter
+        const companySelect = document.getElementById('companyFilter');
+        (companies.results || companies).forEach(c => {
+            const option = document.createElement('option');
+            option.value = c.id;
+            option.textContent = c.name;
+            companySelect.appendChild(option);
+        });
+
+        // Populate region filter
+        const regionSelect = document.getElementById('regionFilter');
+        (regions.results || regions).forEach(r => {
+            const option = document.createElement('option');
+            option.value = r.id;
+            option.textContent = r.name;
+            regionSelect.appendChild(option);
+        });
+
+        // Populate replenishment fund select
+        loadReplenishFunds();
+    });
+}
+
+function loadReplenishFunds() {
+    const select = document.getElementById('replenishFund');
+    select.innerHTML = '<option value="">-- Choose Fund --</option>';
+    allFunds.forEach(fund => {
+        const option = document.createElement('option');
+        option.value = fund.id;
+        option.textContent = `${fund.name} (Balance: ${formatCurrency(fund.current_balance)})`;
+        select.appendChild(option);
+    });
+}
+
+function applyFilters() {
+    let filtered = allFunds;
+
+    // Filter by status
+    const status = document.getElementById('statusFilter').value;
+    if (status) {
+        filtered = filtered.filter(f => f.status === status);
+    }
+
+    // Filter by company
+    const company = document.getElementById('companyFilter').value;
+    if (company) {
+        filtered = filtered.filter(f => f.company === parseInt(company));
+    }
+
+    // Filter by region
+    const region = document.getElementById('regionFilter').value;
+    if (region) {
+        filtered = filtered.filter(f => f.region === parseInt(region));
+    }
+
+    // Sort
+    const sort = document.getElementById('sortFilter').value;
+    filtered.sort((a, b) => {
+        if (sort === 'name') {
+            return a.name.localeCompare(b.name);
+        } else if (sort === '-current_balance') {
+            return b.current_balance - a.current_balance;
+        } else if (sort === 'current_balance') {
+            return a.current_balance - b.current_balance;
+        } else if (sort === '-utilization_pct') {
+            return b.utilization_pct - a.utilization_pct;
+        }
+    });
+
+    renderFundsTable(filtered);
+}
+
+function renderFundsTable(funds) {
+    const tbody = document.getElementById('fundsTableBody');
+
+    if (funds.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                    No funds found matching the filters
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = funds.map(fund => {
+        const statusClass = fund.status === 'CRITICAL' ? 'danger' : 
+                          fund.status === 'WARNING' ? 'warning' : 'success';
+        const statusIcon = fund.status === 'CRITICAL' ? '⚠️' : 
+                         fund.status === 'WARNING' ? '⚡' : '✓';
+
+        return `
+            <tr>
+                <td>
+                    <strong>${fund.name}</strong>
+                </td>
+                <td>
+                    <small>${fund.branch || fund.region || 'HQ'}</small>
+                </td>
+                <td>
+                    <strong>${formatCurrency(fund.current_balance)}</strong>
+                </td>
+                <td>
+                    ${formatCurrency(fund.reorder_level)}
+                </td>
+                <td>
+                    <div class="progress" style="height: 6px; width: 100px;">
+                        <div class="progress-bar" style="width: ${fund.utilization_pct}%"></div>
+                    </div>
+                    <small>${fund.utilization_pct.toFixed(1)}%</small>
+                </td>
+                <td>
+                    <span class="badge bg-${statusClass}">${statusIcon} ${fund.status}</span>
+                </td>
+                <td>
+                    <small class="text-muted">${new Date(fund.updated_at).toLocaleString()}</small>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewFundDetails('${fund.id}', '${fund.name}')">
+                        View
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function viewFundDetails(fundId, fundName) {
+    document.getElementById('fundDetailsTitle').textContent = `${fundName} - Details`;
+
+    fetch(`/api/treasury/funds/${fundId}/`, {
+        headers: { 'Authorization': 'Token ' + getCookie('auth_token') }
+    })
+    .then(r => r.json())
+    .then(fund => {
+        document.getElementById('detailsFundId').textContent = fund.id;
+        document.getElementById('detailsStatus').innerHTML = `
+            <span class="badge bg-${fund.status === 'CRITICAL' ? 'danger' : fund.status === 'WARNING' ? 'warning' : 'success'}">
+                ${fund.status}
+            </span>
+        `;
+        document.getElementById('detailsBalance').textContent = formatCurrency(fund.current_balance);
+        document.getElementById('detailsReorderLevel').textContent = formatCurrency(fund.reorder_level);
+        
+        const pct = fund.utilization_pct || 0;
+        document.getElementById('detailsUtilizationBar').style.width = pct + '%';
+        document.getElementById('detailsUtilizationBar').className = `progress-bar bg-${
+            pct > 80 ? 'danger' : pct > 60 ? 'warning' : 'success'
+        }`;
+        document.getElementById('detailsUtilizationPct').textContent = pct.toFixed(1) + '%';
+
+        // Load transaction history
+        loadTransactionHistory(fundId);
+
+        new bootstrap.Modal(document.getElementById('fundDetailsModal')).show();
+    });
+}
+
+function loadTransactionHistory(fundId) {
+    fetch(`/api/ledger/?fund=${fundId}&ordering=-created_at`, {
+        headers: { 'Authorization': 'Token ' + getCookie('auth_token') }
+    })
+    .then(r => r.json())
+    .then(data => {
+        const transactions = data.results || data;
+        const container = document.getElementById('transactionHistory');
+
+        if (transactions.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted py-3">No transactions</div>';
+            return;
+        }
+
+        container.innerHTML = transactions.slice(0, 10).map(t => `
+            <div class="mb-2 pb-2" style="border-bottom: 1px solid #dee2e6;">
+                <div class="d-flex justify-content-between mb-1">
+                    <strong>${t.description}</strong>
+                    <span class="text-${t.type === 'debit' ? 'danger' : 'success'}">
+                        ${t.type === 'debit' ? '−' : '+'}${formatCurrency(Math.abs(t.amount))}
+                    </span>
+                </div>
+                <small class="text-muted">${new Date(t.created_at).toLocaleString()}</small>
+            </div>
+        `).join('');
+    });
+}
+
+function submitReplenishment(event) {
+    event.preventDefault();
+
+    const fundId = document.getElementById('replenishFund').value;
+    const amount = parseFloat(document.getElementById('replenishAmount').value);
+    const notes = document.getElementById('replenishNotes').value;
+
+    if (!fundId || !amount) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    fetch('/api/replenishment/', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Token ' + getCookie('auth_token'),
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            fund: fundId,
+            amount: amount,
+            notes: notes
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.id || data.success) {
+            alert('Replenishment request submitted successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('replenishModal')).hide();
+            document.getElementById('replenishForm').reset();
+        } else {
+            alert('Error: ' + (data.error || JSON.stringify(data)));
+        }
+    })
+    .catch(err => {
+        alert('Error submitting request: ' + err.message);
+    });
+}
+
+function formatCurrency(value) {
+    if (typeof value !== 'number') value = parseFloat(value) || 0;
+    return '₹' + value.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+<style>
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.badge {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.65rem;
+}
+</style>
+{% endblock %}

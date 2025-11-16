@@ -3,38 +3,299 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Petty Cash System{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #0dcaf0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+
+        header {
+            background: white;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav.navbar {
+            padding: 1rem 2rem;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+            font-size: 1.25rem;
+        }
+
+        .nav-item .nav-link {
+            color: #6c757d !important;
+            font-size: 0.95rem;
+            margin-right: 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .nav-item .nav-link:hover {
+            color: var(--primary-color) !important;
+        }
+
+        .nav-item .nav-link.active {
+            color: var(--primary-color) !important;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+        }
+
+        footer {
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            padding: 2rem;
+            text-align: center;
+            color: #6c757d;
+            margin-top: auto;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-menu .badge {
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 768px) {
+            nav.navbar {
+                padding: 0.75rem 1rem;
+            }
+
+            main {
+                padding: 1rem;
+            }
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
+    <!-- Header Navigation -->
     <header>
-        <nav style="display:flex; justify-content:space-between; align-items:center; padding:10px 20px; background:#f0f0f0;">
-            <div class="nav-left">
-                <ul style="list-style:none; display:flex; gap:15px; margin:0; padding:0;">
-                    <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
-                    {% block extra_nav %}{% endblock %}
-                </ul>
-            </div>
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">
+                    <i class="bi bi-cash-coin"></i> Petty Cash System
+                </a>
+                
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
 
-            <div class="nav-right">
-                {% if user.is_authenticated %}
-                <form id="logout-form" method="post" action="{% url 'logout' %}" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" style="padding:5px 10px; background:#dc3545; color:#fff; border:none; border-radius:5px; cursor:pointer;">
-                        Logout
-                    </button>
-                </form>
-                {% endif %}
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        {% if user.is_authenticated %}
+                            <!-- Main Navigation -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="/">
+                                    <i class="bi bi-house"></i> Home
+                                </a>
+                            </li>
+
+                            <!-- Treasury Module (Phase 5-6) -->
+                            {% if user.groups.all|first.name == 'treasury' or user.is_staff %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="treasuryDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-piggy-bank"></i> Treasury
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="treasuryDropdown">
+                                    <li><a class="dropdown-item" href="/treasury/dashboard/">
+                                        <i class="bi bi-graph-up"></i> Dashboard
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/treasury/funds/">
+                                        <i class="bi bi-safe2"></i> Manage Funds
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/treasury/payment-execute/">
+                                        <i class="bi bi-credit-card"></i> Execute Payment
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="/treasury/alerts/">
+                                        <i class="bi bi-bell"></i> Alerts
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/treasury/variances/">
+                                        <i class="bi bi-exclamation-triangle"></i> Variances
+                                    </a></li>
+                                </ul>
+                            </li>
+                            {% endif %}
+
+                            <!-- Reports Module (Phase 6) -->
+                            {% if user.groups.all|first.name == 'fp&a' or user.groups.all|first.name == 'cfo' or user.is_staff %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="/reports/dashboard/">
+                                    <i class="bi bi-file-earmark-text"></i> Reports
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            <!-- Requisitions (Phase 4) -->
+                            {% if user.groups.all|first.name == 'department_head' or user.groups.all|first.name == 'requester' or user.is_staff %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="/transactions/">
+                                    <i class="bi bi-file-check"></i> Requisitions
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            <!-- Admin Panel -->
+                            {% if user.is_staff %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/">
+                                    <i class="bi bi-sliders"></i> Admin
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endif %}
+                    </ul>
+
+                    <!-- User Menu (Right Side) -->
+                    <div class="user-menu ms-auto">
+                        {% if user.is_authenticated %}
+                            <span class="text-muted small">
+                                {% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
+                            </span>
+                            <span class="badge bg-primary">{{ user.role_key|default:"user" }}</span>
+                            <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </button>
+                            </form>
+                        {% else %}
+                            <a href="{% url 'login' %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </nav>
     </header>
 
-    <main style="padding:20px;">
+    <!-- Main Content -->
+    <main class="flex-grow-1">
+        <!-- Breadcrumbs (optional, can be overridden) -->
+        {% block breadcrumbs %}{% endblock %}
+
+        <!-- Flash Messages -->
+        {% if messages %}
+        <div class="container-fluid mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Page Content -->
         {% block content %}{% endblock %}
     </main>
 
-    <footer style="padding:10px 20px; background:#f0f0f0; text-align:center;">
-        <p>&copy; 2025 Petty Cash System</p>
+    <!-- Footer -->
+    <footer>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Petty Cash System</h6>
+                    <small>Phase 6 - Treasury Dashboard & Reporting</small>
+                </div>
+                <div class="col-md-4 text-center">
+                    <small>&copy; 2025 All Rights Reserved</small>
+                </div>
+                <div class="col-md-4 text-end">
+                    <small>
+                        <a href="#" class="text-muted text-decoration-none">Help</a> | 
+                        <a href="#" class="text-muted text-decoration-none">Support</a>
+                    </small>
+                </div>
+            </div>
+        </div>
     </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Global Scripts -->
+    <script>
+        // CSRF Token helper
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Show toast notifications
+        function showToast(message, type = 'info') {
+            const alertHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            const container = document.querySelector('main') || document.body;
+            container.insertAdjacentHTML('afterbegin', alertHTML);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                const alerts = container.querySelectorAll('.alert');
+                if (alerts.length > 0) {
+                    const alert = alerts[0];
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        }
+    </script>
+
+    <!-- Phase 6 frontend modules -->
+    <script src="{% static 'js/api.js' %}"></script>
+    <script src="{% static 'js/ui.js' %}"></script>
+    <script src="{% static 'js/alerts.js' %}"></script>
+    <script src="{% static 'js/reports.js' %}"></script>
+    <script src="{% static 'js/forms.js' %}"></script>
+
+    {% block extra_scripts %}{% endblock %}
 </body>
 </html>

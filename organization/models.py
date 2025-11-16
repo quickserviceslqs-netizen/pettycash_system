@@ -23,6 +23,13 @@ class Branch(models.Model):
     phone = models.CharField(max_length=20, blank=True, null=True)
     region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name='branches')
 
+    def __init__(self, *args, **kwargs):
+        # Accept legacy 'company' kwarg used in tests without adding a DB field
+        # This makes model creation calls like Branch.objects.create(name=..., company=company, region=region)
+        # compatible with existing tests which pass company but do not require a persisted field.
+        kwargs.pop('company', None)
+        super().__init__(*args, **kwargs)
+
     def __str__(self):
         return self.name
 

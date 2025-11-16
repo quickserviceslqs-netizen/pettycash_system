@@ -42,3 +42,12 @@ class User(AbstractUser):
     def role_key(self):
         """Clean, normalized role key for permissions/dashboards."""
         return self.role.lower().strip()
+
+    @property
+    def profile(self):
+        """
+        Compatibility shim: some code/tests expect a `user.profile` object
+        with attributes like `company`. Return self so `user.profile.company`
+        maps to `user.company` without requiring a separate Profile model.
+        """
+        return self

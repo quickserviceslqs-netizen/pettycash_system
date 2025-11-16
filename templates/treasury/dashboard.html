@@ -1,0 +1,438 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Treasury Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="bi bi-building"></i> Treasury Dashboard
+            </h1>
+            <small class="text-muted">Real-time fund monitoring and payment tracking</small>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" id="refreshBtn" onclick="refreshDashboard()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Alerts Section -->
+    <div id="alertsSection"></div>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">Total Funds</h6>
+                    <h3 id="totalFunds" class="mb-0">-</h3>
+                    <small class="text-muted">Active</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">Total Balance</h6>
+                    <h3 id="totalBalance" class="mb-0">-</h3>
+                    <small class="text-muted">Available</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">Payments Today</h6>
+                    <h3 id="paymentsToday" class="mb-0">-</h3>
+                    <small id="amountToday" class="text-muted">₹0</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">Active Alerts</h6>
+                    <h3 id="activeAlerts" class="mb-0 text-danger">-</h3>
+                    <small class="text-muted"><span id="criticalAlerts">0</span> Critical</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fund Status Cards -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-piggy-bank"></i> Fund Status Cards
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="fundCards" class="row"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Payments Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-hourglass-split"></i> Pending Payments
+                    </h5>
+                    <span class="badge bg-warning" id="pendingCount">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="pendingPaymentsList" class="list-group">
+                        <div class="text-center text-muted py-4">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Payments Section -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle"></i> Recent Executions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="recentPaymentsList" class="list-group">
+                        <div class="text-center text-muted py-4">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Variances & Replenishments -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Pending Variances
+                    </h5>
+                    <span class="badge bg-info" id="varianceCount">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="variancesList" class="list-group">
+                        <div class="text-center text-muted py-4">No pending variances</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-arrow-repeat"></i> Replenishment Status
+                    </h5>
+                    <span class="badge bg-secondary" id="replenishCount">0</span>
+                </div>
+                <div class="card-body">
+                    <div id="replenishmentList" class="list-group">
+                        <div class="text-center text-muted py-4">No pending replenishments</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Payment Execution Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Execute Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="paymentModalBody">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-refresh dashboard every 5 minutes
+let dashboardRefreshInterval = setInterval(refreshDashboard, 5 * 60 * 1000);
+
+// Initial load
+document.addEventListener('DOMContentLoaded', function() {
+    refreshDashboard();
+    // Start global alerts polling (updates via window.onAlertsUpdate)
+    if (window.pc_alerts && typeof window.pc_alerts.startPolling === 'function') {
+        window.onAlertsUpdate = function(alertsData) {
+            try { updateAlerts(alertsData); } catch(e){ console.error(e); }
+        };
+        window.pc_alerts.startPolling();
+    }
+});
+
+function refreshDashboard() {
+    const btn = document.getElementById('refreshBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass"></i> Refreshing...';
+
+    Promise.all([
+        (window.pc_api && window.pc_api.get ? window.pc_api.get('/api/dashboard/summary/') : fetch('/api/dashboard/summary/').then(r=>r.json())),
+        (window.pc_api && window.pc_api.get ? window.pc_api.get('/api/dashboard/fund_status/') : fetch('/api/dashboard/fund_status/').then(r=>r.json())),
+        (window.pc_api && window.pc_api.get ? window.pc_api.get('/api/dashboard/pending_payments/') : fetch('/api/dashboard/pending_payments/').then(r=>r.json())),
+        (window.pc_api && window.pc_api.get ? window.pc_api.get('/api/dashboard/recent_payments/') : fetch('/api/dashboard/recent_payments/').then(r=>r.json())),
+        (window.pc_api && window.pc_api.get ? window.pc_api.get('/api/alerts/active/') : fetch('/api/alerts/active/').then(r=>r.json())),
+    ]).then(([summary, fundStatus, pending, recent, alerts]) => {
+        updateDashboard(summary, fundStatus, pending, recent, alerts);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+    }).catch(err => {
+        console.error('Error refreshing dashboard:', err);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+    });
+}
+
+function updateDashboard(summary, fundStatus, pending, recent, alerts) {
+    // Update key metrics
+    document.getElementById('totalFunds').textContent = summary.total_funds || 0;
+    document.getElementById('totalBalance').textContent = formatCurrency(summary.total_balance);
+    document.getElementById('paymentsToday').textContent = summary.payments_today || 0;
+    document.getElementById('amountToday').textContent = formatCurrency(summary.total_amount_today);
+    document.getElementById('activeAlerts').textContent = summary.active_alerts || 0;
+    document.getElementById('criticalAlerts').textContent = summary.critical_alerts || 0;
+
+    // Update fund status cards
+    updateFundCards(fundStatus.fund_status || []);
+
+    // Update pending payments
+    updatePendingPayments(pending.pending_payments || []);
+
+    // Update recent payments
+    updateRecentPayments(recent.recent_payments || []);
+
+    // Update alerts
+    updateAlerts(alerts.active_alerts || []);
+}
+
+function updateFundCards(funds) {
+    const container = document.getElementById('fundCards');
+    container.innerHTML = '';
+
+    funds.forEach(fund => {
+        const statusClass = fund.status === 'CRITICAL' ? 'danger' : 
+                          fund.status === 'WARNING' ? 'warning' : 'success';
+        const statusIcon = fund.status === 'CRITICAL' ? '⚠️' : 
+                         fund.status === 'WARNING' ? '⚡' : '✓';
+
+        const card = document.createElement('div');
+        card.className = 'col-md-6 col-lg-4 mb-3';
+        card.innerHTML = `
+            <div class="card border-${statusClass}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title mb-0">${fund.name}</h6>
+                        <span class="badge bg-${statusClass}">${statusIcon} ${fund.status}</span>
+                    </div>
+                    <small class="text-muted">${fund.branch || fund.region || 'HQ'}</small>
+                    
+                    <hr class="my-2">
+                    
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Balance</small>
+                            <small><strong>${formatCurrency(fund.current_balance)}</strong></small>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-${statusClass}" style="width: ${fund.utilization_pct}%"></div>
+                        </div>
+                        <small class="text-muted">${fund.utilization_pct.toFixed(1)}% utilized</small>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <small>Reorder Level: ${formatCurrency(fund.reorder_level)}</small>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button class="btn btn-sm btn-outline-primary" onclick="executePayment('${fund.fund_id}')">
+                            Execute Payment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function updatePendingPayments(payments) {
+    const container = document.getElementById('pendingPaymentsList');
+    document.getElementById('pendingCount').textContent = payments.length;
+
+    if (payments.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-4">No pending payments</div>';
+        return;
+    }
+
+    container.innerHTML = payments.map(p => `
+        <a href="#" class="list-group-item list-group-item-action" onclick="executePayment('${p.payment_id}')">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="mb-1">${p.requisition}</h6>
+                    <small class="text-muted">${p.destination}</small>
+                </div>
+                <strong>${formatCurrency(p.amount)}</strong>
+            </div>
+        </a>
+    `).join('');
+}
+
+function updateRecentPayments(payments) {
+    const container = document.getElementById('recentPaymentsList');
+
+    if (payments.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-4">No recent payments</div>';
+        return;
+    }
+
+    container.innerHTML = payments.slice(0, 5).map(p => {
+        const statusClass = p.status === 'success' ? 'success' : 'danger';
+        const statusIcon = p.status === 'success' ? '✓' : '✗';
+        return `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="mb-1">${p.requisition}</h6>
+                        <small class="text-muted">${new Date(p.updated_at).toLocaleString()}</small>
+                    </div>
+                    <div class="text-end">
+                        <strong>${formatCurrency(p.amount)}</strong><br>
+                        <span class="badge bg-${statusClass}">${statusIcon} ${p.status.toUpperCase()}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateAlerts(alerts) {
+    const container = document.getElementById('alertsSection');
+
+    if (alerts.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const groupedByType = {};
+    alerts.forEach(alert => {
+        if (!groupedByType[alert.severity]) {
+            groupedByType[alert.severity] = [];
+        }
+        groupedByType[alert.severity].push(alert);
+    });
+
+    let html = '<div class="row mb-4">';
+    Object.entries(groupedByType).forEach(([severity, items]) => {
+        const alertClass = severity === 'Critical' ? 'danger' : 
+                         severity === 'High' ? 'warning' : 
+                         severity === 'Medium' ? 'info' : 'secondary';
+        
+        html += `
+            <div class="col-12 mb-2">
+                <div class="alert alert-${alertClass} mb-0">
+                    <h5 class="alert-heading">${severity} Alerts (${items.length})</h5>
+                    ${items.map(a => `<div>• ${a.title}: ${a.message}</div>`).join('')}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+function executePayment(paymentId) {
+    // Open payment execution modal
+    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    modal.show();
+    // Load payment execution form
+    loadPaymentExecutionForm(paymentId);
+}
+
+function formatCurrency(value) {
+    if (typeof value !== 'number') value = parseFloat(value) || 0;
+    return '₹' + value.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.badge {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.65rem;
+}
+
+.list-group-item {
+    border: 1px solid #dee2e6;
+    padding: 1rem;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+#alertsSection .alert {
+    border-left: 4px solid;
+}
+
+#alertsSection .alert-danger {
+    border-left-color: #dc3545;
+}
+
+#alertsSection .alert-warning {
+    border-left-color: #ffc107;
+}
+
+#alertsSection .alert-info {
+    border-left-color: #0dcaf0;
+}
+</style>
+{% endblock %}

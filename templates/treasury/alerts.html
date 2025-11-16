@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Alert Center{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="bi bi-bell"></i> Alert Center
+            </h1>
+            <small class="text-muted">System alerts and notifications</small>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-outline-secondary" onclick="refreshAlerts()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="mb-4">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#activeAlerts" role="tab">
+                    Active <span class="badge bg-danger ms-2" id="activeCount">0</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#resolvedAlerts" role="tab">
+                    Resolved <span class="badge bg-secondary ms-2" id="resolvedCount">0</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Active Alerts -->
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="activeAlerts" role="tabpanel">
+            <!-- Critical Alerts -->
+            <div class="mb-4">
+                <h6 class="text-danger mb-3">
+                    <i class="bi bi-exclamation-circle"></i> Critical
+                </h6>
+                <div id="criticalAlertsList" class="alert-list"></div>
+            </div>
+
+            <!-- High Priority Alerts -->
+            <div class="mb-4">
+                <h6 class="text-warning mb-3">
+                    <i class="bi bi-exclamation-triangle"></i> High Priority
+                </h6>
+                <div id="highAlertsList" class="alert-list"></div>
+            </div>
+
+            <!-- Medium Priority Alerts -->
+            <div class="mb-4">
+                <h6 class="text-info mb-3">
+                    <i class="bi bi-info-circle"></i> Medium Priority
+                </h6>
+                <div id="mediumAlertsList" class="alert-list"></div>
+            </div>
+
+            <!-- Low Priority Alerts -->
+            <div class="mb-4">
+                <h6 class="text-secondary mb-3">
+                    <i class="bi bi-info-circle-fill"></i> Low Priority
+                </h6>
+                <div id="lowAlertsList" class="alert-list"></div>
+            </div>
+        </div>
+
+        <!-- Resolved Alerts -->
+        <div class="tab-pane fade" id="resolvedAlerts" role="tabpanel">
+            <div id="resolvedAlertsList" class="alert-list"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Alert Details Modal -->
+<div class="modal fade" id="alertDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="alertTitle">Alert Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Alert Type</small>
+                        <p id="alertType"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Severity</small>
+                        <p id="alertSeverity"></p>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted">Message</small>
+                    <p id="alertMessage"></p>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Created</small>
+                        <p id="alertCreated"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Status</small>
+                        <p id="alertStatus"></p>
+                    </div>
+                </div>
+
+                <div id="alertActions" class="mb-3">
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <label class="form-label">Add Note</label>
+                    <textarea class="form-control" id="alertNote" rows="3" placeholder="Add a note..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveAlertNote()">Save Note</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentAlert = null;
+let allAlerts = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    refreshAlerts();
+    // Auto-refresh every 2 minutes
+    setInterval(refreshAlerts, 2 * 60 * 1000);
+
+    // Hook into global alerts poller if available
+    if (window.pc_alerts && typeof window.pc_alerts.startPolling === 'function') {
+        window.onAlertsUpdate = function(alertsData) {
+            try {
+                allAlerts = (alertsData && (alertsData.active_alerts || alertsData)) || [];
+                renderAlerts();
+            } catch(e) { console.error(e); }
+        };
+        window.pc_alerts.startPolling();
+    }
+});
+
+function refreshAlerts() {
+    const fetchPromise = (window.pc_api && window.pc_api.get)
+        ? window.pc_api.get('/api/alerts/active/')
+        : fetch('/api/alerts/active/', { headers: { 'Authorization': 'Token ' + getCookie('auth_token') } }).then(r=>r.json());
+
+    fetchPromise.then(data => {
+        allAlerts = data.active_alerts || data || [];
+        renderAlerts();
+    }).catch(err => { console.error('Error fetching alerts:', err); });
+}
+
+function renderAlerts() {
+    const critical = allAlerts.filter(a => a.severity === 'Critical');
+    const high = allAlerts.filter(a => a.severity === 'High');
+    const medium = allAlerts.filter(a => a.severity === 'Medium');
+    const low = allAlerts.filter(a => a.severity === 'Low');
+
+    document.getElementById('activeCount').textContent = allAlerts.length;
+    document.getElementById('criticalAlertsList').innerHTML = renderAlertList(critical);
+    document.getElementById('highAlertsList').innerHTML = renderAlertList(high);
+    document.getElementById('mediumAlertsList').innerHTML = renderAlertList(medium);
+    document.getElementById('lowAlertsList').innerHTML = renderAlertList(low);
+}
+
+function renderAlertList(alerts) {
+    if (alerts.length === 0) {
+        return '<div class="text-muted text-center py-3">No alerts</div>';
+    }
+
+    return alerts.map(a => {
+        const severityClass = {
+            'Critical': 'danger',
+            'High': 'warning',
+            'Medium': 'info',
+            'Low': 'secondary'
+        }[a.severity] || 'secondary';
+
+        return `
+            <div class="card mb-2 alert-card border-${severityClass}" onclick="showAlertDetails('${a.id}')">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title mb-1">${a.title}</h6>
+                            <p class="card-text text-muted mb-2">${a.message}</p>
+                            <small class="text-muted">
+                                ${new Date(a.created_at).toLocaleString()}
+                            </small>
+                        </div>
+                        <span class="badge bg-${severityClass} ms-2">${a.severity}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function showAlertDetails(alertId) {
+    const alert = allAlerts.find(a => a.id === alertId);
+    if (!alert) return;
+
+    currentAlert = alert;
+    const severityClass = {
+        'Critical': 'danger',
+        'High': 'warning',
+        'Medium': 'info',
+        'Low': 'secondary'
+    }[alert.severity] || 'secondary';
+
+    document.getElementById('alertTitle').textContent = alert.title;
+    document.getElementById('alertType').textContent = alert.alert_type;
+    document.getElementById('alertSeverity').innerHTML = `
+        <span class="badge bg-${severityClass}">${alert.severity}</span>
+    `;
+    document.getElementById('alertMessage').textContent = alert.message;
+    document.getElementById('alertCreated').textContent = new Date(alert.created_at).toLocaleString();
+    document.getElementById('alertStatus').textContent = alert.status;
+
+    // Show action buttons if not acknowledged
+    const actions = document.getElementById('alertActions');
+    if (alert.status === 'active') {
+        actions.innerHTML = `
+            <div class="btn-group w-100" role="group">
+                <button type="button" class="btn btn-warning" onclick="acknowledgeAlert('${alert.id}')">
+                    Acknowledge
+                </button>
+                <button type="button" class="btn btn-success" onclick="resolveAlert('${alert.id}')">
+                    Mark Resolved
+                </button>
+            </div>
+        `;
+    } else {
+        actions.innerHTML = `<p class="text-muted text-center"><small>Alert has been ${alert.status}</small></p>`;
+    }
+
+    document.getElementById('alertNote').value = alert.notes || '';
+
+    new bootstrap.Modal(document.getElementById('alertDetailsModal')).show();
+}
+
+function acknowledgeAlert(alertId) {
+    const p = (window.pc_api && window.pc_api.post)
+        ? window.pc_api.post(`/api/alerts/${alertId}/acknowledge/`)
+        : fetch(`/api/alerts/${alertId}/acknowledge/`, { method: 'POST', headers: { 'Authorization': 'Token ' + getCookie('auth_token'), 'X-CSRFToken': getCookie('csrftoken') } }).then(r=>r.json());
+
+    p.then(data => {
+        if (data && data.success) {
+            alert('Alert acknowledged');
+            bootstrap.Modal.getInstance(document.getElementById('alertDetailsModal')).hide();
+            refreshAlerts();
+        }
+    }).catch(err => { console.error(err); });
+}
+
+function resolveAlert(alertId) {
+    const p = (window.pc_api && window.pc_api.post)
+        ? window.pc_api.post(`/api/alerts/${alertId}/resolve/`)
+        : fetch(`/api/alerts/${alertId}/resolve/`, { method: 'POST', headers: { 'Authorization': 'Token ' + getCookie('auth_token'), 'X-CSRFToken': getCookie('csrftoken') } }).then(r=>r.json());
+
+    p.then(data => {
+        if (data && data.success) {
+            alert('Alert resolved');
+            bootstrap.Modal.getInstance(document.getElementById('alertDetailsModal')).hide();
+            refreshAlerts();
+        }
+    }).catch(err => { console.error(err); });
+}
+
+function saveAlertNote() {
+    const note = document.getElementById('alertNote').value;
+    if (!currentAlert) return;
+    const p = (window.pc_api && window.pc_api.patch)
+        ? window.pc_api.patch(`/api/alerts/${currentAlert.id}/`, { notes: note })
+        : fetch(`/api/alerts/${currentAlert.id}/`, { method: 'PATCH', headers: { 'Authorization': 'Token ' + getCookie('auth_token'), 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' }, body: JSON.stringify({ notes: note }) }).then(r=>r.json());
+
+    p.then(data => {
+        if (data && data.id) {
+            alert('Note saved');
+            refreshAlerts();
+        }
+    }).catch(err => { console.error(err); });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+<style>
+.alert-list {
+    min-height: 100px;
+}
+
+.alert-card {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.alert-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 3px solid transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom-color: #0d6efd;
+    background: none;
+}
+</style>
+{% endblock %}

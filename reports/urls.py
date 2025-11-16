@@ -1,5 +1,5 @@
 from django.urls import path
-from django.http import HttpResponse
+from django.views.generic import TemplateView
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 # ---------------------------------------------------------------------
@@ -13,17 +13,17 @@ def role_required(allowed_roles):
         return user.is_authenticated and user.role_key in allowed_roles
     return user_passes_test(check_role)
 
-# ---------------------------------------------------------------------
-# Views
-# ---------------------------------------------------------------------
-@login_required
-@role_required(['admin', 'fp&a', 'regional_manager', 'group_finance_manager', 'cfo', 'ceo'])
-def reports_home(request):
-    return HttpResponse("Reports Home")
+# Create dashboard view with role requirement
+dashboard_view = login_required(
+    role_required(['admin', 'fp&a', 'regional_manager', 'group_finance_manager', 'cfo', 'ceo'])(
+        TemplateView.as_view(template_name='reports/dashboard.html')
+    )
+)
 
 # ---------------------------------------------------------------------
 # URL patterns
 # ---------------------------------------------------------------------
 urlpatterns = [
-    path('', reports_home, name='reports-home'),
+    path('', dashboard_view, name='reports-home'),
+    path('dashboard/', dashboard_view, name='reports-dashboard'),
 ]

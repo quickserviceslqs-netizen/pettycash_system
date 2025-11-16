@@ -442,3 +442,410 @@ class LedgerEntryViewSet(viewsets.ReadOnlyModelViewSet):
         entries = LedgerEntry.objects.filter(fund__fund_id=fund_id).order_by('-created_at')
         serializer = self.get_serializer(entries, many=True)
         return Response(serializer.data)
+
+
+# ============================================================================
+# PHASE 6: DASHBOARD & REPORTING VIEWS
+# ============================================================================
+
+from treasury.models import (
+    TreasuryDashboard, DashboardMetric, Alert, PaymentTracking, FundForecast
+)
+from treasury.services.dashboard_service import DashboardService
+from treasury.services.alert_service import AlertService
+from treasury.services.report_service import ReportService
+
+
+# Serializers for Phase 6
+
+class TreasuryDashboardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TreasuryDashboard
+        fields = [
+            'dashboard_id', 'company', 'total_funds', 'total_balance', 'total_utilization_pct',
+            'funds_below_reorder', 'funds_critical', 'payments_today', 'payments_this_week',
+            'payments_this_month', 'total_amount_today', 'total_amount_this_week',
+            'total_amount_this_month', 'active_alerts', 'critical_alerts',
+            'pending_replenishments', 'pending_replenishment_amount', 'pending_variances',
+            'pending_variance_amount', 'calculated_at'
+        ]
+        read_only_fields = fields
+
+
+class DashboardMetricSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DashboardMetric
+        fields = ['metric_id', 'metric_type', 'metric_date', 'metric_hour', 'value', 'created_at']
+        read_only_fields = fields
+
+
+class AlertSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Alert
+        fields = [
+            'alert_id', 'alert_type', 'severity', 'title', 'message',
+            'related_payment', 'related_fund', 'related_variance',
+            'created_at', 'acknowledged_at', 'resolved_at', 'resolution_notes',
+            'email_sent', 'email_sent_at'
+        ]
+        read_only_fields = [
+            'alert_id', 'created_at', 'acknowledged_at', 'resolved_at'
+        ]
+
+
+class PaymentTrackingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentTracking
+        fields = [
+            'tracking_id', 'payment', 'current_status', 'status_message',
+            'created_at', 'otp_sent_at', 'otp_verified_at', 'execution_started_at',
+            'execution_completed_at', 'total_execution_time', 'otp_verification_time'
+        ]
+        read_only_fields = fields
+
+
+class FundForecastSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FundForecast
+        fields = [
+            'forecast_id', 'fund', 'forecast_date', 'predicted_balance',
+            'predicted_utilization_pct', 'predicted_daily_expense', 'days_until_reorder',
+            'needs_replenishment', 'recommended_replenishment_amount', 'confidence_level',
+            'forecast_horizon_days', 'calculated_at'
+        ]
+        read_only_fields = fields
+
+
+# ViewSets for Phase 6
+
+class DashboardViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Dashboard metrics and aggregates.
+    
+    Actions:
+    - list: Get all dashboards
+    - retrieve: Get dashboard for company
+    - summary: Get dashboard summary with all metrics
+    - fund_status: Get fund status cards
+    - pending_payments: Get pending payments ready to execute
+    - recent_payments: Get recent executed payments
+    - refresh: Force refresh dashboard cache
+    """
+    queryset = TreasuryDashboard.objects.all()
+    serializer_class = TreasuryDashboardSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'dashboard_id'
+    
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Get complete dashboard summary for user's company."""
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        
+        if not company_id:
+            return Response(
+                {'error': 'User company not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        dashboard = DashboardService.calculate_dashboard_metrics(company_id)
+        serializer = self.get_serializer(dashboard)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def fund_status(self, request):
+        """Get fund status cards for dashboard."""
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        
+        if not company_id:
+            return Response(
+                {'error': 'User company not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        cards = DashboardService.get_fund_status_cards(company_id)
+        return Response({'fund_status': cards})
+    
+    @action(detail=False, methods=['get'])
+    def pending_payments(self, request):
+        """Get pending payments ready for execution."""
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        
+        if not company_id:
+            return Response(
+                {'error': 'User company not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        payments = DashboardService.get_pending_payments(company_id)
+        serializer = PaymentSerializer(payments, many=True)
+        return Response({'pending_payments': serializer.data})
+    
+    @action(detail=False, methods=['get'])
+    def recent_payments(self, request):
+        """Get recent executed payments."""
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        
+        if not company_id:
+            return Response(
+                {'error': 'User company not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        payments = DashboardService.get_recent_payments(company_id, limit=15)
+        serializer = PaymentSerializer(payments, many=True)
+        return Response({'recent_payments': serializer.data})
+    
+    @action(detail=False, methods=['post'])
+    def refresh(self, request):
+        """Force refresh dashboard cache for all companies."""
+        count = DashboardService.refresh_dashboard_cache()
+        return Response({
+            'message': f'Dashboard cache refreshed for {count} companies',
+            'count': count
+        })
+
+
+class AlertsViewSet(viewsets.ModelViewSet):
+    """
+    Treasury alerts and notifications.
+    
+    Actions:
+    - list: Get all alerts
+    - retrieve: Get alert details
+    - active: Get active (unresolved) alerts
+    - summary: Get alert summary by severity
+    - acknowledge: Mark alert as acknowledged
+    - resolve: Mark alert as resolved
+    """
+    queryset = Alert.objects.all()
+    serializer_class = AlertSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'alert_id'
+    
+    @action(detail=False, methods=['get'])
+    def active(self, request):
+        """Get active (unresolved) alerts."""
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        alerts = AlertService.get_unresolved_alerts(company_id=company_id)
+        
+        severity_filter = request.query_params.get('severity')
+        if severity_filter:
+            alerts = alerts.filter(severity=severity_filter)
+        
+        serializer = self.get_serializer(alerts, many=True)
+        return Response({'active_alerts': serializer.data})
+    
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Get alert summary by severity."""
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        summary = AlertService.get_alert_summary(company_id=company_id)
+        return Response({'alert_summary': summary})
+    
+    @action(detail=True, methods=['post'])
+    def acknowledge(self, request, alert_id=None):
+        """Acknowledge an alert (mark as seen)."""
+        alert = self.get_object()
+        AlertService.acknowledge_alert(alert, request.user)
+        serializer = self.get_serializer(alert)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def resolve(self, request, alert_id=None):
+        """Resolve an alert with optional notes."""
+        alert = self.get_object()
+        notes = request.data.get('notes')
+        AlertService.resolve_alert(alert, request.user, notes)
+        serializer = self.get_serializer(alert)
+        return Response(serializer.data)
+
+
+class PaymentTrackingViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Payment execution tracking and audit trail.
+    
+    Actions:
+    - list: Get all payment tracking records
+    - retrieve: Get tracking for specific payment
+    - by_status: Get payments filtered by status
+    """
+    queryset = PaymentTracking.objects.all()
+    serializer_class = PaymentTrackingSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'tracking_id'
+    
+    @action(detail=False, methods=['get'])
+    def by_status(self, request):
+        """Get payment tracking records filtered by status."""
+        status_filter = request.query_params.get('status')
+        
+        if not status_filter:
+            return Response(
+                {'error': 'status query parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        tracking = PaymentTracking.objects.filter(current_status=status_filter)
+        serializer = self.get_serializer(tracking, many=True)
+        return Response({'tracking': serializer.data})
+
+
+class ReportingViewSet(viewsets.ViewSet):
+    """
+    Reporting and analytics endpoints.
+    
+    Actions:
+    - payment_summary: Get payment summary report
+    - fund_health: Get fund health report
+    - variance_analysis: Get variance analysis
+    - forecast: Get replenishment forecast
+    - export: Export report to CSV/PDF
+    """
+    permission_classes = [IsAuthenticated]
+    
+    @action(detail=False, methods=['get'])
+    def payment_summary(self, request):
+        """Get payment summary report."""
+        from datetime import datetime
+        
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        start_date = request.query_params.get('start_date', str(timezone.now().date() - timezone.timedelta(days=30)))
+        end_date = request.query_params.get('end_date', str(timezone.now().date()))
+        
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            return Response(
+                {'error': 'Invalid date format. Use YYYY-MM-DD'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        report = ReportService.generate_payment_summary(company_id, start_date, end_date)
+        return Response(report)
+    
+    @action(detail=False, methods=['get'])
+    def fund_health(self, request):
+        """Get fund health report."""
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        report = ReportService.generate_fund_health_report(company_id)
+        return Response(report)
+    
+    @action(detail=False, methods=['get'])
+    def variance_analysis(self, request):
+        """Get variance analysis report."""
+        from datetime import datetime
+        
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        start_date = request.query_params.get('start_date', str(timezone.now().date() - timezone.timedelta(days=30)))
+        end_date = request.query_params.get('end_date', str(timezone.now().date()))
+        
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            return Response(
+                {'error': 'Invalid date format. Use YYYY-MM-DD'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        report = ReportService.generate_variance_analysis(company_id, start_date, end_date)
+        return Response(report)
+    
+    @action(detail=False, methods=['get'])
+    def forecast(self, request):
+        """Get replenishment forecast."""
+        from organization.models import Company
+        
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        horizon_days = int(request.query_params.get('horizon', 30))
+        
+        try:
+            company = Company.objects.get(id=company_id)
+        except Company.DoesNotExist:
+            return Response(
+                {'error': 'Company not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        funds = TreasuryFund.objects.filter(company=company)
+        forecasts = []
+        
+        for fund in funds:
+            forecast = ReportService.generate_replenishment_forecast(fund, horizon_days)
+            forecasts.append(FundForecastSerializer(forecast).data)
+        
+        return Response({'forecasts': forecasts})
+    
+    @action(detail=False, methods=['get'])
+    def export(self, request):
+        """Export report to CSV or PDF."""
+        from django.http import HttpResponse
+        
+        report_type = request.query_params.get('type', 'payment_summary')
+        export_format = request.query_params.get('format', 'csv')
+        
+        company_id = request.user.profile.company_id if hasattr(request.user, 'profile') else None
+        
+        # Generate report
+        if report_type == 'payment_summary':
+            from datetime import datetime
+            start_date = request.query_params.get('start_date', str(timezone.now().date() - timezone.timedelta(days=30)))
+            end_date = request.query_params.get('end_date', str(timezone.now().date()))
+            
+            try:
+                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            except ValueError:
+                return Response(
+                    {'error': 'Invalid date format'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            report_data = ReportService.generate_payment_summary(company_id, start_date, end_date)
+        elif report_type == 'fund_health':
+            report_data = ReportService.generate_fund_health_report(company_id)
+        elif report_type == 'variance_analysis':
+            from datetime import datetime
+            start_date = request.query_params.get('start_date', str(timezone.now().date() - timezone.timedelta(days=30)))
+            end_date = request.query_params.get('end_date', str(timezone.now().date()))
+            
+            try:
+                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            except ValueError:
+                return Response(
+                    {'error': 'Invalid date format'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            report_data = ReportService.generate_variance_analysis(company_id, start_date, end_date)
+        else:
+            return Response(
+                {'error': 'Invalid report type'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Export
+        if export_format == 'csv':
+            csv_data = ReportService.export_report_to_csv(report_data, report_type)
+            response = HttpResponse(csv_data, content_type='text/csv')
+            response['Content-Disposition'] = f'attachment; filename="report_{report_type}.csv"'
+            return response
+        elif export_format == 'pdf':
+            pdf_data = ReportService.export_report_to_pdf(report_data, report_type)
+            if pdf_data:
+                response = HttpResponse(pdf_data, content_type='application/pdf')
+                response['Content-Disposition'] = f'attachment; filename="report_{report_type}.pdf"'
+                return response
+            else:
+                return Response(
+                    {'error': 'PDF export not available'},
+                    status=status.HTTP_501_NOT_IMPLEMENTED
+                )
+        else:
+            return Response(
+                {'error': 'Invalid export format'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+

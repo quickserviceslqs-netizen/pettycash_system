@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Variance Approvals{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="bi bi-exclamation-triangle"></i> Variance Approvals
+            </h1>
+            <small class="text-muted">Review and approve transaction variances</small>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-outline-secondary" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Status Tabs -->
+    <div class="mb-4">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#pendingVariances" role="tab">
+                    Pending <span class="badge bg-warning ms-2" id="pendingCount">0</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#approvedVariances" role="tab">
+                    Approved <span class="badge bg-success ms-2" id="approvedCount">0</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#rejectedVariances" role="tab">
+                    Rejected <span class="badge bg-danger ms-2" id="rejectedCount">0</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="tab-content">
+        <!-- Pending Variances -->
+        <div class="tab-pane fade show active" id="pendingVariances" role="tabpanel">
+            <div id="pendingVariancesList" class="variance-list">
+                <div class="text-center text-muted py-4">
+                    <span class="spinner-border spinner-border-sm me-2"></span> Loading...
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved Variances -->
+        <div class="tab-pane fade" id="approvedVariances" role="tabpanel">
+            <div id="approvedVariancesList" class="variance-list"></div>
+        </div>
+
+        <!-- Rejected Variances -->
+        <div class="tab-pane fade" id="rejectedVariances" role="tabpanel">
+            <div id="rejectedVariancesList" class="variance-list"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Variance Details Modal -->
+<div class="modal fade" id="varianceDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Variance Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Variance ID</small>
+                        <p id="detailsVarianceId"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Payment ID</small>
+                        <p id="detailsPaymentId"></p>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">Expected Amount</small>
+                        <h5 id="detailsExpectedAmount"></h5>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Actual Amount</small>
+                        <h5 id="detailsActualAmount"></h5>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Variance</strong><br>
+                    <h4 id="detailsVarianceAmount" class="mb-0 text-danger"></h4>
+                    <small id="detailsVariancePct"></small>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted">Reason</small>
+                    <p id="detailsReason"></p>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted">Created</small>
+                    <p id="detailsCreated"></p>
+                </div>
+
+                <div id="approvalSection"></div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <label class="form-label">Approval Notes</label>
+                    <textarea class="form-control" id="varianceNotes" rows="3" 
+                              placeholder="Add approval or rejection notes..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer" id="varianceModalFooter">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let allVariances = [];
+let currentVariance = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadVariances();
+});
+
+function loadVariances() {
+    fetch('/api/variance/', {
+        headers: { 'Authorization': 'Token ' + getCookie('auth_token') }
+    })
+    .then(r => r.json())
+    .then(data => {
+        allVariances = data.results || data;
+        renderVariances();
+    })
+    .catch(err => {
+        console.error('Error loading variances:', err);
+    });
+}
+
+function renderVariances() {
+    const pending = allVariances.filter(v => v.status === 'pending');
+    const approved = allVariances.filter(v => v.status === 'approved');
+    const rejected = allVariances.filter(v => v.status === 'rejected');
+
+    document.getElementById('pendingCount').textContent = pending.length;
+    document.getElementById('approvedCount').textContent = approved.length;
+    document.getElementById('rejectedCount').textContent = rejected.length;
+
+    document.getElementById('pendingVariancesList').innerHTML = renderVarianceList(pending, true);
+    document.getElementById('approvedVariancesList').innerHTML = renderVarianceList(approved, false);
+    document.getElementById('rejectedVariancesList').innerHTML = renderVarianceList(rejected, false);
+}
+
+function renderVarianceList(variances, isPending) {
+    if (variances.length === 0) {
+        return '<div class="text-center text-muted py-4">No variances</div>';
+    }
+
+    return variances.map(v => {
+        const varianceAmount = Math.abs(v.actual_amount - v.original_amount);
+        const variancePct = ((varianceAmount / v.original_amount) * 100).toFixed(2);
+        const isNegative = v.actual_amount < v.original_amount;
+
+        return `
+            <div class="card mb-3 variance-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h6 class="card-title mb-1">Payment #${v.payment}</h6>
+                            <small class="text-muted">
+                                Original: ${formatCurrency(v.original_amount)}<br>
+                                Actual: ${formatCurrency(v.actual_amount)}
+                            </small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-end">
+                                <h5 class="mb-1 ${isNegative ? 'text-success' : 'text-danger'}">
+                                    ${isNegative ? '−' : '+'}${formatCurrency(varianceAmount)}
+                                </h5>
+                                <small class="text-muted">${variancePct}%</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <span class="badge bg-${v.status === 'pending' ? 'warning' : v.status === 'approved' ? 'success' : 'danger'}">
+                                ${v.status.toUpperCase()}
+                            </span>
+                            ${isPending ? `
+                                <br>
+                                <button class="btn btn-sm btn-link p-0 mt-2" onclick="viewVariance('${v.id}')">
+                                    Review
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function viewVariance(varianceId) {
+    const variance = allVariances.find(v => v.id === varianceId);
+    if (!variance) return;
+
+    currentVariance = variance;
+    const varianceAmount = Math.abs(variance.actual_amount - variance.original_amount);
+
+    document.getElementById('detailsVarianceId').textContent = variance.id;
+    document.getElementById('detailsPaymentId').textContent = variance.payment;
+    document.getElementById('detailsExpectedAmount').textContent = formatCurrency(variance.original_amount);
+    document.getElementById('detailsActualAmount').textContent = formatCurrency(variance.actual_amount);
+    document.getElementById('detailsVarianceAmount').textContent = formatCurrency(varianceAmount);
+    document.getElementById('detailsVariancePct').textContent = 
+        `${((varianceAmount / variance.original_amount) * 100).toFixed(2)}% variance`;
+    document.getElementById('detailsReason').textContent = variance.reason || 'No reason provided';
+    document.getElementById('detailsCreated').textContent = new Date(variance.created_at).toLocaleString();
+    document.getElementById('varianceNotes').value = variance.approval_notes || '';
+
+    // Show approval section if pending
+    const approvalSection = document.getElementById('approvalSection');
+    const footer = document.getElementById('varianceModalFooter');
+    
+    if (variance.status === 'pending') {
+        approvalSection.innerHTML = `
+            <div class="alert alert-warning">
+                <strong>Pending Approval</strong><br>
+                <small>Please review the variance details and provide approval or rejection.</small>
+            </div>
+        `;
+        footer.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-danger" onclick="rejectVariance()">Reject</button>
+            <button type="button" class="btn btn-success" onclick="approveVariance()">Approve</button>
+        `;
+    } else {
+        approvalSection.innerHTML = `
+            <div class="alert alert-${variance.status === 'approved' ? 'success' : 'danger'}">
+                <strong>Status: ${variance.status.toUpperCase()}</strong><br>
+                <small>Approved by: ${variance.approved_by || 'N/A'}<br>
+                Approval date: ${variance.approval_date ? new Date(variance.approval_date).toLocaleString() : 'N/A'}</small>
+            </div>
+        `;
+        footer.innerHTML = `
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        `;
+    }
+
+    new bootstrap.Modal(document.getElementById('varianceDetailsModal')).show();
+}
+
+function approveVariance() {
+    if (!currentVariance) return;
+
+    const notes = document.getElementById('varianceNotes').value;
+
+    fetch(`/api/variance/${currentVariance.id}/approve/`, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Token ' + getCookie('auth_token'),
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ approval_notes: notes })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success || data.id) {
+            alert('Variance approved successfully');
+            bootstrap.Modal.getInstance(document.getElementById('varianceDetailsModal')).hide();
+            loadVariances();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to approve variance'));
+        }
+    })
+    .catch(err => {
+        alert('Error: ' + err.message);
+    });
+}
+
+function rejectVariance() {
+    if (!currentVariance) return;
+
+    const notes = document.getElementById('varianceNotes').value;
+    if (!notes) {
+        alert('Please provide rejection notes');
+        return;
+    }
+
+    fetch(`/api/variance/${currentVariance.id}/reject/`, {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Token ' + getCookie('auth_token'),
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ approval_notes: notes })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success || data.id) {
+            alert('Variance rejected');
+            bootstrap.Modal.getInstance(document.getElementById('varianceDetailsModal')).hide();
+            loadVariances();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to reject variance'));
+        }
+    })
+    .catch(err => {
+        alert('Error: ' + err.message);
+    });
+}
+
+function formatCurrency(value) {
+    if (typeof value !== 'number') value = parseFloat(value) || 0;
+    return '₹' + value.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+<style>
+.variance-card {
+    transition: all 0.2s;
+    border: 1px solid #dee2e6;
+}
+
+.variance-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 3px solid transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom-color: #0d6efd;
+    background: none;
+}
+</style>
+{% endblock %}

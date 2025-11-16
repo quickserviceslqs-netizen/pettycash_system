@@ -1,0 +1,607 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Execute Payment{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1 class="mb-4">
+                <i class="bi bi-credit-card"></i> Execute Payment
+            </h1>
+
+            <!-- Step Indicator -->
+            <div class="mb-4">
+                <div class="row text-center">
+                    <div class="col">
+                        <div class="step-circle active" data-step="1">1</div>
+                        <small>Select Payment</small>
+                    </div>
+                    <div class="col">
+                        <div class="step-circle" data-step="2">2</div>
+                        <small>Request OTP</small>
+                    </div>
+                    <div class="col">
+                        <div class="step-circle" data-step="3">3</div>
+                        <small>Verify OTP</small>
+                    </div>
+                    <div class="col">
+                        <div class="step-circle" data-step="4">4</div>
+                        <small>Confirm</small>
+                    </div>
+                    <div class="col">
+                        <div class="step-circle" data-step="5">5</div>
+                        <small>Complete</small>
+                    </div>
+                </div>
+                <hr class="my-4">
+            </div>
+
+            <!-- Step 1: Select Payment -->
+            <div class="step-content active" id="step-1">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Step 1: Select Payment</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="fundSelect" class="form-label">Select Fund</label>
+                            <select class="form-select" id="fundSelect" onchange="loadPayments()">
+                                <option value="">-- Choose Fund --</option>
+                            </select>
+                        </div>
+
+                        <div id="paymentsContainer" class="mb-3" style="display: none;">
+                            <label class="form-label">Select Payment</label>
+                            <div id="paymentsList" class="list-group"></div>
+                        </div>
+
+                        <div id="selectedPaymentSummary" style="display: none;">
+                            <hr>
+                            <h6 class="mb-3">Payment Summary</h6>
+                            <div class="row mb-2">
+                                <div class="col-6"><small class="text-muted">Requisition ID</small></div>
+                                <div class="col-6"><small id="summaryReqId"></small></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><small class="text-muted">Payee</small></div>
+                                <div class="col-6"><small id="summaryPayee"></small></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><small class="text-muted">Amount</small></div>
+                                <div class="col-6"><small id="summaryAmount" class="fw-bold"></small></div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button class="btn btn-primary" id="step1NextBtn" onclick="nextStep(1)" disabled>
+                                Next: Request OTP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Request OTP -->
+            <div class="step-content" id="step-2">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Step 2: Request OTP</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <strong>OTP will be sent to your registered email address.</strong><br>
+                            <small>Please check your inbox and spam folder.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="emailAddress" readonly>
+                            <small class="text-muted">OTP will be sent to this address</small>
+                        </div>
+
+                        <div id="otpStatus"></div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button class="btn btn-primary" id="requestOtpBtn" onclick="requestOTP()">
+                                Send OTP to Email
+                            </button>
+                            <button class="btn btn-secondary" onclick="previousStep(2)">
+                                Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Verify OTP -->
+            <div class="step-content" id="step-3">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Step 3: Verify OTP</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <label for="otpInput" class="form-label">Enter 6-Digit OTP</label>
+                            <div class="input-group input-group-lg">
+                                <input type="text" class="form-control text-center" id="otpInput" 
+                                       maxlength="6" placeholder="000000" inputmode="numeric"
+                                       onkeyup="validateOTPInput(this)">
+                            </div>
+                            <small class="text-muted">
+                                OTP will expire in <span id="otpTimer">5:00</span> minutes
+                            </small>
+                        </div>
+
+                        <div id="otpValidationStatus"></div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button class="btn btn-primary" id="verifyOtpBtn" onclick="verifyOTP()" disabled>
+                                Verify OTP & Continue
+                            </button>
+                            <button class="btn btn-secondary" onclick="previousStep(3)">
+                                Back
+                            </button>
+                            <button class="btn btn-link text-muted" onclick="requestOTPAgain()">
+                                Resend OTP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Confirm -->
+            <div class="step-content" id="step-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Step 4: Confirm Payment</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <strong>Please verify all details before confirming.</strong><br>
+                            <small>This action cannot be undone.</small>
+                        </div>
+
+                        <h6 class="mb-3">Payment Details</h6>
+                        <div class="row mb-2">
+                            <div class="col-6"><small class="text-muted">Requisition ID</small></div>
+                            <div class="col-6"><small id="confirmReqId"></small></div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6"><small class="text-muted">Payee</small></div>
+                            <div class="col-6"><small id="confirmPayee"></small></div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6"><small class="text-muted">Amount</small></div>
+                            <div class="col-6"><small id="confirmAmount" class="fw-bold text-success"></small></div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-6"><small class="text-muted">Fund</small></div>
+                            <div class="col-6"><small id="confirmFund"></small></div>
+                        </div>
+
+                        <hr>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirmCheckbox" 
+                                   onchange="toggleConfirmButton()">
+                            <label class="form-check-label" for="confirmCheckbox">
+                                I confirm all details are correct and authorize this payment
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button class="btn btn-success btn-lg" id="confirmPaymentBtn" 
+                                    onclick="confirmPayment()" disabled>
+                                <i class="bi bi-check-circle"></i> Confirm & Execute Payment
+                            </button>
+                            <button class="btn btn-secondary" onclick="previousStep(4)">
+                                Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Complete -->
+            <div class="step-content" id="step-5">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <div id="successIcon" style="display: none;">
+                            <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+                            <h3 class="mt-3 text-success">Payment Executed Successfully!</h3>
+                        </div>
+
+                        <div id="failureIcon" style="display: none;">
+                            <i class="bi bi-x-circle text-danger" style="font-size: 4rem;"></i>
+                            <h3 class="mt-3 text-danger">Payment Execution Failed</h3>
+                        </div>
+
+                        <div id="resultDetails" class="mt-4 text-start" style="max-width: 400px; margin-left: auto; margin-right: auto;">
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button class="btn btn-primary" onclick="location.href='/treasury/dashboard/'">
+                                Return to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPayment = null;
+let otpToken = null;
+let otpExpireTime = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadFunds();
+    document.getElementById('emailAddress').value = getCurrentUserEmail();
+});
+
+function loadFunds() {
+    const p = (window.pc_api && window.pc_api.get)
+        ? window.pc_api.get('/api/treasury/funds/')
+        : fetch('/api/treasury/funds/', { headers: { 'Authorization': 'Token ' + getCookie('auth_token') } }).then(r=>r.json());
+
+    p.then(data => {
+        const select = document.getElementById('fundSelect');
+        select.innerHTML = '<option value="">-- Choose Fund --</option>';
+        (data.results || data).forEach(fund => {
+            const option = document.createElement('option');
+            option.value = fund.id;
+            option.textContent = `${fund.name} (${formatCurrency(fund.current_balance)})`;
+            select.appendChild(option);
+        });
+    });
+}
+
+function loadPayments() {
+    const fundId = document.getElementById('fundSelect').value;
+    if (!fundId) {
+        document.getElementById('paymentsContainer').style.display = 'none';
+        return;
+    }
+
+    const p = (window.pc_api && window.pc_api.get)
+        ? window.pc_api.get(`/api/payment/?fund=${fundId}&status=approved`)
+        : fetch(`/api/payment/?fund=${fundId}&status=approved`, { headers: { 'Authorization': 'Token ' + getCookie('auth_token') } }).then(r=>r.json());
+
+    p.then(data => {
+        const container = document.getElementById('paymentsContainer');
+        const list = document.getElementById('paymentsList');
+        const payments = data.results || data;
+
+        if (payments.length === 0) {
+            list.innerHTML = '<div class="alert alert-info">No pending payments for this fund</div>';
+            container.style.display = 'block';
+            return;
+        }
+
+        list.innerHTML = payments.map(p => `
+            <div class="list-group-item list-group-item-action" 
+                 onclick="selectPayment(${p.id}, '${p.requisition_number}', '${p.payee_name}', ${p.amount})">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="mb-1">Req #${p.requisition_number}</h6>
+                        <small class="text-muted">${p.payee_name}</small>
+                    </div>
+                    <strong>${formatCurrency(p.amount)}</strong>
+                </div>
+            </div>
+        `).join('');
+
+        container.style.display = 'block';
+    });
+}
+
+function selectPayment(id, reqId, payee, amount) {
+    currentPayment = { id, reqId, payee, amount };
+
+    document.getElementById('summaryReqId').textContent = reqId;
+    document.getElementById('summaryPayee').textContent = payee;
+    document.getElementById('summaryAmount').textContent = formatCurrency(amount);
+    document.getElementById('selectedPaymentSummary').style.display = 'block';
+
+    document.getElementById('step1NextBtn').disabled = false;
+}
+
+function nextStep(step) {
+    if (step === 1) {
+        if (!currentPayment) {
+            alert('Please select a payment');
+            return;
+        }
+    }
+
+    document.querySelector(`#step-${step}`).classList.remove('active');
+    document.querySelector(`#step-${step + 1}`).classList.add('active');
+    document.querySelector(`[data-step="${step}"]`).parentElement.classList.add('completed');
+    document.querySelector(`[data-step="${step + 1}"]`).parentElement.classList.add('active');
+}
+
+function previousStep(step) {
+    document.querySelector(`#step-${step}`).classList.remove('active');
+    document.querySelector(`#step-${step - 1}`).classList.add('active');
+    document.querySelector(`[data-step="${step}"]`).parentElement.classList.remove('active');
+    document.querySelector(`[data-step="${step - 1}"]`).parentElement.classList.remove('completed');
+}
+
+function requestOTP() {
+    const btn = document.getElementById('requestOtpBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+    const p = (window.pc_api && window.pc_api.post)
+        ? window.pc_api.post(`/api/payment/${currentPayment.id}/request_otp/`)
+        : fetch(`/api/payment/${currentPayment.id}/request_otp/`, { method: 'POST', headers: { 'Authorization': 'Token ' + getCookie('auth_token'), 'X-CSRFToken': getCookie('csrftoken') } }).then(r=>r.json());
+
+    p.then(data => {
+        if (data && data.success) {
+            otpToken = data.otp_token;
+            otpExpireTime = Date.now() + (data.expires_in * 1000);
+
+            document.getElementById('otpStatus').innerHTML = `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> OTP sent successfully! 
+                    Check your email: ${data.email_masked}
+                </div>
+            `;
+
+            nextStep(2);
+
+            // Prefer centralized forms helper for OTP countdown when available
+            if (window.pc_forms && typeof window.pc_forms.startOtpCountdown === 'function') {
+                window.pc_forms.startOtpCountdown(data.expires_in, ({minutes, seconds}) => {
+                    document.getElementById('otpTimer').textContent = `${minutes}:${seconds.toString().padStart(2,'0')}`;
+                }, function(){
+                    document.getElementById('verifyOtpBtn').disabled = true;
+                    document.getElementById('otpInput').disabled = true;
+                    document.getElementById('otpValidationStatus').innerHTML = `<div class="alert alert-danger">OTP has expired. Please request a new one.</div>`;
+                });
+            } else {
+                startOTPTimer();
+            }
+        } else {
+            document.getElementById('otpStatus').innerHTML = `
+                <div class="alert alert-danger">${(data && data.error) || 'Failed to send OTP'}</div>
+            `;
+        }
+        btn.disabled = false;
+        btn.innerHTML = 'Send OTP to Email';
+    })
+    .catch(err => {
+        document.getElementById('otpStatus').innerHTML = `
+            <div class="alert alert-danger">Error: ${err.message}</div>
+        `;
+        btn.disabled = false;
+        btn.innerHTML = 'Send OTP to Email';
+    });
+}
+
+function validateOTPInput(input) {
+    input.value = input.value.replace(/\D/g, '').slice(0, 6);
+    document.getElementById('verifyOtpBtn').disabled = input.value.length !== 6;
+}
+
+function startOTPTimer() {
+    // Use centralized pc_forms helper when available
+    if (window.pc_forms && typeof window.pc_forms.startOtpCountdown === 'function') {
+        const remainingSeconds = Math.max(0, Math.ceil((otpExpireTime - Date.now()) / 1000));
+        window.pc_forms.startOtpCountdown(remainingSeconds, ({minutes, seconds}) => {
+            const timerEl = document.getElementById('otpTimer');
+            if (timerEl) timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }, function(){
+            document.getElementById('verifyOtpBtn').disabled = true;
+            document.getElementById('otpInput').disabled = true;
+            document.getElementById('otpValidationStatus').innerHTML = `
+                <div class="alert alert-danger">OTP has expired. Please request a new one.</div>
+            `;
+        });
+        return;
+    }
+
+    const timerEl = document.getElementById('otpTimer');
+    const interval = setInterval(() => {
+        const remaining = Math.max(0, otpExpireTime - Date.now());
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        
+        timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (remaining === 0) {
+            clearInterval(interval);
+            document.getElementById('verifyOtpBtn').disabled = true;
+            document.getElementById('otpInput').disabled = true;
+            document.getElementById('otpValidationStatus').innerHTML = `
+                <div class="alert alert-danger">OTP has expired. Please request a new one.</div>
+            `;
+        }
+    }, 1000);
+}
+
+function verifyOTP() {
+    const otp = document.getElementById('otpInput').value;
+    if (otp.length !== 6) {
+        alert('Please enter a valid 6-digit OTP');
+        return;
+    }
+
+    const btn = document.getElementById('verifyOtpBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+
+    const p = (window.pc_api && window.pc_api.post)
+        ? window.pc_api.post(`/api/payment/${currentPayment.id}/verify_otp/`, { otp, otp_token: otpToken })
+        : fetch(`/api/payment/${currentPayment.id}/verify_otp/`, { method: 'POST', headers: { 'Authorization': 'Token ' + getCookie('auth_token'), 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' }, body: JSON.stringify({ otp, otp_token: otpToken }) }).then(r=>r.json());
+
+    p.then(data => {
+        if (data.success) {
+            document.getElementById('otpValidationStatus').innerHTML = `
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> OTP verified successfully!
+                </div>
+            `;
+            
+            setTimeout(() => {
+                populateConfirmStep();
+                nextStep(3);
+            }, 1000);
+        } else {
+            document.getElementById('otpValidationStatus').innerHTML = `
+                <div class="alert alert-danger">${data.error || 'Invalid OTP'}</div>
+            `;
+            btn.disabled = false;
+            btn.innerHTML = 'Verify OTP & Continue';
+        }
+    });
+}
+
+function populateConfirmStep() {
+    document.getElementById('confirmReqId').textContent = currentPayment.reqId;
+    document.getElementById('confirmPayee').textContent = currentPayment.payee;
+    document.getElementById('confirmAmount').textContent = formatCurrency(currentPayment.amount);
+    document.getElementById('confirmFund').textContent = document.getElementById('fundSelect').options[document.getElementById('fundSelect').selectedIndex].text;
+}
+
+function toggleConfirmButton() {
+    document.getElementById('confirmPaymentBtn').disabled = !document.getElementById('confirmCheckbox').checked;
+}
+
+function confirmPayment() {
+    const btn = document.getElementById('confirmPaymentBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+    const p = (window.pc_api && window.pc_api.post)
+        ? window.pc_api.post(`/api/payment/${currentPayment.id}/execute/`, { otp_token: otpToken })
+        : fetch(`/api/payment/${currentPayment.id}/execute/`, { method: 'POST', headers: { 'Authorization': 'Token ' + getCookie('auth_token'), 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' }, body: JSON.stringify({ otp_token: otpToken }) }).then(r=>r.json());
+
+    p.then(data => {
+        nextStep(4);
+        
+        if (data.success) {
+            document.getElementById('successIcon').style.display = 'block';
+            document.getElementById('resultDetails').innerHTML = `
+                <div class="mb-3">
+                    <h6>Payment Details</h6>
+                    <small>Requisition: ${data.requisition_number}</small><br>
+                    <small>Amount: ${formatCurrency(data.amount)}</small><br>
+                    <small>Executed at: ${new Date(data.executed_at).toLocaleString()}</small><br>
+                    <small>Reference: ${data.reference_number}</small>
+                </div>
+            `;
+        } else {
+            document.getElementById('failureIcon').style.display = 'block';
+            document.getElementById('resultDetails').innerHTML = `
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> ${data.error || 'Payment execution failed'}
+                </div>
+            `;
+        }
+    })
+    .catch(err => {
+        nextStep(4);
+        document.getElementById('failureIcon').style.display = 'block';
+        document.getElementById('resultDetails').innerHTML = `
+            <div class="alert alert-danger">
+                <strong>Error:</strong> ${err.message}
+            </div>
+        `;
+    });
+}
+
+function requestOTPAgain() {
+    document.getElementById('otpInput').disabled = false;
+    document.getElementById('otpInput').value = '';
+    document.getElementById('otpValidationStatus').innerHTML = '';
+    requestOTP();
+}
+
+function formatCurrency(value) {
+    if (typeof value !== 'number') value = parseFloat(value) || 0;
+    return '₹' + value.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function getCurrentUserEmail() {
+    // This would be populated from the server-rendered context
+    return document.getElementById('emailAddress')?.value || 'user@example.com';
+}
+</script>
+
+<style>
+.step-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin: 0 auto 10px;
+    transition: all 0.3s;
+}
+
+.step-circle.active {
+    background: #0d6efd;
+    color: white;
+}
+
+.step-circle.completed {
+    background: #198754;
+    color: white;
+}
+
+.step-content {
+    display: none;
+}
+
+.step-content.active {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.list-group-item {
+    cursor: pointer;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.input-group-lg .form-control {
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    font-weight: bold;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+</style>
+{% endblock %}

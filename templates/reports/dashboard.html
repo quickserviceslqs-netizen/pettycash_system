@@ -1,0 +1,515 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Treasury Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="bi bi-graph-up"></i> Treasury Reports
+            </h1>
+            <small class="text-muted">Analytics and reporting</small>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-primary" onclick="exportReport()">
+                <i class="bi bi-download"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Date Range Selector -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="startDate" 
+                           value="" onchange="loadReports()">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="endDate" 
+                           value="" onchange="loadReports()">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Report Type</label>
+                    <select class="form-select" id="reportType" onchange="loadReports()">
+                        <option value="payment_summary">Payment Summary</option>
+                        <option value="fund_health">Fund Health</option>
+                        <option value="variance_analysis">Variance Analysis</option>
+                        <option value="forecast">30-Day Forecast</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-outline-secondary w-100" onclick="loadReports()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Summary Report -->
+    <div id="paymentSummaryReport" class="report-section">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Payment Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <small class="text-muted">Total Payments</small>
+                            <h4 id="totalPayments">-</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <small class="text-muted">Total Amount</small>
+                            <h4 id="totalPaymentAmount">-</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <small class="text-muted">Successful</small>
+                            <h4 id="successfulPayments">-</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <small class="text-muted">Failed</small>
+                            <h4 id="failedPayments">-</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="mb-3">By Method</h6>
+                <div id="paymentMethodChart" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="methodCanvas"></canvas>
+                </div>
+
+                <hr>
+
+                <h6 class="mb-3">By Status</h6>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Count</th>
+                            <th>Amount</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentStatusTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fund Health Report -->
+    <div id="fundHealthReport" class="report-section" style="display: none;">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Fund Health Report</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <small class="text-muted">Total Funds</small>
+                            <h4 id="healthTotalFunds">-</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <small class="text-muted">Total Balance</small>
+                            <h4 id="healthTotalBalance">-</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card text-danger">
+                            <small class="text-muted">Critical</small>
+                            <h4 id="healthCritical">-</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card text-warning">
+                            <small class="text-muted">Warning</small>
+                            <h4 id="healthWarning">-</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="mb-3">Fund Status Overview</h6>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Fund Name</th>
+                            <th>Balance</th>
+                            <th>Utilization</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fundStatusTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Variance Analysis Report -->
+    <div id="varianceAnalysisReport" class="report-section" style="display: none;">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Variance Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="metric-card">
+                            <small class="text-muted">Total Variances</small>
+                            <h4 id="totalVariances">-</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card text-danger">
+                            <small class="text-muted">Total Variance Amount</small>
+                            <h4 id="totalVarianceAmount">-</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="metric-card">
+                            <small class="text-muted">Avg Variance %</small>
+                            <h4 id="avgVariancePct">-</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="mb-3">Variance Trends</h6>
+                <div id="varianceTrendChart" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="trendCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forecast Report -->
+    <div id="forecastReport" class="report-section" style="display: none;">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">30-Day Forecast</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-3">Projected Fund Balances</h6>
+                <div id="forecastChart" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="forecastCanvas"></canvas>
+                </div>
+
+                <hr>
+
+                <h6 class="mb-3">Replenishment Recommendations</h6>
+                <div id="replenishmentRecs" class="alert alert-info">
+                    <small>Loading recommendations...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+let reportCharts = {};
+
+// Set default date range (last 30 days)
+const today = new Date();
+const last30 = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+document.getElementById('startDate').value = last30.toISOString().split('T')[0];
+document.getElementById('endDate').value = today.toISOString().split('T')[0];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadReports();
+});
+
+function loadReports() {
+    const reportType = document.getElementById('reportType').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    // Hide all reports
+    document.querySelectorAll('.report-section').forEach(s => s.style.display = 'none');
+
+    switch (reportType) {
+        case 'payment_summary':
+            loadPaymentSummary(startDate, endDate);
+            document.getElementById('paymentSummaryReport').style.display = 'block';
+            break;
+        case 'fund_health':
+            loadFundHealth();
+            document.getElementById('fundHealthReport').style.display = 'block';
+            break;
+        case 'variance_analysis':
+            loadVarianceAnalysis(startDate, endDate);
+            document.getElementById('varianceAnalysisReport').style.display = 'block';
+            break;
+        case 'forecast':
+            loadForecast();
+            document.getElementById('forecastReport').style.display = 'block';
+            break;
+    }
+}
+
+function loadPaymentSummary(startDate, endDate) {
+    fetch(`/api/reporting/payment_summary/?start_date=${startDate}&end_date=${endDate}`, {
+        headers: { 'Authorization': 'Token ' + getCookie('auth_token') }
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('totalPayments').textContent = data.total_count || 0;
+        document.getElementById('totalPaymentAmount').textContent = formatCurrency(data.total_amount);
+        document.getElementById('successfulPayments').textContent = data.successful_count || 0;
+        document.getElementById('failedPayments').textContent = data.failed_count || 0;
+
+        // Render status table
+        const tbody = document.getElementById('paymentStatusTable');
+        tbody.innerHTML = (data.by_status || []).map(s => `
+            <tr>
+                <td><strong>${s.status}</strong></td>
+                <td>${s.count}</td>
+                <td>${formatCurrency(s.amount)}</td>
+                <td>${((s.amount / data.total_amount) * 100).toFixed(1)}%</td>
+            </tr>
+        `).join('');
+
+        // Create method chart
+        if (data.by_method) {
+            createMethodChart(data.by_method);
+        }
+    });
+}
+
+function loadFundHealth() {
+    fetch('/api/reporting/fund_health/', {
+        headers: { 'Authorization': 'Token ' + getCookie('auth_token') }
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('healthTotalFunds').textContent = data.total_funds || 0;
+        document.getElementById('healthTotalBalance').textContent = formatCurrency(data.total_balance);
+        document.getElementById('healthCritical').textContent = data.critical_count || 0;
+        document.getElementById('healthWarning').textContent = data.warning_count || 0;
+
+        const tbody = document.getElementById('fundStatusTable');
+        tbody.innerHTML = (data.funds || []).map(f => `
+            <tr>
+                <td>${f.name}</td>
+                <td>${formatCurrency(f.balance)}</td>
+                <td>
+                    <div class="progress" style="height: 6px; width: 100px;">
+                        <div class="progress-bar" style="width: ${f.utilization_pct}%"></div>
+                    </div>
+                    ${f.utilization_pct.toFixed(1)}%
+                </td>
+                <td>
+                    <span class="badge bg-${f.status === 'CRITICAL' ? 'danger' : f.status === 'WARNING' ? 'warning' : 'success'}">
+                        ${f.status}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    });
+}
+
+function loadVarianceAnalysis(startDate, endDate) {
+    fetch(`/api/reporting/variance_analysis/?start_date=${startDate}&end_date=${endDate}`, {
+        headers: { 'Authorization': 'Token ' + getCookie('auth_token') }
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('totalVariances').textContent = data.total_count || 0;
+        document.getElementById('totalVarianceAmount').textContent = formatCurrency(data.total_amount);
+        document.getElementById('avgVariancePct').textContent = (data.avg_variance_pct || 0).toFixed(2) + '%';
+
+        if (data.trends) {
+            createVarianceTrendChart(data.trends);
+        }
+    });
+}
+
+function loadForecast() {
+    fetch('/api/reporting/forecast/', {
+        headers: { 'Authorization': 'Token ' + getCookie('auth_token') }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.projections) {
+            createForecastChart(data.projections);
+        }
+
+        const recs = document.getElementById('replenishmentRecs');
+        if (data.recommendations && data.recommendations.length > 0) {
+            recs.innerHTML = data.recommendations.map(r => `
+                <div class="mb-2 p-2 border-bottom">
+                    <strong>${r.fund_name}</strong> - ${r.recommendation}
+                    <br><small class="text-muted">Projected balance: ${formatCurrency(r.projected_balance)}</small>
+                </div>
+            `).join('');
+            recs.classList.remove('alert-info');
+            recs.classList.add('alert-warning');
+        }
+    });
+}
+
+function createMethodChart(data) {
+    const ctx = document.getElementById('methodCanvas')?.getContext('2d');
+    if (!ctx) return;
+
+    if (reportCharts.method) reportCharts.method.destroy();
+
+    reportCharts.method = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: data.map(d => d.method),
+            datasets: [{
+                data: data.map(d => d.count),
+                backgroundColor: [
+                    '#0d6efd', '#198754', '#ffc107', '#dc3545'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+function createVarianceTrendChart(data) {
+    const ctx = document.getElementById('trendCanvas')?.getContext('2d');
+    if (!ctx) return;
+
+    if (reportCharts.trend) reportCharts.trend.destroy();
+
+    reportCharts.trend = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(d => d.date),
+            datasets: [{
+                label: 'Variance Amount',
+                data: data.map(d => d.amount),
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true }
+            }
+        }
+    });
+}
+
+function createForecastChart(data) {
+    const ctx = document.getElementById('forecastCanvas')?.getContext('2d');
+    if (!ctx) return;
+
+    if (reportCharts.forecast) reportCharts.forecast.destroy();
+
+    reportCharts.forecast = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(d => d.date),
+            datasets: [{
+                label: 'Projected Balance',
+                data: data.map(d => d.balance),
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+
+function exportReport() {
+    const reportType = document.getElementById('reportType').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const format = confirm('Export as CSV? (OK=CSV, Cancel=PDF)') ? 'csv' : 'pdf';
+
+    const url = `/api/reporting/${reportType}/export/?start_date=${startDate}&end_date=${endDate}&format=${format}`;
+    window.location.href = url;
+}
+
+function formatCurrency(value) {
+    if (typeof value !== 'number') value = parseFloat(value) || 0;
+    return '₹' + value.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+<style>
+.metric-card {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.metric-card h4 {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+    color: #0d6efd;
+}
+
+.metric-card.text-danger {
+    color: #dc3545;
+}
+
+.metric-card.text-danger h4 {
+    color: #dc3545;
+}
+
+.metric-card.text-warning {
+    color: #ffc107;
+}
+
+.metric-card.text-warning h4 {
+    color: #ffc107;
+}
+
+table td {
+    vertical-align: middle;
+}
+</style>
+{% endblock %}
