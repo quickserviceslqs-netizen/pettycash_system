@@ -24,6 +24,8 @@ urlpatterns = [
     path('treasury/', include('treasury.urls')),
     path('workflow/', include('workflow.urls')),
     path('reports/', include('reports.urls')),
+    # API alias for reporting endpoints (keeps legacy JS and templates working)
+    path('api/reporting/', include('reports.api_urls')),
 ]
 
 # Serve media files in development

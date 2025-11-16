@@ -94,7 +94,9 @@ class DashboardServiceTestCase(TestCase):
         self.assertEqual(len(cards), 2)
         self.assertEqual(cards[0]['status'], 'OK')
         self.assertEqual(cards[1]['status'], 'WARNING')
-        self.assertAlmostEqual(cards[0]['utilization_pct'], 250.0, places=1)
+        # Utilization is balance / reorder_level * 100
+        # fund1: 2500000 / 1000000 * 100 = 250%
+        self.assertAlmostEqual(cards[0]['utilization_pct'], 250.0, places=0)
     
     def test_fund_critical_status(self):
         """Test critical fund status calculation."""
@@ -127,16 +129,17 @@ class DashboardServiceTestCase(TestCase):
             transaction_id='REQ-001',
             origin_type='branch',
             requesting_user=user,
+            company=self.company,
             amount=Decimal('50000.00'),
-            purpose='Office Supplies'
+            purpose='Office Supplies',
+            status='pending'
         )
         
         payment = Payment.objects.create(
             requisition=requisition,
-            treasury_fund=self.fund1,
             amount=requisition.amount,
-            method='bank_transfer',
-            destination='ACCOUNT-001',
+            method='mpesa',
+            destination='254712345678',
             status='pending'
         )
         
@@ -301,16 +304,16 @@ class ReportServiceTestCase(TestCase):
             transaction_id='REQ-002',
             origin_type='hq',
             requesting_user=self.user,
+            company=self.company,
             amount=Decimal('100000.00'),
             purpose='Test'
         )
         
         Payment.objects.create(
             requisition=requisition,
-            treasury_fund=self.fund,
             amount=Decimal('100000.00'),
-            method='bank_transfer',
-            destination='ACC-001',
+            method='mpesa',
+            destination='254712345678',
             status='success'
         )
         
@@ -339,6 +342,8 @@ class ReportServiceTestCase(TestCase):
         # Create variance
         VarianceAdjustment.objects.create(
             treasury_fund=self.fund,
+            original_amount=Decimal('100000.00'),
+            adjusted_amount=Decimal('105000.00'),
             variance_amount=Decimal('5000.00'),
             reason='Gateway discount',
             status='approved'
@@ -437,10 +442,9 @@ class PaymentTrackingTestCase(TestCase):
         
         self.payment = Payment.objects.create(
             requisition=requisition,
-            treasury_fund=self.fund,
             amount=Decimal('50000.00'),
-            method='bank_transfer',
-            destination='ACC-001',
+            method='mpesa',
+            destination='254712345678',
             status='pending'
         )
     

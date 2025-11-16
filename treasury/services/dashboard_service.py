@@ -12,6 +12,7 @@ from treasury.models import (
     TreasuryDashboard, TreasuryFund, Payment, Alert, LedgerEntry, 
     VarianceAdjustment, ReplenishmentRequest, FundForecast, DashboardMetric
 )
+from transactions.models import Requisition
 from organization.models import Company
 
 
@@ -178,7 +179,6 @@ class DashboardService:
             
             # Calculate utilization
             utilization_pct = (fund.current_balance / fund.reorder_level * 100) if fund.reorder_level > 0 else 0
-            utilization_pct = min(utilization_pct, 100)
             
             # Get transaction count
             transaction_count = LedgerEntry.objects.filter(
@@ -207,16 +207,17 @@ class DashboardService:
         """
         Get pending payments ready for execution (API).
         """
-        funds_query = TreasuryFund.objects.filter(company_id=company_id)
+        # Filter requisitions by company/region/branch scope
+        requisitions = Requisition.objects.filter(company_id=company_id, status='pending')
         if region_id:
-            funds_query = funds_query.filter(region_id=region_id)
+            requisitions = requisitions.filter(region_id=region_id)
         if branch_id:
-            funds_query = funds_query.filter(branch_id=branch_id)
+            requisitions = requisitions.filter(branch_id=branch_id)
         
         payments = Payment.objects.filter(
-            treasury_fund__in=funds_query,
+            requisition__in=requisitions,
             status='pending'
-        ).select_related('requisition', 'treasury_fund', 'executor')[:limit]
+        ).select_related('requisition', 'executor')[:limit]
         
         return list(payments)
     
@@ -225,16 +226,17 @@ class DashboardService:
         """
         Get recent executed payments with status.
         """
-        funds_query = TreasuryFund.objects.filter(company_id=company_id)
+        # Filter requisitions by company/region/branch scope
+        requisitions = Requisition.objects.filter(company_id=company_id)
         if region_id:
-            funds_query = funds_query.filter(region_id=region_id)
+            requisitions = requisitions.filter(region_id=region_id)
         if branch_id:
-            funds_query = funds_query.filter(branch_id=branch_id)
+            requisitions = requisitions.filter(branch_id=branch_id)
         
         payments = Payment.objects.filter(
-            treasury_fund__in=funds_query,
+            requisition__in=requisitions,
             status__in=['success', 'failed']
-        ).select_related('requisition', 'treasury_fund').order_by('-updated_at')[:limit]
+        ).select_related('requisition').order_by('-updated_at')[:limit]
         
         return list(payments)
     

@@ -22,11 +22,11 @@ def role_required(allowed_roles):
 
 # Common roles allowed to access transactions
 TRANSACTION_ROLES = [
-    'admin', 'staff', 'fp&a', 'department_head',
+    'admin', 'fp&a', 'department_head',
     'branch_manager', 'regional_manager', 'group_finance_manager'
 ]
 
-# Wrapper to apply login + role_required
+# Wrapper to apply login + role_required (used for approver-only views)
 def protected(view):
     return login_required(role_required(TRANSACTION_ROLES)(view))
 
@@ -35,7 +35,8 @@ def protected(view):
 # ---------------------------------------------------------------------
 urlpatterns = [
     path('', protected(transactions_home), name='transactions-home'),
-    path('create/', protected(create_requisition), name='create-requisition'),
+    # Allow any authenticated user to create a requisition (no role restriction)
+    path('create/', login_required(create_requisition), name='create-requisition'),
     path('approve/<uuid:requisition_id>/', protected(approve_requisition), name='approve-requisition'),
     path('reject/<uuid:requisition_id>/', protected(reject_requisition), name='reject-requisition'),
 

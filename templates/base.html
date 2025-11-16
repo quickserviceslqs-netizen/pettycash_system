@@ -124,7 +124,7 @@
                             </li>
 
                             <!-- Treasury Module (Phase 5-6) -->
-                            {% if user.groups.all|first.name == 'treasury' or user.is_staff %}
+                            {% if user.role == 'treasury' or user.is_staff %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="treasuryDropdown" role="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-piggy-bank"></i> Treasury
@@ -151,7 +151,7 @@
                             {% endif %}
 
                             <!-- Reports Module (Phase 6) -->
-                            {% if user.groups.all|first.name == 'fp&a' or user.groups.all|first.name == 'cfo' or user.is_staff %}
+                            {% if user.role == 'fp&a' or user.role == 'cfo' or user.is_staff %}
                             <li class="nav-item">
                                 <a class="nav-link" href="/reports/dashboard/">
                                     <i class="bi bi-file-earmark-text"></i> Reports
@@ -159,8 +159,8 @@
                             </li>
                             {% endif %}
 
-                            <!-- Requisitions (Phase 4) -->
-                            {% if user.groups.all|first.name == 'department_head' or user.groups.all|first.name == 'requester' or user.is_staff %}
+                            <!-- Requisitions (Phase 4) - available to any authenticated user -->
+                            {% if user.is_authenticated %}
                             <li class="nav-item">
                                 <a class="nav-link" href="/transactions/">
                                     <i class="bi bi-file-check"></i> Requisitions

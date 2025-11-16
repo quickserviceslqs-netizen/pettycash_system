@@ -1,5 +1,5 @@
 from django.urls import path, include
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, RedirectView
 from rest_framework.routers import DefaultRouter
 from treasury.views import (
     TreasuryFundViewSet, PaymentViewSet, 
@@ -24,6 +24,8 @@ router.register(r'reports', ReportingViewSet, basename='report')
 
 # HTML Views for Phase 6
 html_patterns = [
+    # Default index for /treasury/ -> redirect to treasury dashboard
+    path('', RedirectView.as_view(url='dashboard/', permanent=False), name='index'),
     path('dashboard/', TemplateView.as_view(template_name='treasury/dashboard.html'), name='dashboard_view'),
     path('payment-execute/', TemplateView.as_view(template_name='treasury/payment_execute.html'), name='payment_execute'),
     path('funds/', TemplateView.as_view(template_name='treasury/funds.html'), name='funds_view'),

@@ -17,6 +17,7 @@ def transactions_home(request):
     user = request.user
 
     # Define approver roles (case-insensitive)
+    # Note: application role 'staff' is NOT an approver by design.
     APPROVER_ROLES = [
         "branch_manager",
         "regional_manager",
