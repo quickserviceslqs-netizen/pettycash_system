@@ -50,12 +50,12 @@ def resolve_workflow(requisition):
     is_treasury_request = requisition.requested_by.role.lower() == "treasury"
     if is_treasury_request:
         tier = requisition.tier
-        if tier == "Tier1":
-            base_roles = ["DEPT_HEAD", "GROUP_FINANCE_MANAGER"]
-        elif tier in ["Tier2", "Tier3"]:
-            base_roles = ["GROUP_FINANCE_MANAGER", "CFO"]
-        elif tier == "Tier4":
-            base_roles = ["CFO", "CEO"]
+        if tier in ["Tier 1", "Tier1"]:
+            base_roles = ["department_head", "group_finance_manager"]
+        elif tier in ["Tier 2", "Tier2", "Tier 3", "Tier3"]:
+            base_roles = ["group_finance_manager", "cfo"]
+        elif tier in ["Tier 4", "Tier4"]:
+            base_roles = ["cfo", "ceo"]
 
     # 3️⃣ Loop through roles in order
     for role in base_roles:
@@ -63,12 +63,13 @@ def resolve_workflow(requisition):
         if role.lower() == "staff":
             continue
 
-        # Candidate users (case-insensitive)
-        candidates = User.objects.filter(role__iexact=role, is_active=True).exclude(id=requisition.requested_by.id)
+        # Candidate users (case-insensitive, normalize role to lowercase for DB lookup)
+        normalized_role = role.lower().replace("_", "_")  # Keep as-is for DB
+        candidates = User.objects.filter(role=normalized_role, is_active=True).exclude(id=requisition.requested_by.id)
 
         # Apply scoping only for non-centralized roles
-        centralized_roles = ["TREASURY", "FPNA", "GROUP_FINANCE_MANAGER", "CFO", "CEO", "ADMIN"]
-        if role.upper() not in centralized_roles:
+        centralized_roles = ["treasury", "fp&a", "group_finance_manager", "cfo", "ceo", "admin"]
+        if role.lower() not in centralized_roles:
             if requisition.origin_type.lower() == "branch" and requisition.branch:
                 candidates = candidates.filter(branch=requisition.branch)
             elif requisition.origin_type.lower() == "hq" and requisition.company:

@@ -1,29 +1,20 @@
-from django.urls import path
-from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from treasury.views import (
+    TreasuryFundViewSet, PaymentViewSet, 
+    VarianceAdjustmentViewSet, ReplenishmentRequestViewSet,
+    LedgerEntryViewSet
+)
 
-# ---------------------------------------------------------------------
-# Role-based access decorator
-# ---------------------------------------------------------------------
-def role_required(allowed_roles):
-    """
-    Decorator to restrict access based on user's role.
-    """
-    def check_role(user):
-        return user.is_authenticated and user.role_key in allowed_roles
-    return user_passes_test(check_role)
+# Setup DRF router for API endpoints
+router = DefaultRouter()
+router.register(r'funds', TreasuryFundViewSet, basename='fund')
+router.register(r'payments', PaymentViewSet, basename='payment')
+router.register(r'variances', VarianceAdjustmentViewSet, basename='variance')
+router.register(r'replenishments', ReplenishmentRequestViewSet, basename='replenishment')
+router.register(r'ledger', LedgerEntryViewSet, basename='ledger')
 
-# ---------------------------------------------------------------------
-# Views
-# ---------------------------------------------------------------------
-@login_required
-@role_required(['admin', 'treasury'])
-def treasury_home(request):
-    return HttpResponse("Treasury Home")
-
-# ---------------------------------------------------------------------
 # URL patterns
-# ---------------------------------------------------------------------
 urlpatterns = [
-    path('', treasury_home, name='treasury-home'),
+    path('api/', include(router.urls)),
 ]
