@@ -11,3 +11,5 @@ DATABASES = {
         'NAME': ':memory:',  # Use in-memory SQLite for fast tests
     }
 }
+
+

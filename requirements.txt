@@ -4,3 +4,6 @@ psycopg2-binary
 django-crispy-forms
 crispy-bootstrap5
 django-environ
+dj-database-url
+whitenoise
+gunicorn

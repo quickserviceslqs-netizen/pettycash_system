@@ -3,6 +3,8 @@ Django settings for pettycash_system project.
 """
 
 from pathlib import Path
+import os
+import dj_database_url
 
 # ---------------------------------------------------------------------
 # BASE DIR
@@ -12,9 +14,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ---------------------------------------------------------------------
 # SECURITY
 # ---------------------------------------------------------------------
-SECRET_KEY = 'django-insecure-%7!es6s0(ak^5(mmz_uh65^vy6*za^h+9+9ojdotnwe0-&pn%@'
-DEBUG = True
-ALLOWED_HOSTS = []
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-%7!es6s0(ak^5(mmz_uh65^vy6*za^h+9+9ojdotnwe0-&pn%@')
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.railway.app,.render.com').split(',')
+
+# CSRF & Security for production
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
 
 # ---------------------------------------------------------------------
 # APPLICATIONS
@@ -48,6 +60,7 @@ INSTALLED_APPS = [
 # ---------------------------------------------------------------------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # For static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -88,15 +101,13 @@ WSGI_APPLICATION = 'pettycash_system.wsgi.application'
 # ---------------------------------------------------------------------
 # DATABASE
 # ---------------------------------------------------------------------
+# Use DATABASE_URL from environment (Railway/Render) or fallback to local PostgreSQL
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'pettycash_db',
-        'USER': 'chelotian',
-        'PASSWORD': '35315619@Ian',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.config(
+        default=f"postgresql://chelotian:35315619@Ian@localhost:5432/pettycash_db",
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 # ---------------------------------------------------------------------
@@ -140,6 +151,9 @@ STATIC_ROOT = BASE_DIR / "staticfiles"  # For collectstatic
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "media"
+
+# WhiteNoise for serving static files in production
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ---------------------------------------------------------------------
 # DJANGO CRISPY FORMS

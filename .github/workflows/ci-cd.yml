@@ -1,0 +1,370 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, staging ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  PYTHON_VERSION: '3.11'
+  
+jobs:
+  # ============================================================
+  # JOB 1: CODE QUALITY & LINTING
+  # ============================================================
+  lint:
+    name: Code Quality & Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort pylint
+          pip install -r requirements.txt
+      
+      - name: Check code formatting with Black
+        run: black --check --diff .
+      
+      - name: Check import sorting with isort
+        run: isort --check-only --diff .
+      
+      - name: Lint with flake8
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      
+      - name: Static analysis with Pylint
+        run: |
+          pylint --fail-under=7.0 --disable=C0114,C0115,C0116 \
+            accounts/ organization/ transactions/ treasury/ workflow/ reports/
+        continue-on-error: true
+
+  # ============================================================
+  # JOB 2: SECURITY SCANNING
+  # ============================================================
+  security:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit
+          pip install -r requirements.txt
+      
+      - name: Run Safety check for vulnerable dependencies
+        run: |
+          safety check --json --output safety-report.json || true
+          safety check
+        continue-on-error: true
+      
+      - name: Run Bandit security analysis
+        run: |
+          bandit -r . -f json -o bandit-report.json || true
+          bandit -r . -ll
+        continue-on-error: true
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            safety-report.json
+            bandit-report.json
+
+  # ============================================================
+  # JOB 3: UNIT & INTEGRATION TESTS
+  # ============================================================
+  test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_pettycash_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install coverage pytest pytest-django pytest-cov
+      
+      - name: Run unit tests with coverage
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_pettycash_db
+        run: |
+          coverage run --source='.' manage.py test --settings=test_settings --parallel
+          coverage report --skip-empty
+          coverage xml
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+      
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_pettycash_db
+        run: |
+          python manage.py test tests.integration --settings=test_settings -v 2
+
+  # ============================================================
+  # JOB 4: SECURITY TESTS
+  # ============================================================
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run RBAC tests
+        run: |
+          python manage.py test tests.security.test_rbac --settings=test_settings
+      
+      - name: Run CSRF protection tests
+        run: |
+          python manage.py test tests.security.test_csrf --settings=test_settings
+      
+      - name: Run injection prevention tests
+        run: |
+          python manage.py test tests.security.test_injection --settings=test_settings
+
+  # ============================================================
+  # JOB 5: PERFORMANCE TESTS
+  # ============================================================
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install locust
+      
+      - name: Run smoke tests
+        run: |
+          # Start Django dev server in background
+          python manage.py runserver 0.0.0.0:8000 &
+          sleep 10
+          
+          # Run light load test
+          locust -f load_tests/locustfile.py \
+            --host=http://localhost:8000 \
+            --users 10 \
+            --spawn-rate 2 \
+            --run-time 2m \
+            --headless \
+            --csv=performance-results
+        continue-on-error: true
+      
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: performance-results*.csv
+
+  # ============================================================
+  # JOB 6: BUILD & DEPLOY TO STAGING
+  # ============================================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [lint, security, test, security-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    environment:
+      name: staging
+      url: https://staging.yourcompany.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Collect static files
+        run: |
+          python manage.py collectstatic --noinput --settings=pettycash_system.settings
+      
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          SECRET_KEY: ${{ secrets.STAGING_SECRET_KEY }}
+        run: |
+          python manage.py migrate --noinput --settings=pettycash_system.settings
+      
+      - name: Deploy to staging server
+        env:
+          DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+        run: |
+          echo "Deploying to staging..."
+          # Add your deployment script here
+          # Example: rsync, SCP, or cloud provider CLI
+      
+      - name: Run smoke tests on staging
+        run: |
+          echo "Running smoke tests on staging..."
+          # curl https://staging.yourcompany.com/health/
+          # python scripts/smoke_tests.py --env staging
+
+  # ============================================================
+  # JOB 7: DEPLOY TO PRODUCTION
+  # ============================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [lint, security, test, security-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://pettycash.yourcompany.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Collect static files
+        run: |
+          python manage.py collectstatic --noinput --settings=pettycash_system.settings
+      
+      - name: Create backup before deployment
+        env:
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          echo "Creating database backup..."
+          # pg_dump or cloud provider backup command
+      
+      - name: Run database migrations
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          SECRET_KEY: ${{ secrets.PROD_SECRET_KEY }}
+        run: |
+          python manage.py migrate --noinput --settings=pettycash_system.settings
+      
+      - name: Deploy to production
+        env:
+          DEPLOY_KEY: ${{ secrets.PROD_DEPLOY_KEY }}
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+        run: |
+          echo "Deploying to production..."
+          # Add your deployment script here
+      
+      - name: Run smoke tests on production
+        run: |
+          echo "Running smoke tests on production..."
+          # curl https://pettycash.yourcompany.com/health/
+          # python scripts/smoke_tests.py --env production
+      
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "✅ Production deployment successful!"
+          # Send notification to Slack, email, etc.
+      
+      - name: Rollback on failure
+        if: failure()
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          echo "❌ Deployment failed. Rolling back..."
+          # Rollback commands here

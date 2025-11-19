@@ -1,0 +1,228 @@
+[
+  {
+    "model": "organization.company",
+    "pk": 1,
+    "fields": {
+      "name": "Test Company Ltd",
+      "code": "TC001",
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organization.region",
+    "pk": 1,
+    "fields": {
+      "name": "Central Region",
+      "code": "CR001",
+      "company": 1,
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organization.branch",
+    "pk": 1,
+    "fields": {
+      "name": "Branch A",
+      "code": "BA001",
+      "region": 1,
+      "company": 1,
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organization.branch",
+    "pk": 2,
+    "fields": {
+      "name": "Branch B",
+      "code": "BB001",
+      "region": 1,
+      "company": 1,
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organization.department",
+    "pk": 1,
+    "fields": {
+      "name": "Operations",
+      "code": "OPS001",
+      "branch": 1,
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "organization.department",
+    "pk": 2,
+    "fields": {
+      "name": "Finance",
+      "code": "FIN001",
+      "branch": 1,
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 1,
+    "fields": {
+      "username": "staff@test.com",
+      "email": "staff@test.com",
+      "password": "pbkdf2_sha256$600000$test$test",
+      "first_name": "John",
+      "last_name": "Doe",
+      "role": "staff",
+      "company": 1,
+      "region": 1,
+      "branch": 1,
+      "department": 1,
+      "phone_number": "+254700111111",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 2,
+    "fields": {
+      "username": "manager@test.com",
+      "email": "manager@test.com",
+      "password": "pbkdf2_sha256$600000$test$test",
+      "first_name": "Jane",
+      "last_name": "Manager",
+      "role": "branch_manager",
+      "company": 1,
+      "region": 1,
+      "branch": 1,
+      "phone_number": "+254700222222",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 3,
+    "fields": {
+      "username": "treasury@test.com",
+      "email": "treasury@test.com",
+      "password": "pbkdf2_sha256$600000$test$test",
+      "first_name": "Tom",
+      "last_name": "Treasury",
+      "role": "treasury",
+      "company": 1,
+      "phone_number": "+254700333333",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false,
+      "is_centralized_approver": true
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 4,
+    "fields": {
+      "username": "cfo@test.com",
+      "email": "cfo@test.com",
+      "password": "pbkdf2_sha256$600000$test$test",
+      "first_name": "Carol",
+      "last_name": "Finance",
+      "role": "cfo",
+      "company": 1,
+      "phone_number": "+254700444444",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false,
+      "is_centralized_approver": true
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 5,
+    "fields": {
+      "username": "admin@test.com",
+      "email": "admin@test.com",
+      "password": "pbkdf2_sha256$600000$test$test",
+      "first_name": "Admin",
+      "last_name": "User",
+      "role": "admin",
+      "company": 1,
+      "phone_number": "+254700555555",
+      "is_active": true,
+      "is_staff": true,
+      "is_superuser": true
+    }
+  },
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 1,
+    "fields": {
+      "name": "Tier 1 - Small Amounts",
+      "min_amount": "0.00",
+      "max_amount": "10000.00",
+      "roles_sequence": ["branch_manager", "treasury"],
+      "allow_urgent_fasttrack": true,
+      "requires_cfo": false,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 2,
+    "fields": {
+      "name": "Tier 2 - Medium Amounts",
+      "min_amount": "10000.01",
+      "max_amount": "50000.00",
+      "roles_sequence": ["branch_manager", "treasury", "cfo"],
+      "allow_urgent_fasttrack": true,
+      "requires_cfo": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "workflow.approvalthreshold",
+    "pk": 3,
+    "fields": {
+      "name": "Tier 3 - Large Amounts",
+      "min_amount": "50000.01",
+      "max_amount": "999999999.99",
+      "roles_sequence": ["branch_manager", "regional_manager", "treasury", "cfo"],
+      "allow_urgent_fasttrack": false,
+      "requires_cfo": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "treasury.treasuryfund",
+    "pk": 1,
+    "fields": {
+      "name": "Main Operating Fund",
+      "fund_type": "operating",
+      "balance": "500000.00",
+      "reorder_level": "50000.00",
+      "max_limit": "1000000.00",
+      "company": 1,
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "treasury.treasuryfund",
+    "pk": 2,
+    "fields": {
+      "name": "Emergency Fund",
+      "fund_type": "emergency",
+      "balance": "100000.00",
+      "reorder_level": "20000.00",
+      "max_limit": "200000.00",
+      "company": 1,
+      "active": true,
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  }
+]
