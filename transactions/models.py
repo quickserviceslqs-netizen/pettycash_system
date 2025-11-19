@@ -86,7 +86,9 @@ class Requisition(models.Model):
         skipped_roles = []
 
         for role in roles_sequence:
-            candidates = User.objects.filter(role=role, is_active=True)
+            # Normalize role to lowercase for case-insensitive matching
+            normalized_role = role.lower()
+            candidates = User.objects.filter(role=normalized_role, is_active=True)
             # Scope filtering
             if self.origin_type == 'branch' and self.branch:
                 candidates = candidates.filter(branch=self.branch)
