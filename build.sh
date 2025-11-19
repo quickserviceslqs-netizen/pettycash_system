@@ -14,3 +14,6 @@ python manage.py migrate --no-input
 
 # Create superuser (one-time, safe to run multiple times)
 python create_superuser.py
+
+# Load test data (safe to run multiple times)
+python manage.py load_test_data
