@@ -53,7 +53,8 @@
         </div>
     </section>
 
-    <!-- Phase 4: Pending Approvals -->
+    <!-- Phase 4: Pending Approvals (Only for Approvers) -->
+    {% if show_pending_section %}
     <section style="margin-bottom:40px;">
         <h3 style="margin-bottom:20px;">Pending Approvals</h3>
         {% if pending_for_user %}
@@ -89,6 +90,7 @@
             <p>No requisitions pending your approval.</p>
         {% endif %}
     </section>
+    {% endif %}
 
 </div>
 {% endblock %}
