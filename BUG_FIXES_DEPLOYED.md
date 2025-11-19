@@ -1,10 +1,20 @@
 # Dashboard Issues - Fixed & Explained
 
+## Summary of Fixes
+
+**✅ FIXED:** Pending Approvals section - now only visible to approvers (not staff members)
+
+**✅ FIXED:** Staff access to requisitions - added 'staff' to allowed transaction roles
+
+**✅ FIXED:** Duplicate role display - removed "Role: Staff" line from dashboard (badge still shows role)
+
+---
+
 ## Issues Reported
 
 1. ✅ **Staff member seeing "Pending Approvals" section** - FIXED
-2. ⚠️ **"Staff Staff" duplicate text** - EXPLAINED (test data)
-3. ❓ **Staff member being logged out when accessing requisitions** - NEEDS INVESTIGATION
+2. ✅ **Duplicate "Staff" text** - FIXED  
+3. ✅ **Staff member being logged out when accessing requisitions** - FIXED
 
 ---
 
@@ -32,70 +42,67 @@ Updated `templates/accounts/dashboard.html` to wrap the section in a conditional
 
 ---
 
-## 2. "Staff Staff" Text (EXPLAINED ⚠️)
+## 2. Duplicate Role Display (FIXED ✅)
 
-### What You're Seeing:
-When logged in as `staff_user`, you might see "Staff Member" or "Staff Staff" displayed.
+### Problem:
+"Staff Staff" or "Staff Member" text appeared to be duplicated in the UI.
 
-### Why This Happens:
-The test data loader creates a user with:
-- **First Name:** "Staff"
-- **Last Name:** "Member"  
-- **Role:** "staff"
+### Root Cause:
+The dashboard was showing "Role: Staff" on line 12, AND the header badge was also showing "staff", creating visual redundancy.
 
-Different UI areas show different information:
-- **Header Badge:** Shows `role` = "staff"
-- **Dashboard Welcome:** Shows `first_name last_name` = "Staff Member"
+### Fix Applied:
+Removed the redundant role line from dashboard template:
 
-### This is NOT a bug - it's just test data!
+```html
+<!-- Before -->
+<h2>Welcome, {{ user.username|title }}!</h2>
+<p>Role: {{ user_role|title }}</p>  ← Removed this line
 
-**Real user example:**
-- First Name: "John", Last Name: "Doe", Role: "staff"
-- Display: "John Doe" + badge "staff" ✅ Looks perfect!
+<!-- After -->
+<h2>Welcome, {{ user.username|title }}!</h2>
+```
 
-**Test user example:**
-- First Name: "Staff", Last Name: "Member", Role: "staff"
-- Display: "Staff Member" + badge "staff" ⚠️ Looks redundant
+The user's role is still visible in the header badge (top right), so no information is lost.
 
-### Solution:
-When creating real users in production, use actual names!
+**Status:** ✅ Deployed to Render
 
 ---
 
-## 3. Requisitions Access Issue (NEEDS INVESTIGATION ❓)
+## 3. Requisitions Access Issue (FIXED ✅)
 
 ### Problem Reported:
 "Staff member gets logged out when trying to access requisitions app"
 
-### Possible Causes:
+### Root Cause:
+The `transactions/urls.py` file had a role-based access control that **excluded STAFF role**:
 
-**A. Permission Check (Most Likely)**
-The requisitions view might have role-based permissions that block STAFF role.
+```python
+TRANSACTION_ROLES = [
+    'admin', 'fp&a', 'department_head',
+    'branch_manager', 'regional_manager', 'group_finance_manager'
+]
+# 'staff' was missing!
+```
 
-**B. Session Timeout**
-Idle sessions expire and redirect to login.
+When a staff user tried to access `/transactions/`, the `protected()` decorator checked their role, found it wasn't in the allowed list, and redirected them to login (appearing as a logout).
 
-**C. CSRF Token Issue**
-Missing token on form submission.
+### Fix Applied:
+Added `'staff'` to the allowed transaction roles:
 
-### Investigation Needed:
+```python
+TRANSACTION_ROLES = [
+    'admin', 'staff', 'fp&a', 'department_head',  # ← Added 'staff'
+    'branch_manager', 'regional_manager', 'group_finance_manager'
+]
+```
 
-1. **Check Render logs:**
-   - Go to https://dashboard.render.com → Your service → Logs
-   - Look for errors when staff_user accesses `/transactions/`
-   - Filter for "Permission" or "403" or "401"
+Now staff users can:
+- ✅ Access the requisitions homepage (`/transactions/`)
+- ✅ Create new requisitions (`/transactions/create/`)
+- ✅ View their own requisitions
+- ❌ Cannot approve/reject (still approver-only)
 
-2. **Check transactions/views.py:**
-   - Look for role-based permission checks
-   - See if STAFF is excluded from allowed roles
-
-3. **Test with other roles:**
-   - Try with `branch_user` (BRANCH_MANAGER)
-   - Try with `finance_user` (FP&A)
-   - See if they can access requisitions
-
-### Temporary Workaround:
-Use `branch_user`, `finance_user`, or `treasury_user` to test requisitions until we fix staff permissions.
+**Status:** ✅ Deployed to Render
 
 ---
 
