@@ -111,8 +111,7 @@ class Command(BaseCommand):
                 'roles_sequence': ['BRANCH_MANAGER'],
                 'allow_urgent_fasttrack': True,
                 'requires_cfo': False,
-                'priority': 1,
-                'is_active': True
+                'priority': 1
             }
         )
 
@@ -125,8 +124,7 @@ class Command(BaseCommand):
                 'roles_sequence': ['BRANCH_MANAGER', 'FINANCE'],
                 'allow_urgent_fasttrack': True,
                 'requires_cfo': False,
-                'priority': 2,
-                'is_active': True
+                'priority': 2
             }
         )
 
@@ -139,8 +137,7 @@ class Command(BaseCommand):
                 'roles_sequence': ['BRANCH_MANAGER', 'FINANCE', 'TREASURY'],
                 'allow_urgent_fasttrack': False,
                 'requires_cfo': False,
-                'priority': 3,
-                'is_active': True
+                'priority': 3
             }
         )
 
