@@ -8,6 +8,8 @@
 
 **✅ FIXED:** Duplicate role display - removed "Role: Staff" line from dashboard (badge still shows role)
 
+**✅ FIXED:** Treasury payment visibility - approved requisitions now appear in treasury dashboard
+
 ---
 
 ## Issues Reported
@@ -15,6 +17,7 @@
 1. ✅ **Staff member seeing "Pending Approvals" section** - FIXED
 2. ✅ **Duplicate "Staff" text** - FIXED  
 3. ✅ **Staff member being logged out when accessing requisitions** - FIXED
+4. ✅ **Treasury not showing approved requisitions** - FIXED
 
 ---
 
@@ -139,3 +142,58 @@ Now staff users can:
 3. **Share the error** so I can fix the permissions
 
 For now, test requisitions workflow with `branch_user` or `finance_user`.
+
+---
+
+## 4. Treasury Payment Visibility (FIXED ✅)
+
+### Problem Reported:
+After Branch Manager approved a requisition (status changed to "reviewed"), Treasury dashboard showed nothing in pending payments.
+
+### Root Causes:
+
+**Issue 1:** Treasury dashboard was filtering for requisitions with status `'pending'` instead of `'reviewed'`:
+```python
+# Before (WRONG)
+requisitions = Requisition.objects.filter(company_id=company_id, status='pending')
+
+# After (CORRECT)
+requisitions = Requisition.objects.filter(company_id=company_id, status='reviewed')
+```
+
+**Issue 2:** Payment records were NOT being created when requisitions got fully approved.
+
+### Fix Applied:
+
+**1. Updated `treasury/services/dashboard_service.py`:**
+- Changed `get_pending_payments()` to filter by `status='reviewed'` 
+- Reviewed = fully approved requisitions ready for treasury to execute payment
+
+**2. Updated `transactions/views.py`:**
+- When final approver approves (workflow complete), automatically create Payment record:
+```python
+# Create Payment record for treasury to execute
+Payment.objects.get_or_create(
+    requisition=requisition,
+    defaults={
+        'amount': requisition.amount,
+        'method': 'bank_transfer',
+        'destination': '',
+        'status': 'pending',
+        'otp_required': True,
+    }
+)
+```
+
+### How It Works Now:
+
+**Approval Flow:**
+1. Staff creates requisition → Status: `pending`
+2. Branch Manager approves (final approval for Tier 1) → Status: `reviewed`
+3. **System automatically creates Payment record** with status `pending`
+4. Treasury sees payment in their dashboard under "Pending Payments"
+5. Treasury executes payment → Payment status: `success`
+
+**Status:** ✅ Deployed to Render
+
+---
