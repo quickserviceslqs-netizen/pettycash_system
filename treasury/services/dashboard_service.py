@@ -206,9 +206,11 @@ class DashboardService:
     def get_pending_payments(company_id, region_id=None, branch_id=None, limit=10):
         """
         Get pending payments ready for execution (API).
+        Looks for requisitions with status 'reviewed' (fully approved, ready for payment).
         """
         # Filter requisitions by company/region/branch scope
-        requisitions = Requisition.objects.filter(company_id=company_id, status='pending')
+        # Status 'reviewed' means all approvals complete, ready for treasury to execute payment
+        requisitions = Requisition.objects.filter(company_id=company_id, status='reviewed')
         if region_id:
             requisitions = requisitions.filter(region_id=region_id)
         if branch_id:

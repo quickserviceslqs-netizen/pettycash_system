@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.utils import timezone
 
 from .models import Requisition, ApprovalTrail
+from treasury.models import Payment
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
@@ -122,10 +123,23 @@ def approve_requisition(request, requisition_id):
         requisition.workflow_sequence = workflow_seq
         requisition.save(update_fields=["next_approver", "workflow_sequence"])
     else:
+        # Final approval - mark as reviewed and create payment record for treasury
         requisition.status = "reviewed"
         requisition.next_approver = None
         requisition.workflow_sequence = []
         requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
+        
+        # Create Payment record for treasury to execute
+        Payment.objects.get_or_create(
+            requisition=requisition,
+            defaults={
+                'amount': requisition.amount,
+                'method': 'bank_transfer',  # Default method
+                'destination': '',  # To be filled by treasury
+                'status': 'pending',
+                'otp_required': True,
+            }
+        )
 
     messages.success(request, f"Requisition {requisition_id} approved successfully.")
     return redirect("transactions-home")
