@@ -6,8 +6,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from accounts.models import User
 from organization.models import Company, Region, Branch, Department
-from workflow.models import ApprovalWorkflow, WorkflowStep
-from treasury.models import TreasuryFund
+from workflow.models import ApprovalThreshold
 from decimal import Decimal
 
 
@@ -113,48 +112,46 @@ class Command(BaseCommand):
                 user.save()
                 self.stdout.write(f'✅ Created user: {user.username}')
 
-        # Create test workflow
-        workflow, _ = ApprovalWorkflow.objects.get_or_create(
-            name='Standard Approval Workflow',
+        # Create test approval thresholds
+        ApprovalThreshold.objects.get_or_create(
+            name='Tier 1 - Small Amounts',
             defaults={
-                'description': 'Test workflow for UAT',
+                'origin_type': 'ANY',
+                'min_amount': Decimal('0.00'),
+                'max_amount': Decimal('1000.00'),
+                'roles_sequence': ['BRANCH_MANAGER'],
+                'allow_urgent_fasttrack': True,
+                'requires_cfo': False,
+                'priority': 1,
                 'is_active': True
             }
         )
 
-        # Create workflow steps
-        WorkflowStep.objects.get_or_create(
-            workflow=workflow,
-            step_order=1,
+        ApprovalThreshold.objects.get_or_create(
+            name='Tier 2 - Medium Amounts',
             defaults={
-                'approver_role': 'BRANCH_MANAGER',
-                'required': True
+                'origin_type': 'ANY',
+                'min_amount': Decimal('1000.01'),
+                'max_amount': Decimal('10000.00'),
+                'roles_sequence': ['BRANCH_MANAGER', 'FINANCE'],
+                'allow_urgent_fasttrack': True,
+                'requires_cfo': False,
+                'priority': 2,
+                'is_active': True
             }
         )
 
-        WorkflowStep.objects.get_or_create(
-            workflow=workflow,
-            step_order=2,
+        ApprovalThreshold.objects.get_or_create(
+            name='Tier 3 - Large Amounts',
             defaults={
-                'approver_role': 'FINANCE',
-                'required': True
-            }
-        )
-
-        WorkflowStep.objects.get_or_create(
-            workflow=workflow,
-            step_order=3,
-            defaults={
-                'approver_role': 'TREASURY',
-                'required': True
-            }
-        )
-
-        # Create test treasury fund
-        TreasuryFund.objects.get_or_create(
-            defaults={
-                'balance': Decimal('100000.00'),
-                'currency': 'USD'
+                'origin_type': 'ANY',
+                'min_amount': Decimal('10000.01'),
+                'max_amount': Decimal('50000.00'),
+                'roles_sequence': ['BRANCH_MANAGER', 'FINANCE', 'TREASURY'],
+                'allow_urgent_fasttrack': False,
+                'requires_cfo': False,
+                'priority': 3,
+                'is_active': True
             }
         )
 
