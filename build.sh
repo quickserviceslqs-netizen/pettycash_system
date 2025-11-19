@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render.com build script
+# Render.com build script - Updated
 
 set -o errexit  # Exit on error
 
