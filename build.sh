@@ -17,3 +17,6 @@ python create_superuser.py
 
 # Load test data (safe to run multiple times)
 python manage.py load_test_data
+
+# Fix any pending requisitions with missing next_approver (bug fix)
+python manage.py fix_pending_requisitions
