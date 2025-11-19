@@ -20,42 +20,32 @@ class Command(BaseCommand):
         # Create test company
         company, _ = Company.objects.get_or_create(
             name='Test Company Ltd',
-            defaults={
-                'code': 'TEST001',
-                'is_active': True
-            }
+            defaults={'code': 'TEST001'}
         )
 
         # Create test region
         region, _ = Region.objects.get_or_create(
             name='Test Region',
             company=company,
-            defaults={
-                'code': 'TR001',
-                'is_active': True
-            }
+            defaults={'code': 'TR001'}
         )
 
         # Create test branch
         branch, _ = Branch.objects.get_or_create(
             name='Test Branch',
             region=region,
-            defaults={
-                'is_active': True
-            }
+            defaults={'code': 'TB001'}
         )
 
         # Create test departments
         finance_dept, _ = Department.objects.get_or_create(
             name='Finance',
-            branch=branch,
-            defaults={'is_active': True}
+            branch=branch
         )
 
         operations_dept, _ = Department.objects.get_or_create(
             name='Operations',
-            branch=branch,
-            defaults={'is_active': True}
+            branch=branch
         )
 
         # Create test users
@@ -103,8 +93,7 @@ class Command(BaseCommand):
                     'last_name': user_data['last_name'],
                     'role': user_data['role'],
                     'department': user_data['department'],
-                    'branch': branch,
-                    'is_active': True
+                    'branch': branch
                 }
             )
             if created:
