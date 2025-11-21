@@ -41,15 +41,31 @@
         <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Receipt/Document</th>
         <td style="padding:8px; border-bottom:1px solid #ccc;">
             {% if requisition.receipt %}
-                <a href="{{ requisition.receipt.url }}" target="_blank" style="color:#0d6efd; text-decoration:none;">
-                    📎 View Receipt
+                <a href="{{ requisition.receipt.url }}" target="_blank" style="display:inline-block; padding:8px 15px; background:#0d6efd; color:#fff; text-decoration:none; border-radius:5px; font-weight:bold;">
+                    📎 View Receipt/Attachment
                 </a>
             {% else %}
-                <em>No receipt uploaded</em>
+                <em style="color:#dc3545;">⚠️ No receipt uploaded</em>
             {% endif %}
         </td>
     </tr>
 </table>
+
+<!-- Treasury: Review attachment reminder -->
+{% if can_act and user.role == 'treasury' %}
+    <div style="padding:15px; background:#cfe2ff; border:1px solid #0d6efd; border-radius:5px; margin-bottom:20px; margin-top:20px;">
+        <h4 style="margin-top:0; color:#084298;">📋 Treasury Validation Checklist</h4>
+        <ul style="margin-bottom:10px; color:#084298;">
+            <li>✓ Review receipt/supporting document above</li>
+            <li>✓ Verify amount matches documentation</li>
+            <li>✓ Confirm all required approvals completed</li>
+            <li>✓ Check fund availability before payment</li>
+        </ul>
+        <p style="color:#084298; margin:0; font-weight:bold;">
+            Click "Validate & Pay" below to proceed with payment execution (OTP required)
+        </p>
+    </div>
+{% endif %}
 
 <!-- Banner: cannot approve your own requisition -->
 {% if user.id == requisition.requested_by.id %}
@@ -92,9 +108,15 @@
 {% if can_act and requisition.status != 'pending_urgency_confirmation' %}
     <form method="post" action="{% url 'approve-requisition' requisition.transaction_id %}" style="display:inline;">
         {% csrf_token %}
-        <button type="submit" style="padding:10px 15px; background:#28a745; color:#fff; border:none; border-radius:5px; cursor:pointer;">
-            Approve
-        </button>
+        {% if user.role == 'treasury' %}
+            <button type="submit" style="padding:10px 20px; background:#0d6efd; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">
+                ✓ Validate & Pay
+            </button>
+        {% else %}
+            <button type="submit" style="padding:10px 15px; background:#28a745; color:#fff; border:none; border-radius:5px; cursor:pointer;">
+                Approve
+            </button>
+        {% endif %}
     </form>
 
     <form method="post" action="{% url 'reject-requisition' requisition.transaction_id %}" style="display:inline; margin-left:10px;">
