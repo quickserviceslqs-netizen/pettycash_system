@@ -25,7 +25,8 @@ def role_required(allowed_roles):
 # Common roles allowed to access transactions
 TRANSACTION_ROLES = [
     'admin', 'staff', 'fp&a', 'department_head',
-    'branch_manager', 'regional_manager', 'group_finance_manager'
+    'branch_manager', 'regional_manager', 'group_finance_manager',
+    'treasury', 'cfo', 'ceo'
 ]
 
 # Wrapper to apply login + role_required (used for approver-only views)
