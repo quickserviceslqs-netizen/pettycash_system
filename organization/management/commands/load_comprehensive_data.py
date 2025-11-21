@@ -252,7 +252,7 @@ class Command(BaseCommand):
                 'origin_type': 'BRANCH',
                 'min_amount': Decimal('50000.01'),
                 'max_amount': Decimal('250000.00'),
-                'roles_sequence': ['branch_manager', 'regional_manager', 'treasury', 'fp&a'],  # Treasury validates & pays, FP&A reviews
+                'roles_sequence': ['branch_manager', 'regional_manager', 'fp&a', 'treasury'],  # FP&A reviews, Treasury validates & pays (LAST)
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
@@ -263,7 +263,7 @@ class Command(BaseCommand):
                 'origin_type': 'BRANCH',
                 'min_amount': Decimal('250000.01'),
                 'max_amount': Decimal('999999999.99'),
-                'roles_sequence': ['regional_manager', 'cfo', 'treasury', 'fp&a'],  # Treasury validates after CFO approval
+                'roles_sequence': ['regional_manager', 'cfo', 'fp&a', 'treasury'],  # CFO approves, FP&A reviews, Treasury validates & pays (LAST)
                 'priority': 1,
                 'allow_urgent_fasttrack': False
             },
@@ -298,7 +298,7 @@ class Command(BaseCommand):
                 'origin_type': 'HQ',
                 'min_amount': Decimal('50000.01'),
                 'max_amount': Decimal('250000.00'),
-                'roles_sequence': ['department_head', 'group_finance_manager', 'treasury', 'fp&a'],  # Treasury validates & pays, FP&A reviews
+                'roles_sequence': ['department_head', 'group_finance_manager', 'fp&a', 'treasury'],  # FP&A reviews, Treasury validates & pays (LAST)
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
@@ -309,7 +309,7 @@ class Command(BaseCommand):
                 'origin_type': 'HQ',
                 'min_amount': Decimal('250000.01'),
                 'max_amount': Decimal('999999999.99'),
-                'roles_sequence': ['group_finance_manager', 'cfo', 'treasury', 'fp&a'],  # Treasury validates after CFO approval
+                'roles_sequence': ['group_finance_manager', 'cfo', 'fp&a', 'treasury'],  # CFO approves, FP&A reviews, Treasury validates & pays (LAST)
                 'priority': 1,
                 'allow_urgent_fasttrack': False
             },
