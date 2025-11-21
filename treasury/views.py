@@ -9,6 +9,7 @@ Endpoints:
 - GET /treasury-funds/{fund_id}/balance/ - Get current balance
 - POST /treasury-funds/{fund_id}/replenish/ - Manual replenishment (admin only)
 - PATCH /variance-adjustments/{variance_id}/approve/ - Approve variance (CFO only)
+- POST /api/mpesa/callback/ - M-Pesa STK Push callback
 """
 
 from rest_framework import viewsets, serializers, status
@@ -17,7 +18,10 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.http import JsonResponse
+import json
 
 from treasury.models import (
     Payment, PaymentExecution, TreasuryFund, 
@@ -26,6 +30,7 @@ from treasury.models import (
 from treasury.services.payment_service import (
     PaymentExecutionService, ReconciliationService, OTPService
 )
+from treasury.services.mpesa_service import process_mpesa_callback
 
 
 # ============================================================================
@@ -849,3 +854,69 @@ class ReportingViewSet(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+
+# ============================================================================
+# M-Pesa Callback Handler
+# ============================================================================
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def mpesa_callback(request):
+    """
+    Handle M-Pesa STK Push callback.
+    Called by Safaricom after customer completes payment.
+    
+    Updates payment record with M-Pesa receipt number.
+    """
+    try:
+        # Parse callback data
+        callback_data = json.loads(request.body)
+        
+        # Process callback
+        result = process_mpesa_callback(callback_data)
+        
+        if not result.get('success'):
+            return JsonResponse({
+                'ResultCode': 1,
+                'ResultDesc': 'Callback processing failed'
+            })
+        
+        # Find payment by checkout request ID
+        checkout_request_id = result.get('checkout_request_id')
+        
+        try:
+            payment = Payment.objects.get(mpesa_checkout_request_id=checkout_request_id)
+            
+            # Update payment with M-Pesa receipt
+            payment.mpesa_receipt = result.get('mpesa_receipt')
+            payment.status = 'success' if result.get('result_code') == 0 else 'failed'
+            
+            if payment.status == 'failed':
+                payment.last_error = result.get('result_desc', 'M-Pesa transaction failed')
+                payment.retry_count += 1
+            
+            payment.save(update_fields=['mpesa_receipt', 'status', 'last_error', 'retry_count'])
+            
+            # Update PaymentExecution record if exists
+            execution = PaymentExecution.objects.filter(payment=payment).first()
+            if execution:
+                execution.gateway_reference = result.get('mpesa_receipt')
+                execution.gateway_status = 'success' if result.get('result_code') == 0 else 'failed'
+                execution.save(update_fields=['gateway_reference', 'gateway_status'])
+            
+            return JsonResponse({
+                'ResultCode': 0,
+                'ResultDesc': 'Callback processed successfully'
+            })
+        
+        except Payment.DoesNotExist:
+            return JsonResponse({
+                'ResultCode': 1,
+                'ResultDesc': f'Payment not found for CheckoutRequestID: {checkout_request_id}'
+            })
+    
+    except Exception as e:
+        return JsonResponse({
+            'ResultCode': 1,
+            'ResultDesc': f'Error processing callback: {str(e)}'
+        })

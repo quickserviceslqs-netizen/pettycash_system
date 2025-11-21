@@ -88,6 +88,10 @@ class Payment(models.Model):
     otp_verified = models.BooleanField(default=False)
     otp_verified_timestamp = models.DateTimeField(null=True, blank=True)
     
+    # M-Pesa integration
+    mpesa_receipt = models.CharField(max_length=20, blank=True, null=True, help_text="M-Pesa confirmation code")
+    mpesa_checkout_request_id = models.CharField(max_length=50, blank=True, null=True)
+    
     # Retry tracking
     retry_count = models.PositiveIntegerField(default=0)
     max_retries = models.PositiveIntegerField(default=3)

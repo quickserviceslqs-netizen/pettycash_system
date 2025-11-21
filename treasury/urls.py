@@ -5,7 +5,7 @@ from treasury.views import (
     TreasuryFundViewSet, PaymentViewSet, 
     VarianceAdjustmentViewSet, ReplenishmentRequestViewSet,
     LedgerEntryViewSet, DashboardViewSet, AlertsViewSet,
-    PaymentTrackingViewSet, ReportingViewSet
+    PaymentTrackingViewSet, ReportingViewSet, mpesa_callback
 )
 
 # Setup DRF router for API endpoints
@@ -37,5 +37,6 @@ html_patterns = [
 urlpatterns = [
     path('', include(html_patterns)),
     path('api/', include(router.urls)),
+    path('api/mpesa/callback/', mpesa_callback, name='mpesa-callback'),  # M-Pesa callback endpoint
 ]
 

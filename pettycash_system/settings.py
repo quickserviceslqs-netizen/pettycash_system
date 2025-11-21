@@ -178,3 +178,16 @@ REST_FRAMEWORK = {
 # DEFAULT AUTO FIELD
 # ---------------------------------------------------------------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ---------------------------------------------------------------------
+# M-PESA DARAJA API SETTINGS
+# ---------------------------------------------------------------------
+# Get from environment variables in production
+import os
+
+MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', '')
+MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', '')
+MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE', '')
+MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', '')
+MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', 'https://pettycash-system.onrender.com/treasury/api/mpesa/callback/')
+
