@@ -246,24 +246,24 @@ class Command(BaseCommand):
                 'allow_urgent_fasttrack': True
             },
             # Tier 3: 50,001–250,000 — regional-level
-            # Treasury validates after approvals, FP&A reviews post-payment
+            # Treasury validates after approvals (FP&A does post-payment review, not approval)
             {
                 'name': 'Tier 3 Branch',
                 'origin_type': 'BRANCH',
                 'min_amount': Decimal('50000.01'),
                 'max_amount': Decimal('250000.00'),
-                'roles_sequence': ['branch_manager', 'regional_manager', 'fp&a', 'treasury'],  # FP&A reviews, Treasury validates & pays (LAST)
+                'roles_sequence': ['branch_manager', 'regional_manager', 'treasury'],  # Treasury validates & pays (LAST)
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
             # Tier 4: > 250,000 — HQ-level, CFO required (cannot fast-track)
-            # RM → CFO approve, then Treasury validates & pays, FP&A reviews
+            # RM → CFO approve, then Treasury validates & pays (FP&A reviews post-payment)
             {
                 'name': 'Tier 4 Branch',
                 'origin_type': 'BRANCH',
                 'min_amount': Decimal('250000.01'),
                 'max_amount': Decimal('999999999.99'),
-                'roles_sequence': ['regional_manager', 'cfo', 'fp&a', 'treasury'],  # CFO approves, FP&A reviews, Treasury validates & pays (LAST)
+                'roles_sequence': ['regional_manager', 'cfo', 'treasury'],  # CFO approves, Treasury validates & pays (LAST)
                 'priority': 1,
                 'allow_urgent_fasttrack': False
             },
@@ -292,24 +292,24 @@ class Command(BaseCommand):
                 'allow_urgent_fasttrack': True
             },
             # Tier 3: 50,001–250,000 — regional-level
-            # Treasury validates after approvals, FP&A reviews post-payment
+            # Treasury validates after approvals (FP&A does post-payment review, not approval)
             {
                 'name': 'Tier 3 HQ',
                 'origin_type': 'HQ',
                 'min_amount': Decimal('50000.01'),
                 'max_amount': Decimal('250000.00'),
-                'roles_sequence': ['department_head', 'group_finance_manager', 'fp&a', 'treasury'],  # FP&A reviews, Treasury validates & pays (LAST)
+                'roles_sequence': ['department_head', 'group_finance_manager', 'treasury'],  # Treasury validates & pays (LAST)
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
             # Tier 4: > 250,000 — HQ-level, CFO required (cannot fast-track)
-            # GFM → CFO approve, then Treasury validates & pays, FP&A reviews
+            # GFM → CFO approve, then Treasury validates & pays (FP&A reviews post-payment)
             {
                 'name': 'Tier 4 HQ',
                 'origin_type': 'HQ',
                 'min_amount': Decimal('250000.01'),
                 'max_amount': Decimal('999999999.99'),
-                'roles_sequence': ['group_finance_manager', 'cfo', 'fp&a', 'treasury'],  # CFO approves, FP&A reviews, Treasury validates & pays (LAST)
+                'roles_sequence': ['group_finance_manager', 'cfo', 'treasury'],  # CFO approves, Treasury validates & pays (LAST)
                 'priority': 1,
                 'allow_urgent_fasttrack': False
             },
