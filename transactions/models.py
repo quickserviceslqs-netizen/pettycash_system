@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from organization.models import Company, Region, Branch, Department
 from workflow.models import ApprovalThreshold
 from workflow.services.resolver import find_approval_threshold
@@ -57,6 +58,30 @@ class Requisition(models.Model):
 
     def __str__(self):
         return f"{self.transaction_id} - {self.status}"
+    
+    def clean(self):
+        """Validate requisition data before save"""
+        # Validate amount is positive (if set)
+        if self.amount is not None and self.amount <= 0:
+            raise ValidationError({'amount': 'Amount must be greater than zero'})
+        
+        # Validate org structure matches origin type (only for non-draft status)
+        if self.status != 'draft':
+            if self.origin_type == 'branch' and not self.branch:
+                raise ValidationError({'branch': 'Branch origin requires a branch to be specified'})
+            if self.origin_type == 'hq' and not self.company:
+                raise ValidationError({'company': 'HQ origin requires a company to be specified'})
+            if self.origin_type == 'field' and not self.region:
+                raise ValidationError({'region': 'Field origin requires a region to be specified'})
+    
+    def save(self, *args, **kwargs):
+        """Override save to run validation only on explicit full_clean calls"""
+        # Don't auto-validate on save to allow incremental model building
+        # Validation will be enforced via forms and explicit clean() calls
+        if not kwargs.pop('skip_validation', False):
+            # Only validate explicitly when needed
+            pass
+        super().save(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         # Accept legacy 'requesting_user' kwarg used in some tests and map it to 'requested_by'
@@ -75,74 +100,33 @@ class Requisition(models.Model):
 
     def resolve_workflow(self):
         """
-        Resolve workflow sequence based on threshold, origin, role availability,
-        no-self-approval invariant, and urgency rules.
+        Resolve workflow sequence - delegates to centralized resolver service.
+        This ensures consistent workflow logic across the application.
         """
-        if not self.applied_threshold:
-            self.apply_threshold()
-
-        roles_sequence = self.applied_threshold.roles_sequence
-        resolved = []
-        skipped_roles = []
-
-        for role in roles_sequence:
-            # Normalize role to lowercase for case-insensitive matching
-            normalized_role = role.lower()
-            candidates = User.objects.filter(role=normalized_role, is_active=True)
-            # Scope filtering
-            if self.origin_type == 'branch' and self.branch:
-                candidates = candidates.filter(branch=self.branch)
-            elif self.origin_type == 'hq' and self.company:
-                candidates = candidates.filter(company=self.company)
-            elif self.origin_type == 'field' and self.region:
-                candidates = candidates.filter(region=self.region)
-
-            # Exclude requester (No-Self-Approval)
-            candidates = candidates.exclude(id=self.requested_by.id)
-
-            candidate = candidates.first()
-            if candidate:
-                resolved.append({
-                    "user_id": candidate.id,
-                    "role": role,
-                    "auto_escalated": False
-                })
-            else:
-                skipped_roles.append(role)  # track skipped role
-                # Auto-escalate to Admin or superuser
-                admin = User.objects.filter(role="admin", is_active=True).first()
-                if not admin:
-                    admin = User.objects.filter(is_superuser=True, is_active=True).first()
-                if not admin:
-                    raise ValueError("No ADMIN or superuser exists. Please create one.")
-                resolved.append({
-                    "user_id": admin.id,
-                    "role": "admin",
-                    "auto_escalated": True
-                })
-
-        # Urgency fast-track
-        if self.is_urgent and self.applied_threshold.allow_urgent_fasttrack and self.tier != 'Tier 4':
-            resolved = [resolved[-1]]  # Short-circuit to final approver
-            skipped_roles = roles_sequence[:-1]
-
-        if resolved:
-            self.workflow_sequence = resolved
-            self.next_approver = User.objects.get(id=resolved[0]["user_id"])
-            self.save(update_fields=['workflow_sequence', 'next_approver'])
-
-        # Store skipped roles for audit trail
-        self._skipped_roles = skipped_roles
-        return resolved
+        from workflow.services.resolver import resolve_workflow
+        return resolve_workflow(self)
 
     def can_approve(self, user):
         """
-        No-self-approval enforcement.
-        Only the next_approver can approve.
+        Validate if user can approve this requisition.
+        Enforces:
+        - Only pending requisitions can be approved
+        - No self-approval
+        - Only next_approver can approve
         """
+        # Only pending requisitions can be approved
+        if self.status != 'pending':
+            return False
+        
+        # No self-approval
         if user.id == self.requested_by.id:
             return False
-        return self.next_approver and user.id == self.next_approver.id
+        
+        # Must be the next approver
+        if not self.next_approver or user.id != self.next_approver.id:
+            return False
+        
+        return True
 
 
 class ApprovalTrail(models.Model):

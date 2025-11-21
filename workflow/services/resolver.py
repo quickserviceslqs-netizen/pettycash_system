@@ -2,8 +2,13 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from workflow.models import ApprovalThreshold
 from django.core.exceptions import PermissionDenied
+import logging
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
+# Centralized roles that are not filtered by branch/region/company
+CENTRALIZED_ROLES = ["treasury", "fp&a", "group_finance_manager", "cfo", "ceo", "admin"]
 
 
 def find_approval_threshold(amount, origin_type):
@@ -68,8 +73,7 @@ def resolve_workflow(requisition):
         candidates = User.objects.filter(role=normalized_role, is_active=True).exclude(id=requisition.requested_by.id)
 
         # Apply scoping only for non-centralized roles
-        centralized_roles = ["treasury", "fp&a", "group_finance_manager", "cfo", "ceo", "admin"]
-        if role.lower() not in centralized_roles:
+        if role.lower() not in CENTRALIZED_ROLES:
             if requisition.origin_type.lower() == "branch" and requisition.branch:
                 candidates = candidates.filter(branch=requisition.branch)
             elif requisition.origin_type.lower() == "hq" and requisition.company:
@@ -86,6 +90,7 @@ def resolve_workflow(requisition):
             })
         else:
             # Auto-escalation flag if no candidate
+            logger.warning(f"No {role} found for requisition {requisition.transaction_id}, auto-escalation needed")
             resolved.append({
                 "user_id": None,
                 "role": role,
@@ -109,7 +114,9 @@ def resolve_workflow(requisition):
         and requisition.applied_threshold.allow_urgent_fasttrack
         and requisition.tier != "Tier4"
         and len(resolved) > 1
+        and resolved[-1].get("user_id") is not None  # Ensure last approver exists
     ):
+        logger.info(f"Urgent fast-track for {requisition.transaction_id}: jumping to final approver")
         resolved = [resolved[-1]]  # jump to last approver
 
     # 6️⃣ Replace None user_ids with Admin if still missing
@@ -131,13 +138,22 @@ def can_approve(user, requisition):
     """
     Check if the user can approve the requisition.
     Enforces:
+    - Only pending requisitions can be approved
     - No-self-approval
     - Only next approver can act
     """
+    # Only pending requisitions can be approved
+    if requisition.status != 'pending':
+        return False
+    
+    # No-self-approval
     if user.id == requisition.requested_by.id:
         return False
-    if user.id != requisition.next_approver.id:
+    
+    # Must be the next approver
+    if not requisition.next_approver or user.id != requisition.next_approver.id:
         return False
+    
     return True
 
 

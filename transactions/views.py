@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.contrib import messages
 from django.utils import timezone
+from django.db import transaction
 
 from .models import Requisition, ApprovalTrail
 from treasury.models import Payment
@@ -98,11 +99,23 @@ def create_requisition(request):
 # Approve Requisition
 # -----------------------------
 @login_required
+@transaction.atomic
 def approve_requisition(request, requisition_id):
-    requisition = get_object_or_404(Requisition, transaction_id=requisition_id)
+    """Approve a requisition with atomic transaction and row locking"""
+    # Lock the row for update to prevent race conditions
+    try:
+        requisition = Requisition.objects.select_for_update().get(
+            transaction_id=requisition_id
+        )
+    except Requisition.DoesNotExist:
+        messages.error(request, "Requisition not found.")
+        return redirect("transactions-home")
+    
+    # Validate can approve
     if not requisition.can_approve(request.user):
         return HttpResponseForbidden("You cannot approve this requisition.")
 
+    # Create approval trail
     ApprovalTrail.objects.create(
         requisition=requisition,
         user=request.user,
@@ -114,14 +127,16 @@ def approve_requisition(request, requisition_id):
         skipped_roles=getattr(requisition, "_skipped_roles", []),
     )
 
-    # Move to next approver
+    # Move to next approver or mark as reviewed
     workflow_seq = requisition.workflow_sequence or []
     if len(workflow_seq) > 1:
+        # More approvers remaining
         workflow_seq.pop(0)
         next_user_id = workflow_seq[0]["user_id"]
         requisition.next_approver = get_object_or_404(User, id=next_user_id)
         requisition.workflow_sequence = workflow_seq
         requisition.save(update_fields=["next_approver", "workflow_sequence"])
+        messages.success(request, f"Requisition {requisition_id} approved. Moved to next approver.")
     else:
         # Final approval - mark as reviewed and create payment record for treasury
         requisition.status = "reviewed"
@@ -129,19 +144,19 @@ def approve_requisition(request, requisition_id):
         requisition.workflow_sequence = []
         requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
         
-        # Create Payment record for treasury to execute
+        # Create Payment record for treasury to execute (within same transaction)
         Payment.objects.get_or_create(
             requisition=requisition,
             defaults={
                 'amount': requisition.amount,
-                'method': 'bank_transfer',  # Default method
-                'destination': '',  # To be filled by treasury
+                'method': 'bank_transfer',
+                'destination': '',
                 'status': 'pending',
                 'otp_required': True,
             }
         )
+        messages.success(request, f"Requisition {requisition_id} fully approved! Ready for payment.")
 
-    messages.success(request, f"Requisition {requisition_id} approved successfully.")
     return redirect("transactions-home")
 
 
@@ -149,11 +164,28 @@ def approve_requisition(request, requisition_id):
 # Reject Requisition
 # -----------------------------
 @login_required
+@transaction.atomic
 def reject_requisition(request, requisition_id):
-    requisition = get_object_or_404(Requisition, transaction_id=requisition_id)
+    """Reject a requisition with atomic transaction"""
+    # Lock the row for update
+    try:
+        requisition = Requisition.objects.select_for_update().get(
+            transaction_id=requisition_id
+        )
+    except Requisition.DoesNotExist:
+        messages.error(request, "Requisition not found.")
+        return redirect("transactions-home")
+    
+    # Validate status - can only reject pending requisitions
+    if requisition.status != 'pending':
+        messages.error(request, "Can only reject pending requisitions.")
+        return redirect("transactions-home")
+    
+    # Validate can reject (uses same logic as approval)
     if not requisition.can_approve(request.user):
         return HttpResponseForbidden("You cannot reject this requisition.")
 
+    # Create rejection trail
     ApprovalTrail.objects.create(
         requisition=requisition,
         user=request.user,
@@ -165,9 +197,11 @@ def reject_requisition(request, requisition_id):
         skipped_roles=getattr(requisition, "_skipped_roles", []),
     )
 
+    # Clear workflow and mark as rejected
     requisition.status = "rejected"
     requisition.next_approver = None
     requisition.workflow_sequence = []
     requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
+    
     messages.success(request, f"Requisition {requisition_id} rejected.")
     return redirect("transactions-home")
