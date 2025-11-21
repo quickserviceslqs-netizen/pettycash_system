@@ -13,7 +13,7 @@
     </tr>
     <tr>
         <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Requested By</th>
-        <td style="padding:8px; border-bottom:1px solid #ccc;">{{ requisition.requested_by.username|title }}</td>
+        <td style="padding:8px; border-bottom:1px solid #ccc;">{{ requisition.requested_by.get_display_name }}</td>
     </tr>
     <tr>
         <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Amount</th>
@@ -27,9 +27,9 @@
         <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Next Approver</th>
         <td style="padding:8px; border-bottom:1px solid #ccc;">
             {% if requisition.next_approver %}
-                {{ requisition.next_approver.username|title }}
+                {{ requisition.next_approver.get_display_name }}
             {% else %}
-                None
+                -
             {% endif %}
         </td>
     </tr>
@@ -44,7 +44,7 @@
     <div style="padding:15px; background:#ffeeba; border:1px solid #ffc107; border-radius:5px; margin-bottom:20px;">
         You cannot approve your own requisition — it will be routed to 
         {% if requisition.next_approver %}
-            {{ requisition.next_approver.username|title }}
+            {{ requisition.next_approver.get_display_name }}
         {% else %}
             the next approver
         {% endif %}.

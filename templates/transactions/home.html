@@ -9,7 +9,7 @@
     <!-- Page Header -->
     <section style="margin-bottom:30px; text-align:center;">
         <h2 style="font-size:1.8rem; margin-bottom:5px;">Transactions</h2>
-        <p style="font-size:1rem; color:#555;">Welcome, {{ user.username|title }}</p>
+        <p style="font-size:1rem; color:#555;">Welcome, {{ user.get_display_name }}</p>
     </section>
 
     <!-- Button to Create New Requisition -->
@@ -52,7 +52,7 @@
                         </td>
                         <td style="padding:10px; border:1px solid #ddd;">
                             {% if req.next_approver %}
-                                {{ req.next_approver.username|title }}
+                                {{ req.next_approver.get_display_name }}
                             {% else %}
                                 N/A
                             {% endif %}
@@ -90,7 +90,7 @@
                 {% for req in pending_for_me %}
                 <tr>
                     <td style="padding:10px; border:1px solid #ddd;">{{ req.transaction_id }}</td>
-                    <td style="padding:10px; border:1px solid #ddd;">{{ req.requested_by.username|title }}</td>
+                    <td style="padding:10px; border:1px solid #ddd;">{{ req.requested_by.get_display_name }}</td>
                     <td style="padding:10px; border:1px solid #ddd;">{{ req.amount }}</td>
                     <td style="padding:10px; border:1px solid #ddd;">
                         {% if req.requested_by != user %}

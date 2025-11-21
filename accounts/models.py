@@ -43,6 +43,20 @@ class User(AbstractUser):
         """Clean, normalized role key for permissions/dashboards."""
         return self.role.lower().strip()
 
+    def get_display_name(self):
+        """Return user's full name, or username if no name set."""
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        elif self.first_name:
+            return self.first_name
+        elif self.last_name:
+            return self.last_name
+        return self.username
+
+    def get_role_display(self):
+        """Return the display name for the user's role."""
+        return dict(self.ROLE_CHOICES).get(self.role, self.role)
+
     @property
     def profile(self):
         """

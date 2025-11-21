@@ -183,9 +183,9 @@
                     <div class="user-menu ms-auto">
                         {% if user.is_authenticated %}
                             <span class="text-muted small">
-                                {% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
+                                {{ user.get_display_name }}
                             </span>
-                            <span class="badge bg-primary">{{ user.role_key|default:"user" }}</span>
+                            <span class="badge bg-primary">{{ user.get_role_display }}</span>
                             <form method="post" action="{% url 'logout' %}" style="display:inline;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-danger">

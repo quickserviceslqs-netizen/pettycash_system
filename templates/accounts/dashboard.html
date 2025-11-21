@@ -8,7 +8,7 @@
 
     <!-- Welcome Section -->
     <section style="margin-bottom:30px; text-align:center;">
-        <h2 style="font-size:1.8rem; margin-bottom:5px;">Welcome, {{ user.username|title }}!</h2>
+        <h2 style="font-size:1.8rem; margin-bottom:5px;">Welcome, {{ user.get_display_name }}!</h2>
     </section>
 
     <!-- No Apps Assigned Message -->
@@ -71,7 +71,7 @@
                     {% for req in pending_for_user %}
                     <tr>
                         <td style="padding:10px; border:1px solid #ddd;">{{ req.transaction_id }}</td>
-                        <td style="padding:10px; border:1px solid #ddd;">{{ req.requested_by.username }}</td>
+                        <td style="padding:10px; border:1px solid #ddd;">{{ req.requested_by.get_display_name }}</td>
                         <td style="padding:10px; border:1px solid #ddd;">{{ req.amount }}</td>
                         <td style="padding:10px; border:1px solid #ddd;">
                             {% if req.requested_by.id != user.id %}
