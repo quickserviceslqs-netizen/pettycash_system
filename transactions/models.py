@@ -2,7 +2,7 @@ import uuid
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from organization.models import Company, Region, Branch, Department
+from organization.models import Company, Region, Branch, Department, CostCenter
 from workflow.models import ApprovalThreshold
 from workflow.services.resolver import find_approval_threshold
 from django.contrib.auth import get_user_model
@@ -45,6 +45,7 @@ class Requisition(models.Model):
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
+    cost_center = models.ForeignKey(CostCenter, on_delete=models.SET_NULL, null=True, blank=True)
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     purpose = models.TextField()
     is_urgent = models.BooleanField(default=False)
