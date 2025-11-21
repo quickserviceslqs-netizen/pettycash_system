@@ -62,6 +62,15 @@
                 {% endif %}
             </div>
 
+            <!-- Cost Center -->
+            <div>
+                <label for="{{ form.cost_center.id_for_label }}">Cost Center</label><br>
+                {{ form.cost_center }}
+                {% if form.cost_center.errors %}
+                    <div style="color:red;">{{ form.cost_center.errors }}</div>
+                {% endif %}
+            </div>
+
             <!-- Amount -->
             <div>
                 <label for="{{ form.amount.id_for_label }}">Amount</label><br>
