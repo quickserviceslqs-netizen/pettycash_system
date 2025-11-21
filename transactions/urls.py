@@ -40,15 +40,15 @@ urlpatterns = [
     path('', protected(transactions_home), name='transactions-home'),
     # Allow any authenticated user to create a requisition (no role restriction)
     path('create/', login_required(create_requisition), name='create-requisition'),
-    path('approve/<uuid:requisition_id>/', protected(approve_requisition), name='approve-requisition'),
-    path('reject/<uuid:requisition_id>/', protected(reject_requisition), name='reject-requisition'),
+    path('approve/<str:requisition_id>/', protected(approve_requisition), name='approve-requisition'),
+    path('reject/<str:requisition_id>/', protected(reject_requisition), name='reject-requisition'),
     
     # Phase 3: Urgency confirmation by first approver
-    path('confirm-urgency/<uuid:requisition_id>/', protected(confirm_urgency), name='confirm-urgency'),
+    path('confirm-urgency/<str:requisition_id>/', protected(confirm_urgency), name='confirm-urgency'),
     
     # Phase 4: Admin override (emergency approval)
-    path('admin-override/<uuid:requisition_id>/', login_required(admin_override_approval), name='admin-override'),
+    path('admin-override/<str:requisition_id>/', login_required(admin_override_approval), name='admin-override'),
 
     # Requisition detail page
-    path('detail/<uuid:requisition_id>/', protected(requisition_detail), name='requisition-detail'),
+    path('detail/<str:requisition_id>/', protected(requisition_detail), name='requisition-detail'),
 ]
