@@ -218,42 +218,46 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'\n✓ Created {created_count} new users'))
         self.stdout.write(self.style.SUCCESS(f'✓ Total users: {User.objects.count()}'))
 
-        # ============= APPROVAL THRESHOLDS =============
-        self.stdout.write('\nSetting up approval thresholds...')
+        # ============= APPROVAL THRESHOLDS - PHASE 3 RE-ENGINEERED =============
+        self.stdout.write('\nSetting up approval thresholds (Phase 3 spec)...')
 
         thresholds_data = [
             # BRANCH ORIGIN
+            # Tier 1: ≤ 10,000 — routine, fast
             {
                 'name': 'Tier 1 Branch',
                 'origin_type': 'BRANCH',
                 'min_amount': Decimal('0.00'),
-                'max_amount': Decimal('1000.00'),
+                'max_amount': Decimal('10000.00'),
                 'roles_sequence': ['branch_manager', 'treasury'],
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
+            # Tier 2: 10,001–50,000 — departmental
             {
                 'name': 'Tier 2 Branch',
                 'origin_type': 'BRANCH',
-                'min_amount': Decimal('1000.01'),
-                'max_amount': Decimal('10000.00'),
+                'min_amount': Decimal('10000.01'),
+                'max_amount': Decimal('50000.00'),
                 'roles_sequence': ['branch_manager', 'department_head', 'treasury'],
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
+            # Tier 3: 50,001–250,000 — regional-level
             {
                 'name': 'Tier 3 Branch',
                 'origin_type': 'BRANCH',
-                'min_amount': Decimal('10000.01'),
-                'max_amount': Decimal('50000.00'),
+                'min_amount': Decimal('50000.01'),
+                'max_amount': Decimal('250000.00'),
                 'roles_sequence': ['branch_manager', 'regional_manager', 'treasury', 'fp&a'],
                 'priority': 1,
-                'allow_urgent_fasttrack': False
+                'allow_urgent_fasttrack': True
             },
+            # Tier 4: > 250,000 — HQ-level, CFO required (cannot fast-track)
             {
                 'name': 'Tier 4 Branch',
                 'origin_type': 'BRANCH',
-                'min_amount': Decimal('50000.01'),
+                'min_amount': Decimal('250000.01'),
                 'max_amount': Decimal('999999999.99'),
                 'roles_sequence': ['regional_manager', 'treasury', 'cfo', 'fp&a'],
                 'priority': 1,
@@ -261,37 +265,41 @@ class Command(BaseCommand):
             },
             
             # HQ ORIGIN
+            # Tier 1: ≤ 10,000 — routine, fast
             {
                 'name': 'Tier 1 HQ',
                 'origin_type': 'HQ',
                 'min_amount': Decimal('0.00'),
-                'max_amount': Decimal('1000.00'),
+                'max_amount': Decimal('10000.00'),
                 'roles_sequence': ['department_head', 'treasury'],
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
+            # Tier 2: 10,001–50,000 — departmental
             {
                 'name': 'Tier 2 HQ',
                 'origin_type': 'HQ',
-                'min_amount': Decimal('1000.01'),
-                'max_amount': Decimal('10000.00'),
+                'min_amount': Decimal('10000.01'),
+                'max_amount': Decimal('50000.00'),
                 'roles_sequence': ['department_head', 'group_finance_manager', 'treasury'],
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
+            # Tier 3: 50,001–250,000 — regional-level
             {
                 'name': 'Tier 3 HQ',
                 'origin_type': 'HQ',
-                'min_amount': Decimal('10000.01'),
-                'max_amount': Decimal('50000.00'),
+                'min_amount': Decimal('50000.01'),
+                'max_amount': Decimal('250000.00'),
                 'roles_sequence': ['department_head', 'group_finance_manager', 'treasury', 'fp&a'],
                 'priority': 1,
-                'allow_urgent_fasttrack': False
+                'allow_urgent_fasttrack': True
             },
+            # Tier 4: > 250,000 — HQ-level, CFO required (cannot fast-track)
             {
                 'name': 'Tier 4 HQ',
                 'origin_type': 'HQ',
-                'min_amount': Decimal('50000.01'),
+                'min_amount': Decimal('250000.01'),
                 'max_amount': Decimal('999999999.99'),
                 'roles_sequence': ['group_finance_manager', 'treasury', 'cfo', 'fp&a'],
                 'priority': 1,

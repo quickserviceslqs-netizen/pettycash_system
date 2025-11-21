@@ -97,34 +97,58 @@ def resolve_workflow(requisition):
                 "auto_escalated": True
             })
 
-    # 4️⃣ Fallback: assign Admin if no valid approvers
+    # 4️⃣ Phase 4: Auto-escalation with audit trail (no valid approvers found)
     if not resolved or all(r["user_id"] is None for r in resolved):
         admin = User.objects.filter(is_superuser=True, is_active=True).first()
         if not admin:
             raise ValueError("No ADMIN user exists. Please create one.")
+        escalation_reason = f"No approvers found in roles: {base_roles}"
+        logger.warning(f"Auto-escalating {requisition.transaction_id} to admin: {escalation_reason}")
         resolved = [{
             "user_id": admin.id,
             "role": "ADMIN",
-            "auto_escalated": True
+            "auto_escalated": True,
+            "escalation_reason": escalation_reason
         }]
 
-    # 5️⃣ Urgent fast-track
+    # 5️⃣ Phase 3: Urgent fast-track (if enabled and Tier ≠ 4)
     if (
         getattr(requisition, "is_urgent", False)
         and requisition.applied_threshold.allow_urgent_fasttrack
-        and requisition.tier != "Tier4"
+        and not requisition.tier.startswith("Tier 4")  # Tier 4 cannot fast-track
         and len(resolved) > 1
         and resolved[-1].get("user_id") is not None  # Ensure last approver exists
     ):
-        logger.info(f"Urgent fast-track for {requisition.transaction_id}: jumping to final approver")
+        logger.info(
+            f"Phase 3 urgent fast-track for {requisition.transaction_id}: "
+            f"jumping to final approver (Tier 4 fast-track disabled)"
+        )
+        # Status will be set to pending_urgency_confirmation by caller
         resolved = [resolved[-1]]  # jump to last approver
 
-    # 6️⃣ Replace None user_ids with Admin if still missing
-    for r in resolved:
+    # 6️⃣ Phase 4: Replace None user_ids with escalation to next-level approver
+    for i, r in enumerate(resolved):
         if r["user_id"] is None:
-            admin = User.objects.filter(is_superuser=True, is_active=True).first()
-            r["user_id"] = admin.id
-            r["role"] = "ADMIN"
+            # Find next available approver or escalate to admin
+            next_approver = None
+            for j in range(i + 1, len(resolved)):
+                if resolved[j]["user_id"] is not None:
+                    next_approver = resolved[j]
+                    break
+            
+            if next_approver:
+                r["user_id"] = next_approver["user_id"]
+                r["auto_escalated"] = True
+                r["escalation_reason"] = f"No {r['role']} found, escalated to {next_approver['role']}"
+                logger.warning(f"Auto-escalated {requisition.transaction_id}: {r['escalation_reason']}")
+            else:
+                # Last resort: escalate to admin
+                admin = User.objects.filter(is_superuser=True, is_active=True).first()
+                r["user_id"] = admin.id
+                r["role"] = "ADMIN"
+                r["auto_escalated"] = True
+                r["escalation_reason"] = f"No {r['role']} found, escalated to ADMIN"
+                logger.warning(f"Admin escalation for {requisition.transaction_id}: {r['escalation_reason']}")
 
     # 7️⃣ Save workflow to requisition
     requisition.workflow_sequence = resolved

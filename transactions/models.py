@@ -10,10 +10,22 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+def generate_transaction_id():
+    """Generate unique transaction ID for requisitions"""
+    return str(uuid.uuid4())
+
+
 class Requisition(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('pending', 'Pending'),
+        ('pending_urgency_confirmation', 'Pending Urgency Confirmation'),
+        ('pending_dept_approval', 'Pending Department Approval'),
+        ('pending_branch_approval', 'Pending Branch Approval'),
+        ('pending_regional_review', 'Pending Regional Review'),
+        ('pending_finance_review', 'Pending Finance Review'),
+        ('pending_treasury_validation', 'Pending Treasury Validation'),
+        ('pending_cfo_approval', 'Pending CFO Approval'),
         ('paid', 'Paid'),
         ('reviewed', 'Reviewed'),
         ('rejected', 'Rejected'),
@@ -26,7 +38,7 @@ class Requisition(models.Model):
 
     # Allow tests to provide simple transaction identifiers (e.g., 'REQ-001')
     # Use a CharField primary key with default UUID string for compatibility.
-    transaction_id = models.CharField(primary_key=True, max_length=64, default=lambda: str(uuid.uuid4()), editable=False)
+    transaction_id = models.CharField(primary_key=True, max_length=64, default=generate_transaction_id, editable=False)
     requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     origin_type = models.CharField(max_length=10, choices=ORIGIN_CHOICES)
     company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True)
@@ -49,7 +61,7 @@ class Requisition(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, related_name='next_approvals'
     )
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='draft')  # Phase 3: Increased for granular statuses
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -108,22 +120,36 @@ class Requisition(models.Model):
 
     def can_approve(self, user):
         """
-        Validate if user can approve this requisition.
+        Phase 4: Core invariant - No-self-approval enforcement.
+        Validates if user can approve this requisition at routing, model, and API layers.
+        
         Enforces:
-        - Only pending requisitions can be approved
-        - No self-approval
+        - Only pending/pending_urgency_confirmation requisitions can be approved
+        - No self-approval (strict invariant)
         - Only next_approver can approve
         """
-        # Only pending requisitions can be approved
-        if self.status != 'pending':
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Only pending or urgency confirmation requisitions can be approved
+        if self.status not in ['pending', 'pending_urgency_confirmation']:
+            logger.warning(f"Approval denied for {self.transaction_id}: status={self.status}")
             return False
         
-        # No self-approval
+        # Phase 4 Core Invariant: No self-approval
         if user.id == self.requested_by.id:
+            logger.warning(
+                f"Self-approval blocked for {self.transaction_id}: "
+                f"user {user.username} (ID: {user.id}) is the requester"
+            )
             return False
         
         # Must be the next approver
         if not self.next_approver or user.id != self.next_approver.id:
+            logger.warning(
+                f"Approval denied for {self.transaction_id}: "
+                f"user {user.username} is not the next approver (expected: {self.next_approver.username if self.next_approver else 'None'})"
+            )
             return False
         
         return True
@@ -133,12 +159,17 @@ class ApprovalTrail(models.Model):
     requisition = models.ForeignKey('Requisition', on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     role = models.CharField(max_length=30)
-    action = models.CharField(max_length=20, choices=[('approved', 'Approved'), ('rejected', 'Rejected')])
+    action = models.CharField(max_length=20, choices=[
+        ('approved', 'Approved'), 
+        ('rejected', 'Rejected'),
+        ('urgency_confirmed', 'Urgency Confirmed')  # Phase 3: Urgency confirmation
+    ])
     comment = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     ip_address = models.GenericIPAddressField(blank=True, null=True)
     auto_escalated = models.BooleanField(default=False)
     skipped_roles = models.JSONField(blank=True, null=True)  # Track skipped roles for audit
+    escalation_reason = models.TextField(blank=True, null=True)  # Phase 4: Audit trail for escalations
     override = models.BooleanField(default=False)
 
     def __str__(self):
