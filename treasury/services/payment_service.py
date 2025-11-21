@@ -13,6 +13,7 @@ import uuid
 import random
 import string
 import hashlib
+import hmac
 from decimal import Decimal
 from datetime import timedelta
 
@@ -276,7 +277,7 @@ class PaymentExecutionService:
         provided_hash = OTPService.hash_otp(provided_otp, str(payment.payment_id))
         
         # Constant-time comparison to prevent timing attacks
-        if not hashlib.compare_digest(provided_hash, payment.otp_hash):
+        if not hmac.compare_digest(provided_hash, payment.otp_hash):
             return False, "Invalid OTP. Please check and try again."
         
         # OTP is valid - mark as verified
