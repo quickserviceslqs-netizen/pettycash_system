@@ -51,8 +51,33 @@
     </div>
 {% endif %}
 
-<!-- Approve/Reject buttons: only visible if user can act -->
-{% if can_act %}
+<!-- Phase 3: Urgency Confirmation - First approver must confirm urgency before proceeding -->
+{% if requisition.status == 'pending_urgency_confirmation' and can_act %}
+    <div style="padding:15px; background:#fff3cd; border:1px solid #ffc107; border-radius:5px; margin-bottom:20px;">
+        <h4 style="margin-top:0; color:#856404;">⚠️ Urgent Request - Confirmation Required</h4>
+        <p style="color:#856404; margin-bottom:10px;">
+            <strong>Urgency Reason:</strong> {{ requisition.urgency_reason }}
+        </p>
+        <p style="color:#856404; margin-bottom:15px;">
+            As the first approver, please confirm this request is genuinely urgent before it proceeds to fast-track approval.
+        </p>
+        <form method="post" action="{% url 'confirm-urgency' requisition.transaction_id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" style="padding:10px 15px; background:#ff9800; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">
+                ✓ Confirm Urgency & Approve
+            </button>
+        </form>
+        <form method="post" action="{% url 'reject-requisition' requisition.transaction_id %}" style="display:inline; margin-left:10px;">
+            {% csrf_token %}
+            <button type="submit" style="padding:10px 15px; background:#dc3545; color:#fff; border:none; border-radius:5px; cursor:pointer;">
+                ✗ Reject (Not Urgent)
+            </button>
+        </form>
+    </div>
+{% endif %}
+
+<!-- Approve/Reject buttons: only visible if user can act and NOT pending urgency confirmation -->
+{% if can_act and requisition.status != 'pending_urgency_confirmation' %}
     <form method="post" action="{% url 'approve-requisition' requisition.transaction_id %}" style="display:inline;">
         {% csrf_token %}
         <button type="submit" style="padding:10px 15px; background:#28a745; color:#fff; border:none; border-radius:5px; cursor:pointer;">
@@ -91,6 +116,73 @@
             </form>
         </div>
     {% endif %}
+{% endif %}
+
+<!-- Phase 4: Approval History with Escalation Details -->
+{% if approval_trail %}
+<div style="margin-top:30px;">
+    <h3>Approval History</h3>
+    <table style="width:100%; border-collapse:collapse;">
+        <thead>
+            <tr style="background:#f8f9fa;">
+                <th style="text-align:left; padding:10px; border-bottom:2px solid #dee2e6;">Date/Time</th>
+                <th style="text-align:left; padding:10px; border-bottom:2px solid #dee2e6;">Approver</th>
+                <th style="text-align:left; padding:10px; border-bottom:2px solid #dee2e6;">Role</th>
+                <th style="text-align:left; padding:10px; border-bottom:2px solid #dee2e6;">Action</th>
+                <th style="text-align:left; padding:10px; border-bottom:2px solid #dee2e6;">Comment</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trail in approval_trail %}
+            <tr>
+                <td style="padding:10px; border-bottom:1px solid #dee2e6;">
+                    {{ trail.timestamp|date:"M d, Y H:i" }}
+                </td>
+                <td style="padding:10px; border-bottom:1px solid #dee2e6;">
+                    {{ trail.user.get_display_name }}
+                    {% if trail.auto_escalated %}
+                        <span style="background:#ffc107; color:#000; padding:2px 6px; border-radius:3px; font-size:0.85em; margin-left:5px;">
+                            ⚠ Auto-escalated
+                        </span>
+                    {% endif %}
+                    {% if trail.override %}
+                        <span style="background:#dc3545; color:#fff; padding:2px 6px; border-radius:3px; font-size:0.85em; margin-left:5px;">
+                            🚨 Admin Override
+                        </span>
+                    {% endif %}
+                </td>
+                <td style="padding:10px; border-bottom:1px solid #dee2e6;">
+                    {{ trail.role|title }}
+                </td>
+                <td style="padding:10px; border-bottom:1px solid #dee2e6;">
+                    {% if trail.action == 'approved' %}
+                        <span style="color:#28a745; font-weight:bold;">✓ Approved</span>
+                    {% elif trail.action == 'rejected' %}
+                        <span style="color:#dc3545; font-weight:bold;">✗ Rejected</span>
+                    {% elif trail.action == 'urgency_confirmed' %}
+                        <span style="color:#ff9800; font-weight:bold;">⚡ Urgency Confirmed</span>
+                    {% else %}
+                        {{ trail.action|title }}
+                    {% endif %}
+                </td>
+                <td style="padding:10px; border-bottom:1px solid #dee2e6;">
+                    {{ trail.comment }}
+                    {% if trail.escalation_reason %}
+                        <div style="margin-top:5px; padding:8px; background:#fff3cd; border-left:3px solid #ffc107; font-size:0.9em;">
+                            <strong>Escalation Reason:</strong> {{ trail.escalation_reason }}
+                        </div>
+                    {% endif %}
+                    {% if trail.skipped_roles %}
+                        <div style="margin-top:5px; padding:8px; background:#e7f3ff; border-left:3px solid #0d6efd; font-size:0.9em;">
+                            <strong>Skipped Roles:</strong> {{ trail.skipped_roles|join:", " }}
+                        </div>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endif %}
 
 {% endblock %}

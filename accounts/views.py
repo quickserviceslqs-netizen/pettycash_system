@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 ROLE_ACCESS = {
     "admin": ["transactions", "treasury", "workflow", "reports"],
     "staff": ["transactions"],  # Removed treasury for regular staff
-    "treasury": ["treasury"],
+    "treasury": ["treasury", "workflow", "transactions"],  # Phase 5: Treasury needs workflow for approval/validation
     "fp&a": ["transactions", "reports"],
     "department_head": ["workflow"],
     "branch_manager": ["workflow"],

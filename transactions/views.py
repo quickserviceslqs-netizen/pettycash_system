@@ -62,7 +62,19 @@ def transactions_home(request):
 def requisition_detail(request, requisition_id):
     requisition = get_object_or_404(Requisition, transaction_id=requisition_id)
     can_act = requisition.can_approve(request.user)
-    return render(request, "transactions/requisition_detail.html", {"requisition": requisition, "can_act": can_act, "user": request.user})
+    
+    # Get approval trail with escalation details (Phase 4)
+    approval_trail = ApprovalTrail.objects.filter(
+        requisition=requisition
+    ).select_related('user').order_by('timestamp')
+    
+    context = {
+        "requisition": requisition,
+        "can_act": can_act,
+        "user": request.user,
+        "approval_trail": approval_trail,
+    }
+    return render(request, "transactions/requisition_detail.html", context)
 
 
 # -----------------------------

@@ -89,6 +89,48 @@ class PaymentExecutionService:
     """Orchestrate atomic payment execution with all safeguards."""
     
     @staticmethod
+    def assign_executor(payment: Payment):
+        """
+        Phase 5: Assign executor for payment, ensuring executor ≠ requester.
+        For Treasury-originated requests, assign different treasury officer or escalate to CFO.
+        
+        Returns: (executor_user, escalation_message)
+        """
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        requester = payment.requisition.requested_by
+        
+        # Find alternate treasury officer (exclude requester)
+        treasury_officers = User.objects.filter(
+            role='treasury',
+            is_active=True
+        ).exclude(id=requester.id)
+        
+        if treasury_officers.exists():
+            # Assign first available alternate officer
+            executor = treasury_officers.first()
+            return executor, None
+        else:
+            # No alternate treasury officer available - escalate to CFO
+            cfo = User.objects.filter(role='cfo', is_active=True).first()
+            if cfo:
+                escalation_msg = (
+                    f"No alternate Treasury officer available for payment {payment.payment_id}. "
+                    f"Requester: {requester.get_display_name()}. CFO must assign executor."
+                )
+                # Send notification to CFO (placeholder - implement email/notification later)
+                return None, escalation_msg
+            else:
+                # Last resort: admin
+                admin = User.objects.filter(is_superuser=True, is_active=True).first()
+                escalation_msg = (
+                    f"No alternate Treasury officer or CFO available. "
+                    f"Admin must assign executor for payment {payment.payment_id}."
+                )
+                return None, escalation_msg
+    
+    @staticmethod
     def can_execute_payment(payment: Payment, executor_user) -> tuple[bool, str]:
         """
         Validate if executor can process payment.
@@ -202,8 +244,8 @@ class PaymentExecutionService:
             payment.executor = executor_user
             payment.save(update_fields=['status', 'executor'])
             
-            # Step 8: Check if replenishment needed
-            if fund.check_reorder_needed():
+            # Step 8: Check if replenishment needed (Phase 5: Auto-trigger)
+            if fund.current_balance < fund.reorder_level:
                 # Check if replenishment already pending
                 pending = ReplenishmentRequest.objects.filter(
                     fund=fund,
@@ -211,7 +253,8 @@ class PaymentExecutionService:
                 ).exists()
                 
                 if not pending:
-                    ReplenishmentRequest.objects.create(
+                    # Auto-create replenishment request
+                    replenishment = ReplenishmentRequest.objects.create(
                         request_id=uuid.uuid4(),
                         fund=fund,
                         current_balance=fund.current_balance,
@@ -219,6 +262,8 @@ class PaymentExecutionService:
                         status='pending',
                         auto_triggered=True,
                     )
+                    # TODO: Send notification to treasury head about replenishment need
+                    print(f"Auto-triggered replenishment request {replenishment.request_id} for fund {fund.fund_id}")
             
             return True, f"Payment executed successfully. Reference: {execution.gateway_reference}"
         
@@ -353,7 +398,9 @@ class ReconciliationService:
         variance.approved_at = timezone.now()
         variance.save(update_fields=['status', 'approved_by', 'approved_at'])
         
-        # Apply variance adjustment to fund if needed
-        # TODO: Implement variance credit/debit logic
+        # Phase 5: Apply variance adjustment to fund balance
+        if variance.fund and variance.variance_amount != 0:
+            variance.fund.current_balance += variance.variance_amount
+            variance.fund.save(update_fields=['current_balance', 'updated_at'])
         
         return True, "Variance approved by CFO"
