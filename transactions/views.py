@@ -158,7 +158,12 @@ def approve_requisition(request, requisition_id):
         requisition.next_approver = get_object_or_404(User, id=next_user_id)
         requisition.workflow_sequence = workflow_seq
         requisition.save(update_fields=["next_approver", "workflow_sequence"])
-        messages.success(request, f"Requisition {requisition_id} approved. Moved to next approver.")
+        
+        # Customize message based on role
+        if request.user.role.lower() == 'treasury':
+            messages.success(request, f"Requisition {requisition_id} validated. Moved to next approver for final approval.")
+        else:
+            messages.success(request, f"Requisition {requisition_id} approved. Moved to next approver.")
     else:
         # Final approval - mark as reviewed and create payment record for treasury
         requisition.status = "reviewed"
