@@ -68,4 +68,29 @@
     </form>
 {% endif %}
 
+<!-- Phase 4: Admin Override Button (Emergency Approval) -->
+{% if user.is_superuser or user.role == 'admin' %}
+    {% if requisition.status not in 'reviewed,paid,rejected' %}
+        <div style="margin-top:20px; padding:15px; background:#fff3cd; border:1px solid #ffc107; border-radius:5px;">
+            <h4 style="margin-top:0; color:#856404;">⚠️ Admin Override (Emergency Only)</h4>
+            <p style="color:#856404; margin-bottom:10px;">
+                Use this only in emergency situations. This action bypasses normal approval workflow and is fully logged for audit.
+            </p>
+            <form method="post" action="{% url 'admin-override' requisition.transaction_id %}" onsubmit="return confirm('Are you sure you want to override normal approval process? This action will be logged.');">
+                {% csrf_token %}
+                <textarea 
+                    name="justification" 
+                    placeholder="REQUIRED: Explain why admin override is necessary (e.g., emergency, all approvers unavailable, urgent payment needed)"
+                    style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ffc107; border-radius:3px;"
+                    rows="3"
+                    required
+                ></textarea>
+                <button type="submit" style="padding:10px 15px; background:#ff9800; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">
+                    🚨 Force Approve (Override)
+                </button>
+            </form>
+        </div>
+    {% endif %}
+{% endif %}
+
 {% endblock %}

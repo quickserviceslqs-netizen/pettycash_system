@@ -218,6 +218,84 @@ def reject_requisition(request, requisition_id):
 
 
 # -----------------------------
+# Phase 4: Admin Override (Emergency Approval)
+# -----------------------------
+@login_required
+@transaction.atomic
+def admin_override_approval(request, requisition_id):
+    """
+    Phase 4: Admin override to force-approve a requisition in emergency situations.
+    
+    Requirements:
+    - User must be superuser or admin role
+    - Justification is REQUIRED
+    - Logged with override=True in ApprovalTrail
+    - Bypasses normal can_approve() checks
+    """
+    # Only superusers or admin role can override
+    if not (request.user.is_superuser or request.user.role.lower() == 'admin'):
+        return HttpResponseForbidden("Only administrators can override approvals.")
+    
+    # Lock the row for update
+    try:
+        requisition = Requisition.objects.select_for_update().get(
+            transaction_id=requisition_id
+        )
+    except Requisition.DoesNotExist:
+        messages.error(request, "Requisition not found.")
+        return redirect("transactions-home")
+    
+    # Validate status - cannot override already approved/rejected requisitions
+    if requisition.status in ['reviewed', 'paid', 'rejected']:
+        messages.error(request, f"Cannot override requisition with status: {requisition.status}")
+        return redirect("transactions-home")
+    
+    # Justification is REQUIRED for override
+    justification = request.POST.get("justification", "").strip()
+    if not justification:
+        messages.error(request, "Justification is required for admin override.")
+        return redirect("requisition-detail", requisition_id=requisition_id)
+    
+    # Create override trail entry
+    ApprovalTrail.objects.create(
+        requisition=requisition,
+        user=request.user,
+        role=request.user.role,
+        action="approved",
+        comment=f"ADMIN OVERRIDE: {justification}",
+        timestamp=timezone.now(),
+        auto_escalated=False,
+        override=True,  # Mark as override
+    )
+    
+    # Force approve - mark as reviewed
+    requisition.status = "reviewed"
+    requisition.next_approver = None
+    requisition.workflow_sequence = []
+    requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
+    
+    # Create Payment record for treasury to execute
+    Payment.objects.get_or_create(
+        requisition=requisition,
+        defaults={
+            'amount': requisition.amount,
+            'method': 'bank_transfer',
+            'destination': '',
+            'status': 'pending',
+            'otp_required': True,
+        }
+    )
+    
+    messages.warning(
+        request, 
+        f"⚠️ ADMIN OVERRIDE: Requisition {requisition_id} force-approved. "
+        f"This action has been logged for audit."
+    )
+    
+    return redirect("transactions-home")
+
+
+# -----------------------------
 # Phase 3: Confirm Urgency (First Approver)
 # -----------------------------
 @login_required

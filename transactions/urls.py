@@ -7,6 +7,7 @@ from transactions.views import (
     reject_requisition,
     requisition_detail,
     confirm_urgency,  # Phase 3: Urgency confirmation
+    admin_override_approval,  # Phase 4: Admin override
 )
 
 # ---------------------------------------------------------------------
@@ -43,6 +44,9 @@ urlpatterns = [
     
     # Phase 3: Urgency confirmation by first approver
     path('confirm-urgency/<uuid:requisition_id>/', protected(confirm_urgency), name='confirm-urgency'),
+    
+    # Phase 4: Admin override (emergency approval)
+    path('admin-override/<uuid:requisition_id>/', login_required(admin_override_approval), name='admin-override'),
 
     # Requisition detail page
     path('detail/<uuid:requisition_id>/', protected(requisition_detail), name='requisition-detail'),
