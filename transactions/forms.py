@@ -19,3 +19,16 @@ class RequisitionForm(forms.ModelForm):
             'is_urgent': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'urgency_reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+    
+    def clean(self):
+        """Phase 3: Validate urgency_reason is required when is_urgent=True"""
+        cleaned_data = super().clean()
+        is_urgent = cleaned_data.get('is_urgent')
+        urgency_reason = cleaned_data.get('urgency_reason')
+        
+        if is_urgent and not urgency_reason:
+            raise forms.ValidationError(
+                "Urgency reason is required when marking a requisition as urgent."
+            )
+        
+        return cleaned_data

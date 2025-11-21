@@ -5,7 +5,8 @@ from transactions.views import (
     create_requisition,
     approve_requisition,
     reject_requisition,
-    requisition_detail,  # Added import
+    requisition_detail,
+    confirm_urgency,  # Phase 3: Urgency confirmation
 )
 
 # ---------------------------------------------------------------------
@@ -39,7 +40,10 @@ urlpatterns = [
     path('create/', login_required(create_requisition), name='create-requisition'),
     path('approve/<uuid:requisition_id>/', protected(approve_requisition), name='approve-requisition'),
     path('reject/<uuid:requisition_id>/', protected(reject_requisition), name='reject-requisition'),
+    
+    # Phase 3: Urgency confirmation by first approver
+    path('confirm-urgency/<uuid:requisition_id>/', protected(confirm_urgency), name='confirm-urgency'),
 
-    # NEW: Requisition detail page
+    # Requisition detail page
     path('detail/<uuid:requisition_id>/', protected(requisition_detail), name='requisition-detail'),
 ]

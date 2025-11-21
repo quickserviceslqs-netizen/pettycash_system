@@ -35,8 +35,9 @@ def transactions_home(request):
     my_requisitions = Requisition.objects.filter(requested_by=user).order_by('-created_at')
 
     if is_approver:
+        # Phase 3: Include both pending and pending_urgency_confirmation
         pending_for_me = Requisition.objects.filter(
-            status="pending",
+            status__in=["pending", "pending_urgency_confirmation"],
             next_approver=user
         ).exclude(requested_by=user).order_by('-created_at')
         show_pending_section = pending_for_me.exists()
@@ -76,7 +77,13 @@ def create_requisition(request):
         if form.is_valid():
             requisition = form.save(commit=False)
             requisition.requested_by = request.user
-            requisition.status = "pending"
+            
+            # Phase 3: Set initial status based on urgency
+            if requisition.is_urgent:
+                requisition.status = "pending_urgency_confirmation"
+            else:
+                requisition.status = "pending"
+            
             requisition.save()
 
             try:
@@ -86,7 +93,10 @@ def create_requisition(request):
                 requisition.delete()
                 return redirect("transactions-home")
 
-            messages.success(request, f"Requisition {requisition.transaction_id} created successfully.")
+            if requisition.is_urgent:
+                messages.success(request, f"Urgent requisition {requisition.transaction_id} created. Awaiting urgency confirmation from first approver.")
+            else:
+                messages.success(request, f"Requisition {requisition.transaction_id} created successfully.")
             return redirect("transactions-home")
         else:
             messages.error(request, "Please correct the errors below.")
@@ -204,4 +214,102 @@ def reject_requisition(request, requisition_id):
     requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
     
     messages.success(request, f"Requisition {requisition_id} rejected.")
+    return redirect("transactions-home")
+
+
+# -----------------------------
+# Phase 3: Confirm Urgency (First Approver)
+# -----------------------------
+@login_required
+@transaction.atomic
+def confirm_urgency(request, requisition_id):
+    """
+    Phase 3: First approver confirms or denies urgency claim.
+    
+    If confirmed: Apply fast-track logic (skip to final approver if allowed)
+    If denied: Follow normal workflow (no fast-track)
+    """
+    # Lock the row for update
+    try:
+        requisition = Requisition.objects.select_for_update().get(
+            transaction_id=requisition_id
+        )
+    except Requisition.DoesNotExist:
+        messages.error(request, "Requisition not found.")
+        return redirect("transactions-home")
+    
+    # Validate status - must be pending_urgency_confirmation
+    if requisition.status != 'pending_urgency_confirmation':
+        messages.error(request, "This requisition is not awaiting urgency confirmation.")
+        return redirect("transactions-home")
+    
+    # Validate user is the next approver
+    if not requisition.next_approver or request.user.id != requisition.next_approver.id:
+        return HttpResponseForbidden("Only the first approver can confirm urgency.")
+    
+    # Get action from POST (confirm or deny)
+    action = request.POST.get("action")
+    comment = request.POST.get("comment", "")
+    
+    if action == "confirm":
+        # Create urgency_confirmed trail entry
+        ApprovalTrail.objects.create(
+            requisition=requisition,
+            user=request.user,
+            role=request.user.role,
+            action="urgency_confirmed",
+            comment=comment or "Urgency confirmed by first approver",
+            timestamp=timezone.now(),
+            auto_escalated=False,
+        )
+        
+        # Apply fast-track if allowed for this tier
+        if (requisition.applied_threshold 
+            and requisition.applied_threshold.allow_urgent_fasttrack
+            and not requisition.tier.startswith("Tier 4")):
+            
+            # Fast-track: Jump to final approver
+            workflow_seq = requisition.workflow_sequence or []
+            if len(workflow_seq) > 1:
+                final_approver = workflow_seq[-1]
+                requisition.workflow_sequence = [final_approver]
+                requisition.next_approver = get_object_or_404(User, id=final_approver["user_id"])
+                requisition.status = "pending"
+                requisition.save(update_fields=["workflow_sequence", "next_approver", "status"])
+                messages.success(request, f"Urgency confirmed! Fast-tracked to final approver: {requisition.next_approver.username}")
+            else:
+                # Only one approver - mark as reviewed
+                requisition.status = "reviewed"
+                requisition.next_approver = None
+                requisition.workflow_sequence = []
+                requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
+                messages.success(request, "Urgency confirmed! Requisition approved.")
+        else:
+            # Tier 4 or fast-track not allowed - follow normal workflow
+            requisition.status = "pending"
+            requisition.save(update_fields=["status"])
+            messages.success(request, f"Urgency confirmed! Following normal approval workflow (Tier 4 or fast-track disabled).")
+        
+    elif action == "deny":
+        # Deny urgency - create rejection trail entry
+        ApprovalTrail.objects.create(
+            requisition=requisition,
+            user=request.user,
+            role=request.user.role,
+            action="rejected",
+            comment=comment or "Urgency claim denied - requisition rejected",
+            timestamp=timezone.now(),
+            auto_escalated=False,
+        )
+        
+        # Reject the requisition
+        requisition.status = "rejected"
+        requisition.next_approver = None
+        requisition.workflow_sequence = []
+        requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
+        messages.success(request, f"Urgency denied. Requisition {requisition_id} rejected.")
+    
+    else:
+        messages.error(request, "Invalid action. Please confirm or deny urgency.")
+    
     return redirect("transactions-home")
