@@ -171,7 +171,7 @@ def approve_requisition(request, requisition_id):
             requisition=requisition,
             defaults={
                 'amount': requisition.amount,
-                'method': 'bank_transfer',
+                'method': 'mpesa',  # Default to M-Pesa
                 'destination': '',
                 'status': 'pending',
                 'otp_required': True,
