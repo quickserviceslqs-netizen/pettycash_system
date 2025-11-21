@@ -167,7 +167,7 @@ def approve_requisition(request, requisition_id):
         requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
         
         # Create Payment record for treasury to execute (within same transaction)
-        Payment.objects.get_or_create(
+        payment, created = Payment.objects.get_or_create(
             requisition=requisition,
             defaults={
                 'amount': requisition.amount,
@@ -177,7 +177,13 @@ def approve_requisition(request, requisition_id):
                 'otp_required': True,
             }
         )
-        messages.success(request, f"Requisition {requisition_id} fully approved! Ready for payment.")
+        
+        # If approver is treasury, redirect to payment execution
+        if request.user.role.lower() == 'treasury':
+            messages.success(request, f"Requisition {requisition_id} validated! Please execute payment.")
+            return redirect('treasury-dashboard')  # Redirect to treasury dashboard to execute payment
+        else:
+            messages.success(request, f"Requisition {requisition_id} fully approved! Ready for payment.")
 
     return redirect("transactions-home")
 
