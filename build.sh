@@ -10,9 +10,10 @@ pip install -r requirements.txt
 python manage.py collectstatic --no-input
 
 # Run migrations with conflict resolution
-# Fake treasury migrations if tables already exist (production migration fix)
+# Fake treasury migrations if tables/columns already exist (production migration fix)
 python manage.py migrate treasury 0002 --fake 2>/dev/null || true
 python manage.py migrate treasury 0003 --fake 2>/dev/null || true
+python manage.py migrate treasury 0005 --fake 2>/dev/null || true
 python manage.py migrate treasury --fake-initial --no-input 2>/dev/null || true
 
 # Run all other migrations normally
