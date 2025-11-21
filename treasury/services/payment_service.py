@@ -12,6 +12,7 @@ Core principles:
 import uuid
 import random
 import string
+import hashlib
 from decimal import Decimal
 from datetime import timedelta
 
@@ -38,6 +39,13 @@ class OTPService:
     def generate_otp() -> str:
         """Generate 6-digit OTP."""
         return ''.join(random.choices(string.digits, k=OTPService.OTP_LENGTH))
+    
+    @staticmethod
+    def hash_otp(otp: str, payment_id: str) -> str:
+        """Hash OTP with payment ID as salt using SHA-256."""
+        # Use payment_id as salt for additional security
+        salted_otp = f"{otp}{payment_id}{settings.SECRET_KEY}"
+        return hashlib.sha256(salted_otp.encode()).hexdigest()
     
     @staticmethod
     def send_otp_email(email: str, otp: str) -> bool:
@@ -231,10 +239,13 @@ class PaymentExecutionService:
         # Generate OTP
         otp = OTPService.generate_otp()
         
-        # In production: hash and store OTP
-        # For now: store plaintext (security risk - fix in production)
+        # Hash OTP with payment_id as salt and store securely
+        otp_hash = OTPService.hash_otp(otp, str(payment.payment_id))
+        payment.otp_hash = otp_hash
         payment.otp_sent_timestamp = timezone.now()
-        payment.save(update_fields=['otp_sent_timestamp'])
+        payment.otp_verified = False  # Reset verification status
+        payment.otp_verified_timestamp = None
+        payment.save(update_fields=['otp_hash', 'otp_sent_timestamp', 'otp_verified', 'otp_verified_timestamp'])
         
         # Send via email
         executor_email = payment.requisition.requester.email  # In real scenario, different user
@@ -246,17 +257,29 @@ class PaymentExecutionService:
     @staticmethod
     def verify_otp(payment: Payment, provided_otp: str) -> tuple[bool, str]:
         """
-        Verify provided OTP against expected value.
+        Verify provided OTP against stored hash.
         Returns (success, message)
         """
+        # Check if OTP exists
+        if not payment.otp_hash:
+            return False, "No OTP has been sent for this payment"
+        
+        # Check if already verified (prevent replay attacks)
+        if payment.otp_verified:
+            return False, "OTP has already been used"
+        
         # Check if OTP has expired
         if OTPService.is_otp_expired(payment):
-            return False, "OTP has expired"
+            return False, "OTP has expired. Please request a new one."
         
-        # In production: compare hashed values
-        # For now: this is a stub that should store hashed OTP
-        # TODO: Implement proper OTP storage and verification
+        # Hash provided OTP and compare with stored hash
+        provided_hash = OTPService.hash_otp(provided_otp, str(payment.payment_id))
         
+        # Constant-time comparison to prevent timing attacks
+        if not hashlib.compare_digest(provided_hash, payment.otp_hash):
+            return False, "Invalid OTP. Please check and try again."
+        
+        # OTP is valid - mark as verified
         payment.otp_verified = True
         payment.otp_verified_timestamp = timezone.now()
         payment.save(update_fields=['otp_verified', 'otp_verified_timestamp'])

@@ -70,7 +70,7 @@ ALTER TABLE treasury_payment DROP COLUMN IF EXISTS payment_id;
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('treasury', '0002_phase6_dashboard_models'),
+        ('treasury', '0001_initial'),
     ]
 
     operations = [

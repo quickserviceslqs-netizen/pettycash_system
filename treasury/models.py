@@ -83,6 +83,7 @@ class Payment(models.Model):
     
     # 2FA
     otp_required = models.BooleanField(default=True)
+    otp_hash = models.CharField(max_length=64, blank=True, null=True, help_text="SHA-256 hash of OTP")
     otp_sent_timestamp = models.DateTimeField(null=True, blank=True)
     otp_verified = models.BooleanField(default=False)
     otp_verified_timestamp = models.DateTimeField(null=True, blank=True)

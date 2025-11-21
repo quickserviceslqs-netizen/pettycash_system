@@ -9,7 +9,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('treasury', '0001_initial'),
+        ('treasury', '0002_add_payment_id'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
