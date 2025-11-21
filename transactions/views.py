@@ -34,16 +34,28 @@ def transactions_home(request):
 
     my_requisitions = Requisition.objects.filter(requested_by=user).order_by('-created_at')
 
-    if is_approver:
-        # Phase 3: Include both pending and pending_urgency_confirmation
+    # Treasury sees reviewed requisitions ready for payment
+    if user.role.lower() == 'treasury':
+        ready_for_payment = Requisition.objects.filter(
+            status="reviewed"
+        ).select_related('requested_by').order_by('-created_at')
+        show_payment_section = ready_for_payment.exists()
+        pending_for_me = Requisition.objects.none()
+        show_pending_section = False
+    elif is_approver:
+        # Other approvers see pending approvals
         pending_for_me = Requisition.objects.filter(
             status__in=["pending", "pending_urgency_confirmation"],
             next_approver=user
         ).exclude(requested_by=user).order_by('-created_at')
         show_pending_section = pending_for_me.exists()
+        ready_for_payment = Requisition.objects.none()
+        show_payment_section = False
     else:
         pending_for_me = Requisition.objects.none()
         show_pending_section = False
+        ready_for_payment = Requisition.objects.none()
+        show_payment_section = False
 
     context = {
         "user": user,
@@ -51,6 +63,8 @@ def transactions_home(request):
         "requisitions": my_requisitions,
         "pending_for_me": pending_for_me,
         "show_pending_section": show_pending_section,
+        "ready_for_payment": ready_for_payment,
+        "show_payment_section": show_payment_section,
     }
     return render(request, "transactions/home.html", context)
 
