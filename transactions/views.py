@@ -85,7 +85,7 @@ def create_requisition(request):
     from .forms import RequisitionForm
 
     if request.method == "POST":
-        form = RequisitionForm(request.POST)
+        form = RequisitionForm(request.POST, request.FILES)
         if form.is_valid():
             requisition = form.save(commit=False)
             requisition.requested_by = request.user

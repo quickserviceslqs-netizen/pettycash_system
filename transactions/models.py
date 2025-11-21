@@ -48,6 +48,7 @@ class Requisition(models.Model):
     cost_center = models.ForeignKey(CostCenter, on_delete=models.SET_NULL, null=True, blank=True)
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     purpose = models.TextField()
+    receipt = models.FileField(upload_to='receipts/', help_text='Upload receipt/supporting document')
     is_urgent = models.BooleanField(default=False)
     urgency_reason = models.TextField(blank=True, null=True)
 

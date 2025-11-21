@@ -37,6 +37,18 @@
         <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Purpose</th>
         <td style="padding:8px; border-bottom:1px solid #ccc;">{{ requisition.purpose }}</td>
     </tr>
+    <tr>
+        <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Receipt/Document</th>
+        <td style="padding:8px; border-bottom:1px solid #ccc;">
+            {% if requisition.receipt %}
+                <a href="{{ requisition.receipt.url }}" target="_blank" style="color:#0d6efd; text-decoration:none;">
+                    📎 View Receipt
+                </a>
+            {% else %}
+                <em>No receipt uploaded</em>
+            {% endif %}
+        </td>
+    </tr>
 </table>
 
 <!-- Banner: cannot approve your own requisition -->

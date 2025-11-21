@@ -8,7 +8,7 @@
 
     <h2 style="text-align:center; margin-bottom:20px;">Create New Requisition</h2>
 
-    <form method="post" novalidate>
+    <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         {% if form.non_field_errors %}
             <div style="color:red; margin-bottom:10px;">
@@ -87,6 +87,16 @@
                 {% if form.purpose.errors %}
                     <div style="color:red;">{{ form.purpose.errors }}</div>
                 {% endif %}
+            </div>
+
+            <!-- Receipt -->
+            <div>
+                <label for="{{ form.receipt.id_for_label }}">Receipt/Supporting Document <span style="color:red;">*</span></label><br>
+                {{ form.receipt }}
+                {% if form.receipt.errors %}
+                    <div style="color:red;">{{ form.receipt.errors }}</div>
+                {% endif %}
+                <small style="color:#666;">Upload receipt, invoice, or supporting document (PDF, Image)</small>
             </div>
 
             <!-- Is Urgent -->
