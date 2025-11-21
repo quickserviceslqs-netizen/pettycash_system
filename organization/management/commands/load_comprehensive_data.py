@@ -126,7 +126,7 @@ class Command(BaseCommand):
                 'department': operations_dept
             },
             
-            # Regional Manager (Centralized)
+            # Regional Manager (Nairobi Region)
             {
                 'username': 'Dwanyiri',
                 'email': 'd.wanyiri@quickservices.com',
@@ -134,7 +134,30 @@ class Command(BaseCommand):
                 'last_name': 'Wanyiri',
                 'role': 'regional_manager',
                 'branch': None,
-                'department': None
+                'department': None,
+                'region': nairobi_region
+            },
+            
+            # Field Staff (Nairobi Region)
+            {
+                'username': 'J.Kamau',
+                'email': 'j.kamau@quickservices.com',
+                'first_name': 'James',
+                'last_name': 'Kamau',
+                'role': 'staff',
+                'branch': None,  # Field staff not tied to branch
+                'department': None,
+                'region': nairobi_region
+            },
+            {
+                'username': 'M.Otieno',
+                'email': 'm.otieno@quickservices.com',
+                'first_name': 'Mary',
+                'last_name': 'Otieno',
+                'role': 'staff',
+                'branch': None,  # Field staff not tied to branch
+                'department': None,
+                'region': nairobi_region
             },
             
             # FP&A (Centralized)
@@ -195,6 +218,7 @@ class Command(BaseCommand):
 
         created_count = 0
         for user_data in users_data:
+            region = user_data.pop('region', None)  # Extract region if present
             user, created = User.objects.get_or_create(
                 username=user_data['username'],
                 defaults={
@@ -205,6 +229,7 @@ class Command(BaseCommand):
                     'branch': user_data['branch'],
                     'department': user_data['department'],
                     'company': company,
+                    'region': region,  # Set region for field staff
                 }
             )
             if created:
