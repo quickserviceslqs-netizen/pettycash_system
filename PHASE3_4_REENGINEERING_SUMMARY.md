@@ -29,16 +29,16 @@ Successfully re-engineered the approval workflow system according to Phase 3 (Dy
 ### ✅ 3.2 Origin-Based Approval Sequences
 
 #### Branch Origin
-- **Tier 1**: `branch_manager` → `treasury`
-- **Tier 2**: `branch_manager` → `department_head` → `treasury`
-- **Tier 3**: `branch_manager` → `regional_manager` → `treasury` → `fp&a`
-- **Tier 4**: `regional_manager` → `treasury` → `cfo` → `fp&a`
+- **Tier 1**: `branch_manager` (approves) → `treasury` (validates & pays)
+- **Tier 2**: `branch_manager` → `department_head` (approve) → `treasury` (validates & pays)
+- **Tier 3**: `branch_manager` → `regional_manager` (approve) → `treasury` (validates & pays) → `fp&a` (reviews)
+- **Tier 4**: `regional_manager` → `cfo` (approve) → `treasury` (validates & pays) → `fp&a` (reviews)
 
 #### HQ Origin
-- **Tier 1**: `department_head` → `treasury`
-- **Tier 2**: `department_head` → `group_finance_manager` → `treasury`
-- **Tier 3**: `department_head` → `group_finance_manager` → `treasury` → `fp&a`
-- **Tier 4**: `group_finance_manager` → `treasury` → `cfo` → `fp&a`
+- **Tier 1**: `department_head` (approves) → `treasury` (validates & pays)
+- **Tier 2**: `department_head` → `group_finance_manager` (approve) → `treasury` (validates & pays)
+- **Tier 3**: `department_head` → `group_finance_manager` (approve) → `treasury` (validates & pays) → `fp&a` (reviews)
+- **Tier 4**: `group_finance_manager` → `cfo` (approve) → `treasury` (validates & pays) → `fp&a` (reviews)
 
 ### ✅ 3.3 Enhanced Workflow Statuses
 
@@ -272,40 +272,43 @@ for i, r in enumerate(resolved):
 ### Tier 1: Routine ($5,000)
 **Branch origin:**
 1. Staff creates requisition ($5,000)
-2. Branch Manager approves
-3. Treasury validates and executes payment
-4. Status: `reviewed`
+2. Branch Manager **approves**
+3. Treasury **validates and executes payment**
+4. Status: `paid`
 
-**Expected flow:** 2 approvers (BM → Treasury)
+**Expected flow:** 1 approval + 1 validation (BM approves → Treasury validates & pays)
 
 ### Tier 2: Departmental ($25,000)
 **Branch origin:**
 1. Staff creates requisition ($25,000)
-2. Branch Manager approves
-3. Department Head approves
-4. Treasury validates and executes payment
+2. Branch Manager **approves**
+3. Department Head **approves**
+4. Treasury **validates and executes payment**
+5. Status: `paid`
 
-**Expected flow:** 3 approvers (BM → DH → Treasury)
+**Expected flow:** 2 approvals + 1 validation (BM → DH approve → Treasury validates & pays)
 
 ### Tier 3: Regional ($100,000)
 **Branch origin:**
 1. Staff creates requisition ($100,000)
-2. Branch Manager approves
-3. Regional Manager approves
-4. Treasury validates
-5. FP&A reviews
+2. Branch Manager **approves**
+3. Regional Manager **approves**
+4. Treasury **validates and executes payment**
+5. FP&A **reviews** (post-payment)
+6. Status: `reviewed`
 
-**Expected flow:** 4 approvers (BM → RM → Treasury → FP&A)
+**Expected flow:** 2 approvals + 1 validation + 1 review (BM → RM approve → Treasury validates & pays → FP&A reviews)
 
 ### Tier 4: HQ-Level ($500,000)
 **Branch origin:**
 1. Staff creates requisition ($500,000)
-2. Regional Manager approves
-3. Treasury validates
-4. CFO approves (mandatory for Tier 4)
-5. FP&A reviews
+2. Regional Manager **approves**
+3. CFO **approves** (mandatory for Tier 4)
+4. Treasury **validates and executes payment**
+5. FP&A **reviews** (post-payment)
+6. Status: `reviewed`
 
-**Expected flow:** 4 approvers (RM → Treasury → CFO → FP&A)
+**Expected flow:** 2 approvals + 1 validation + 1 review (RM → CFO approve → Treasury validates & pays → FP&A reviews)
 **Note:** Cannot fast-track even if urgent
 
 ### Urgent Fast-Track (Tier 1-3 only)
@@ -313,10 +316,10 @@ for i, r in enumerate(resolved):
 1. Staff creates URGENT requisition ($25,000)
 2. ~~Branch Manager~~ (skipped due to urgency)
 3. ~~Department Head~~ (skipped due to urgency)
-4. Treasury validates and executes
-5. Status: `reviewed`
+4. Treasury **validates and executes payment** (final step never skipped)
+5. Status: `paid`
 
-**Expected flow:** Jump to final approver (Treasury)
+**Expected flow:** Jump to Treasury for validation & payment (no approvals needed for urgent)
 
 ---
 
