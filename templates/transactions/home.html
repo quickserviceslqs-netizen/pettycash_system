@@ -75,7 +75,11 @@
     <!-- Section: Pending Approvals for Approvers Only -->
     {% if is_approver and show_pending_section %}
     <section>
-        <h3>Requisitions Pending My Approval</h3>
+        {% if user.role == 'treasury' %}
+            <h3>Requisitions Pending My Validation</h3>
+        {% else %}
+            <h3>Requisitions Pending My Approval</h3>
+        {% endif %}
 
         <table style="width:100%; border-collapse:collapse;">
             <thead>
@@ -96,7 +100,11 @@
                         {% if req.requested_by != user %}
                             <form action="{% url 'approve-requisition' req.transaction_id %}" method="post" style="display:inline;">
                                 {% csrf_token %}
-                                <button type="submit" style="padding:5px 10px; background:#28a745; color:#fff; border:none; border-radius:3px;">Approve</button>
+                                {% if user.role == 'treasury' %}
+                                    <button type="submit" style="padding:5px 10px; background:#0d6efd; color:#fff; border:none; border-radius:3px; font-weight:bold;">Validate & Pay</button>
+                                {% else %}
+                                    <button type="submit" style="padding:5px 10px; background:#28a745; color:#fff; border:none; border-radius:3px;">Approve</button>
+                                {% endif %}
                             </form>
                             <form action="{% url 'reject-requisition' req.transaction_id %}" method="post" style="display:inline;">
                                 {% csrf_token %}
