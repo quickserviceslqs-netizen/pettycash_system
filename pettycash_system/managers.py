@@ -72,3 +72,36 @@ class RequisitionManager(models.Manager):
     def current_company(self):
         """Get requisitions for the current request's company."""
         return self.get_queryset().current_company()
+
+
+class PaymentQuerySet(models.QuerySet):
+    """QuerySet for Payments with company-based filtering via requisition."""
+    
+    def for_company(self, company):
+        """Filter payments by company through requisition's requester."""
+        if company:
+            return self.filter(requisition__requested_by__company=company)
+        return self.none()
+    
+    def current_company(self):
+        """Filter by current request's company."""
+        company = get_current_company()
+        if company:
+            return self.filter(requisition__requested_by__company=company)
+        return self  # Superuser sees all
+
+
+class PaymentManager(models.Manager):
+    """Manager for Payment model with company isolation via requisition."""
+    
+    def get_queryset(self):
+        """Return a PaymentQuerySet."""
+        return PaymentQuerySet(self.model, using=self._db)
+    
+    def for_company(self, company):
+        """Get payments for a specific company."""
+        return self.get_queryset().for_company(company)
+    
+    def current_company(self):
+        """Get payments for the current request's company."""
+        return self.get_queryset().current_company()
