@@ -74,8 +74,30 @@ def transactions_home(request):
 # -----------------------------
 @login_required
 def requisition_detail(request, requisition_id):
+    from treasury.models import Payment
+    
     requisition = get_object_or_404(Requisition, transaction_id=requisition_id)
     can_act = requisition.can_approve(request.user)
+    
+    # Check if Treasury can execute payment (reviewed status)
+    can_execute_payment = (
+        request.user.role.lower() == 'treasury' and 
+        requisition.status == 'reviewed'
+    )
+    
+    # Get or create payment record for reviewed requisitions
+    payment = None
+    if requisition.status == 'reviewed':
+        payment, _ = Payment.objects.get_or_create(
+            requisition=requisition,
+            defaults={
+                'amount': requisition.amount,
+                'method': 'mpesa',
+                'destination': '',
+                'status': 'pending',
+                'otp_required': True,
+            }
+        )
     
     # Get approval trail with escalation details (Phase 4)
     approval_trail = ApprovalTrail.objects.filter(
@@ -85,6 +107,8 @@ def requisition_detail(request, requisition_id):
     context = {
         "requisition": requisition,
         "can_act": can_act,
+        "can_execute_payment": can_execute_payment,
+        "payment": payment,
         "user": request.user,
         "approval_trail": approval_trail,
     }

@@ -51,7 +51,187 @@
     </tr>
 </table>
 
-<!-- Treasury: Review attachment reminder -->
+<!-- Treasury: Payment Execution Interface (for reviewed requisitions) -->
+{% if can_execute_payment %}
+    <div style="padding:20px; background:#e7f1ff; border:2px solid #0d6efd; border-radius:8px; margin:20px 0;">
+        <h3 style="margin-top:0; color:#0d6efd;">💰 Execute Payment</h3>
+        
+        <!-- Validation Checklist -->
+        <div style="padding:15px; background:#fff; border:1px solid #0d6efd; border-radius:5px; margin-bottom:20px;">
+            <h4 style="margin-top:0; color:#084298;">📋 Pre-Payment Validation Checklist</h4>
+            <ul style="margin-bottom:10px; color:#084298;">
+                <li>✓ Receipt/supporting document reviewed above</li>
+                <li>✓ Amount (KES {{requisition.amount|floatformat:2}}) matches documentation</li>
+                <li>✓ All required approvals completed</li>
+                <li>✓ Fund availability confirmed</li>
+            </ul>
+        </div>
+
+        <!-- Payment Execution Form -->
+        <form id="payment-form" style="background:#fff; padding:20px; border-radius:5px;">
+            <h4 style="margin-top:0;">Payment Details</h4>
+            
+            <div style="margin-bottom:15px;">
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Amount (KES)</label>
+                <input type="text" value="{{requisition.amount|floatformat:2}}" readonly 
+                       style="width:100%; padding:10px; border:1px solid #ccc; border-radius:3px; background:#f8f9fa;">
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Payment Method</label>
+                <select id="payment-method" required 
+                        style="width:100%; padding:10px; border:1px solid #ccc; border-radius:3px;">
+                    <option value="mpesa">M-Pesa</option>
+                    <option value="bank">Bank Transfer</option>
+                    <option value="cash">Cash</option>
+                </select>
+            </div>
+
+            <div id="mpesa-fields" style="margin-bottom:15px;">
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Phone Number (M-Pesa)</label>
+                <input type="tel" id="phone-number" placeholder="e.g., 254712345678" 
+                       style="width:100%; padding:10px; border:1px solid #ccc; border-radius:3px;">
+                <small style="color:#6c757d;">Format: 254XXXXXXXXX</small>
+            </div>
+
+            <div id="bank-fields" style="margin-bottom:15px; display:none;">
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">Bank Account / Reference</label>
+                <input type="text" id="destination" placeholder="Account number or reference" 
+                       style="width:100%; padding:10px; border:1px solid #ccc; border-radius:3px;">
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <label style="display:block; margin-bottom:5px; font-weight:bold;">OTP Code</label>
+                <input type="text" id="otp-code" required placeholder="Enter your OTP" 
+                       style="width:100%; padding:10px; border:1px solid #ccc; border-radius:3px;">
+                <button type="button" id="request-otp-btn" 
+                        style="margin-top:5px; padding:5px 10px; background:#6c757d; color:#fff; border:none; border-radius:3px; cursor:pointer;">
+                    📱 Request OTP
+                </button>
+            </div>
+
+            <button type="submit" id="execute-payment-btn" 
+                    style="padding:12px 25px; background:#0d6efd; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:16px;">
+                💸 Execute Payment Now
+            </button>
+        </form>
+
+        <div id="payment-status" style="margin-top:15px;"></div>
+    </div>
+
+    <script>
+        // Toggle payment fields based on method
+        document.getElementById('payment-method').addEventListener('change', function() {
+            const mpesaFields = document.getElementById('mpesa-fields');
+            const bankFields = document.getElementById('bank-fields');
+            
+            if (this.value === 'mpesa') {
+                mpesaFields.style.display = 'block';
+                bankFields.style.display = 'none';
+            } else {
+                mpesaFields.style.display = 'none';
+                bankFields.style.display = 'block';
+            }
+        });
+
+        // Request OTP
+        document.getElementById('request-otp-btn').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = '⏳ Sending...';
+
+            try {
+                const response = await fetch('/treasury/api/payments/{{payment.id}}/request_otp/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ OTP sent! Check your phone/email.');
+                    btn.textContent = '✓ OTP Sent';
+                    btn.style.background = '#28a745';
+                } else {
+                    alert('❌ Failed to send OTP: ' + data.message);
+                    btn.disabled = false;
+                    btn.textContent = '📱 Request OTP';
+                }
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = '📱 Request OTP';
+            }
+        });
+
+        // Execute Payment
+        document.getElementById('payment-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const method = document.getElementById('payment-method').value;
+            const phoneNumber = document.getElementById('phone-number').value;
+            const destination = document.getElementById('destination').value;
+            const otpCode = document.getElementById('otp-code').value;
+            const statusDiv = document.getElementById('payment-status');
+            const btn = document.getElementById('execute-payment-btn');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Processing...';
+            statusDiv.innerHTML = '<p style="color:#0d6efd;">⏳ Processing payment...</p>';
+
+            try {
+                const response = await fetch('/treasury/api/payments/{{payment.id}}/execute/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        method: method,
+                        phone_number: phoneNumber,
+                        destination: destination || phoneNumber,
+                        otp_code: otpCode
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    statusDiv.innerHTML = `
+                        <div style="padding:15px; background:#d1e7dd; border:1px solid #28a745; border-radius:5px;">
+                            <h4 style="margin-top:0; color:#0f5132;">✅ Payment Executed Successfully!</h4>
+                            <p style="color:#0f5132; margin:0;">${data.message}</p>
+                        </div>
+                    `;
+                    setTimeout(() => window.location.href = '/dashboard/', 2000);
+                } else {
+                    statusDiv.innerHTML = `
+                        <div style="padding:15px; background:#f8d7da; border:1px solid #dc3545; border-radius:5px;">
+                            <h4 style="margin-top:0; color:#842029;">❌ Payment Failed</h4>
+                            <p style="color:#842029; margin:0;">${data.message}</p>
+                        </div>
+                    `;
+                    btn.disabled = false;
+                    btn.textContent = '💸 Execute Payment Now';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div style="padding:15px; background:#f8d7da; border:1px solid #dc3545; border-radius:5px;">
+                        <h4 style="margin-top:0; color:#842029;">❌ Error</h4>
+                        <p style="color:#842029; margin:0;">${error.message}</p>
+                    </div>
+                `;
+                btn.disabled = false;
+                btn.textContent = '💸 Execute Payment Now';
+            }
+        });
+    </script>
+{% endif %}
+
+<!-- Treasury: Approval validation checklist (only shown if they're in approval workflow - old requisitions) -->
 {% if can_act and user.role == 'treasury' %}
     <div style="padding:15px; background:#cfe2ff; border:1px solid #0d6efd; border-radius:5px; margin-bottom:20px; margin-top:20px;">
         <h4 style="margin-top:0; color:#084298;">📋 Treasury Validation Checklist</h4>
