@@ -6,6 +6,7 @@ from organization.models import Company, Region, Branch, Department, CostCenter
 from workflow.models import ApprovalThreshold
 from workflow.services.resolver import find_approval_threshold
 from django.contrib.auth import get_user_model
+from pettycash_system.managers import RequisitionManager
 
 User = get_user_model()
 
@@ -66,6 +67,9 @@ class Requisition(models.Model):
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='draft')  # Phase 3: Increased for granular statuses
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Multi-Tenancy: Company-aware manager for automatic filtering
+    objects = RequisitionManager()
 
     # For audit purpose, store skipped roles temporarily
     _skipped_roles = []

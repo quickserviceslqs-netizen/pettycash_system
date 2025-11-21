@@ -32,19 +32,22 @@ def transactions_home(request):
     ]
     is_approver = user.role.lower() in APPROVER_ROLES
 
-    my_requisitions = Requisition.objects.filter(requested_by=user).order_by('-created_at')
+    # Multi-Tenancy: Filter requisitions by user's company
+    my_requisitions = Requisition.objects.current_company().filter(
+        requested_by=user
+    ).order_by('-created_at')
 
     # Treasury sees reviewed requisitions ready for payment
     if user.role.lower() == 'treasury':
-        ready_for_payment = Requisition.objects.filter(
+        ready_for_payment = Requisition.objects.current_company().filter(
             status="reviewed"
         ).select_related('requested_by').order_by('-created_at')
         show_payment_section = ready_for_payment.exists()
         pending_for_me = Requisition.objects.none()
         show_pending_section = False
     elif is_approver:
-        # Other approvers see pending approvals
-        pending_for_me = Requisition.objects.filter(
+        # Other approvers see pending approvals (within their company)
+        pending_for_me = Requisition.objects.current_company().filter(
             status__in=["pending", "pending_urgency_confirmation"],
             next_approver=user
         ).exclude(requested_by=user).order_by('-created_at')

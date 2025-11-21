@@ -69,11 +69,12 @@ def dashboard(request):
     # ----------------------------
     # Dashboard stats
     # ----------------------------
-    total_transactions_pending = Requisition.objects.filter(
+    total_transactions_pending = Requisition.objects.current_company().filter(
         status__startswith="pending"
     ).count()
 
     workflow_overdue = ApprovalTrail.objects.filter(
+        requisition__requested_by__company=user.company,
         requisition__status="pending",
         requisition__next_approver__isnull=False
     ).count()
@@ -81,7 +82,7 @@ def dashboard(request):
     treasury_pending = 0
     if Payment:
         paid_reqs = Payment.objects.values_list('requisition_id', flat=True)
-        treasury_pending = Requisition.objects.filter(
+        treasury_pending = Requisition.objects.current_company().filter(
             status="pending"
         ).exclude(transaction_id__in=paid_reqs).count()
 
@@ -89,7 +90,7 @@ def dashboard(request):
     # Pending approvals for approvers only
     # ----------------------------
     if user_role in APPROVER_ROLES:
-        pending_for_user = Requisition.objects.filter(
+        pending_for_user = Requisition.objects.current_company().filter(
             status="pending",
             next_approver=user
         ).exclude(requested_by=user)  # no-self-approval
@@ -102,7 +103,7 @@ def dashboard(request):
     # Reviewed requisitions ready for payment (Treasury only)
     # ----------------------------
     if user_role == 'treasury':
-        ready_for_payment = Requisition.objects.filter(
+        ready_for_payment = Requisition.objects.current_company().filter(
             status="reviewed"
         ).select_related('requested_by')
         show_payment_section = ready_for_payment.exists()
