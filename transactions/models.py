@@ -160,9 +160,12 @@ class ApprovalTrail(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     role = models.CharField(max_length=30)
     action = models.CharField(max_length=20, choices=[
-        ('approved', 'Approved'), 
-        ('rejected', 'Rejected'),
-        ('urgency_confirmed', 'Urgency Confirmed')  # Phase 3: Urgency confirmation
+        ('approved', 'Approved'),  # Used by approvers (BM, DH, RM, GFM, CFO)
+        ('validated', 'Validated'),  # Used by Treasury (validates payment details)
+        ('paid', 'Paid'),  # Used by Treasury (payment executed)
+        ('reviewed', 'Reviewed'),  # Used by FP&A (post-payment review)
+        ('rejected', 'Rejected'),  # Can be used by any role
+        ('urgency_confirmed', 'Urgency Confirmed')  # Phase 3: First approver confirms urgency
     ])
     comment = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
