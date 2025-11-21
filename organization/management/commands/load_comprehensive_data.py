@@ -224,92 +224,92 @@ class Command(BaseCommand):
         thresholds_data = [
             # BRANCH ORIGIN
             # Tier 1: ≤ 10,000 — routine, fast
-            # Treasury does final validation after approvals
+            # After approval, Treasury validates & executes payment
             {
                 'name': 'Tier 1 Branch',
                 'origin_type': 'BRANCH',
                 'min_amount': Decimal('0.00'),
                 'max_amount': Decimal('10000.00'),
-                'roles_sequence': ['branch_manager', 'treasury'],  # Treasury validates & pays
+                'roles_sequence': ['branch_manager'],  # Approvals end here, Treasury executes payment
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
             # Tier 2: 10,001–50,000 — departmental
-            # Treasury does final validation after approvals
+            # After approvals, Treasury validates & executes payment
             {
                 'name': 'Tier 2 Branch',
                 'origin_type': 'BRANCH',
                 'min_amount': Decimal('10000.01'),
                 'max_amount': Decimal('50000.00'),
-                'roles_sequence': ['branch_manager', 'department_head', 'treasury'],  # Treasury validates & pays
+                'roles_sequence': ['branch_manager', 'department_head'],  # Approvals end here, Treasury executes payment
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
             # Tier 3: 50,001–250,000 — regional-level
-            # Treasury validates after approvals (FP&A does post-payment review, not approval)
+            # After approvals, Treasury validates & executes payment
             {
                 'name': 'Tier 3 Branch',
                 'origin_type': 'BRANCH',
                 'min_amount': Decimal('50000.01'),
                 'max_amount': Decimal('250000.00'),
-                'roles_sequence': ['branch_manager', 'regional_manager', 'treasury'],  # Treasury validates & pays (LAST)
+                'roles_sequence': ['branch_manager', 'regional_manager'],  # Approvals end here, Treasury executes payment
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
             # Tier 4: > 250,000 — HQ-level, CFO required (cannot fast-track)
-            # RM → CFO approve, then Treasury validates & pays (FP&A reviews post-payment)
+            # After CFO approval, Treasury validates & executes payment
             {
                 'name': 'Tier 4 Branch',
                 'origin_type': 'BRANCH',
                 'min_amount': Decimal('250000.01'),
                 'max_amount': Decimal('999999999.99'),
-                'roles_sequence': ['regional_manager', 'cfo', 'treasury'],  # CFO approves, Treasury validates & pays (LAST)
+                'roles_sequence': ['regional_manager', 'cfo'],  # Approvals end here, Treasury executes payment
                 'priority': 1,
                 'allow_urgent_fasttrack': False
             },
             
             # HQ ORIGIN
             # Tier 1: ≤ 10,000 — routine, fast
-            # Treasury does final validation after approvals
+            # After approval, Treasury validates & executes payment
             {
                 'name': 'Tier 1 HQ',
                 'origin_type': 'HQ',
                 'min_amount': Decimal('0.00'),
                 'max_amount': Decimal('10000.00'),
-                'roles_sequence': ['department_head', 'treasury'],  # Treasury validates & pays
+                'roles_sequence': ['department_head'],  # Approvals end here, Treasury executes payment
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
             # Tier 2: 10,001–50,000 — departmental
-            # Treasury does final validation after approvals
+            # After approvals, Treasury validates & executes payment
             {
                 'name': 'Tier 2 HQ',
                 'origin_type': 'HQ',
                 'min_amount': Decimal('10000.01'),
                 'max_amount': Decimal('50000.00'),
-                'roles_sequence': ['department_head', 'group_finance_manager', 'treasury'],  # Treasury validates & pays
+                'roles_sequence': ['department_head', 'group_finance_manager'],  # Approvals end here, Treasury executes payment
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
             # Tier 3: 50,001–250,000 — regional-level
-            # Treasury validates after approvals (FP&A does post-payment review, not approval)
+            # After approvals, Treasury validates & executes payment
             {
                 'name': 'Tier 3 HQ',
                 'origin_type': 'HQ',
                 'min_amount': Decimal('50000.01'),
                 'max_amount': Decimal('250000.00'),
-                'roles_sequence': ['department_head', 'group_finance_manager', 'treasury'],  # Treasury validates & pays (LAST)
+                'roles_sequence': ['department_head', 'group_finance_manager'],  # Approvals end here, Treasury executes payment
                 'priority': 1,
                 'allow_urgent_fasttrack': True
             },
             # Tier 4: > 250,000 — HQ-level, CFO required (cannot fast-track)
-            # GFM → CFO approve, then Treasury validates & pays (FP&A reviews post-payment)
+            # After CFO approval, Treasury validates & executes payment
             {
                 'name': 'Tier 4 HQ',
                 'origin_type': 'HQ',
                 'min_amount': Decimal('250000.01'),
                 'max_amount': Decimal('999999999.99'),
-                'roles_sequence': ['group_finance_manager', 'cfo', 'treasury'],  # CFO approves, Treasury validates & pays (LAST)
+                'roles_sequence': ['group_finance_manager', 'cfo'],  # Approvals end here, Treasury executes payment
                 'priority': 1,
                 'allow_urgent_fasttrack': False
             },
