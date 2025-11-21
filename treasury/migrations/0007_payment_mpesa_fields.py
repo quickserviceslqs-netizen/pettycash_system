@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('treasury', '0006_treasurydashboard_pending_approval_count_and_more'),
+        ('treasury', '0005_payment_otp_hash'),
     ]
 
     operations = [
