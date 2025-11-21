@@ -99,6 +99,18 @@ def dashboard(request):
         show_pending_section = False
 
     # ----------------------------
+    # Reviewed requisitions ready for payment (Treasury only)
+    # ----------------------------
+    if user_role == 'treasury':
+        ready_for_payment = Requisition.objects.filter(
+            status="reviewed"
+        ).select_related('requested_by')
+        show_payment_section = ready_for_payment.exists()
+    else:
+        ready_for_payment = Requisition.objects.none()
+        show_payment_section = False
+
+    # ----------------------------
     # Reports pending (placeholder)
     # ----------------------------
     reports_pending = 0
@@ -115,6 +127,8 @@ def dashboard(request):
         "reports_pending": reports_pending,
         "pending_for_user": pending_for_user,
         "show_pending_section": show_pending_section,
+        "ready_for_payment": ready_for_payment,
+        "show_payment_section": show_payment_section,
         "is_approver": user_role in APPROVER_ROLES,
     }
 

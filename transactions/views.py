@@ -183,10 +183,10 @@ def approve_requisition(request, requisition_id):
             }
         )
         
-        # If approver is treasury, redirect to payment execution
+        # If approver is treasury, redirect to dashboard to execute payment
         if request.user.role.lower() == 'treasury':
             messages.success(request, f"Requisition {requisition_id} validated! Please execute payment.")
-            return redirect('treasury-dashboard')  # Redirect to treasury dashboard to execute payment
+            return redirect('dashboard')  # Redirect to dashboard where pending payments are shown
         else:
             messages.success(request, f"Requisition {requisition_id} fully approved! Ready for payment.")
 
