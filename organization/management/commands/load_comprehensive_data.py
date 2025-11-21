@@ -313,6 +313,52 @@ class Command(BaseCommand):
                 'priority': 1,
                 'allow_urgent_fasttrack': False
             },
+            
+            # FIELD ORIGIN
+            # Tier 1: ≤ 10,000 — routine field expenses
+            # Regional Manager approves, then Treasury executes payment
+            {
+                'name': 'Tier 1 Field',
+                'origin_type': 'FIELD',
+                'min_amount': Decimal('0.00'),
+                'max_amount': Decimal('10000.00'),
+                'roles_sequence': ['regional_manager'],  # Approvals end here, Treasury executes payment
+                'priority': 1,
+                'allow_urgent_fasttrack': True
+            },
+            # Tier 2: 10,001–50,000 — departmental field expenses
+            # Regional Manager → Dept Head approve, then Treasury executes payment
+            {
+                'name': 'Tier 2 Field',
+                'origin_type': 'FIELD',
+                'min_amount': Decimal('10000.01'),
+                'max_amount': Decimal('50000.00'),
+                'roles_sequence': ['regional_manager', 'department_head'],  # Approvals end here, Treasury executes payment
+                'priority': 1,
+                'allow_urgent_fasttrack': True
+            },
+            # Tier 3: 50,001–250,000 — regional-level field expenses
+            # Regional Manager → CFO approve, then Treasury executes payment
+            {
+                'name': 'Tier 3 Field',
+                'origin_type': 'FIELD',
+                'min_amount': Decimal('50000.01'),
+                'max_amount': Decimal('250000.00'),
+                'roles_sequence': ['regional_manager', 'cfo'],  # Approvals end here, Treasury executes payment
+                'priority': 1,
+                'allow_urgent_fasttrack': True
+            },
+            # Tier 4: > 250,000 — HQ-level field expenses (cannot fast-track)
+            # Regional Manager → CFO approve, then Treasury executes payment
+            {
+                'name': 'Tier 4 Field',
+                'origin_type': 'FIELD',
+                'min_amount': Decimal('250000.01'),
+                'max_amount': Decimal('999999999.99'),
+                'roles_sequence': ['regional_manager', 'cfo'],  # Approvals end here, Treasury executes payment
+                'priority': 1,
+                'allow_urgent_fasttrack': False
+            },
         ]
 
         threshold_count = 0
