@@ -6,8 +6,7 @@ from organization.models import Company, Region, Branch, Department, CostCenter,
 class User(AbstractUser):
 
     ROLE_CHOICES = [
-        ('superuser', 'Superuser'),  # System administrator - no org structure required
-        ('admin', 'Admin'),
+        ('admin', 'Admin'),  # Business admin - handles escalations, requires company assignment
         ('staff', 'Staff'),
         ('treasury', 'Treasury'),
         ('fp&a', 'FP&A'),
@@ -18,6 +17,9 @@ class User(AbstractUser):
         ('cfo', 'CFO'),
         ('ceo', 'CEO'),
     ]
+    # Note: For Django Admin access, use Django's built-in is_superuser and is_staff fields
+    # is_superuser=True → Full Django Admin access (technical staff only)
+    # role='admin' → Business workflow escalations and approvals
 
     role = models.CharField(max_length=30, choices=ROLE_CHOICES, default='staff')
 

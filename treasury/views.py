@@ -137,7 +137,8 @@ class TreasuryFundViewSet(viewsets.ReadOnlyModelViewSet):
         fund = self.get_object()
         
         # Check permission: treasury staff or admin
-        if not (request.user.is_staff or request.user.is_superuser):
+        user_role = request.user.role.lower() if request.user.role else ''
+        if user_role not in ['treasury', 'admin']:
             return Response(
                 {'error': 'Only treasury staff can replenish funds'},
                 status=status.HTTP_403_FORBIDDEN
@@ -208,7 +209,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
         # Start with company-scoped queryset
         base_qs = Payment.objects.current_company()
         
-        if user.is_staff or user.is_superuser:
+        user_role = user.role.lower() if user.role else ''
+        if user_role in ['treasury', 'admin']:
             return base_qs
         # Non-staff can only see their requisitions' payments
         return base_qs.filter(requisition__requested_by=user)
@@ -310,7 +312,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
         """
         payment = self.get_object()
         
-        if not (request.user.is_staff or request.user.is_superuser):
+        user_role = request.user.role.lower() if request.user.role else ''
+        if user_role not in ['treasury', 'admin']:
             return Response(
                 {'error': 'Only finance staff can reconcile payments'},
                 status=status.HTTP_403_FORBIDDEN
@@ -336,7 +339,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
         """
         payment = self.get_object()
         
-        if not (request.user.is_staff or request.user.is_superuser):
+        user_role = request.user.role.lower() if request.user.role else ''
+        if user_role not in ['treasury', 'admin']:
             return Response(
                 {'error': 'Only staff can record variance'},
                 status=status.HTTP_403_FORBIDDEN

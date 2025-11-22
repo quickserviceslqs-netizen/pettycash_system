@@ -99,9 +99,9 @@ def resolve_workflow(requisition):
 
     # 4️⃣ Phase 4: Auto-escalation with audit trail (no valid approvers found)
     if not resolved or all(r["user_id"] is None for r in resolved):
-        admin = User.objects.filter(is_superuser=True, is_active=True).first()
+        admin = User.objects.filter(role='admin', is_active=True).first()
         if not admin:
-            raise ValueError("No ADMIN user exists. Please create one.")
+            raise ValueError("No ADMIN user exists. Please create one with role='admin'.")
         escalation_reason = f"No approvers found in roles: {base_roles}"
         logger.warning(f"Auto-escalating {requisition.transaction_id} to admin: {escalation_reason}")
         resolved = [{
