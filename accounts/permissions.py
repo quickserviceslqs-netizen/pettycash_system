@@ -24,6 +24,10 @@ def require_app_access(app_name):
         def wrapped_view(request, *args, **kwargs):
             user = request.user
             
+            # Superusers bypass all app access checks
+            if user.is_superuser:
+                return view_func(request, *args, **kwargs)
+            
             # Check if user has this app assigned (NO fallback to roles)
             has_app = user.assigned_apps.filter(name=app_name, is_active=True).exists()
             
@@ -92,13 +96,19 @@ def check_permission(user, permission_codename, app_label=None):
 def get_user_apps(user):
     """
     Get list of apps a user has access to.
-    Returns app names as list of strings (NO role fallback).
+    Returns app names as list of strings.
+    Superusers get all apps automatically.
     
     Usage:
         apps = get_user_apps(request.user)
         if 'treasury' in apps:
             # Show treasury features
     """
+    # Superusers have access to all apps
+    if user.is_superuser:
+        from accounts.models import App
+        return list(App.objects.filter(is_active=True).values_list('name', flat=True))
+    
     # Get assigned apps only
     assigned = list(user.assigned_apps.filter(is_active=True).values_list('name', flat=True))
     return assigned

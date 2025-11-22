@@ -52,6 +52,10 @@ class RequireAppAccess(permissions.BasePermission):
         if not user.is_authenticated:
             return False
         
+        # Superusers bypass all app access checks
+        if user.is_superuser:
+            return True
+        
         # Check if user has this app assigned
         has_app = user.assigned_apps.filter(
             name=required_app, 
