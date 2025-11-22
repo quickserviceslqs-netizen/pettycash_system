@@ -58,6 +58,7 @@ def dashboard(request):
 
     user = request.user
     user_role = getattr(user, "role", "").lower().strip()
+    is_centralized = getattr(user, "is_centralized_approver", False)
 
     # ----------------------------
     # Apps navigation
@@ -67,14 +68,24 @@ def dashboard(request):
     show_no_apps_cta = not apps
 
     # ----------------------------
-    # Dashboard stats
+    # Dashboard stats (company-wide for centralized, company-scoped for others)
     # ----------------------------
-    total_transactions_pending = Requisition.objects.current_company().filter(
+    if is_centralized:
+        # Centralized approvers see ALL companies' metrics
+        requisition_qs = Requisition.objects.all()
+        approval_trail_qs = ApprovalTrail.objects.all()
+    else:
+        # Regular users see only their company's metrics
+        requisition_qs = Requisition.objects.current_company()
+        approval_trail_qs = ApprovalTrail.objects.filter(
+            requisition__requested_by__company=user.company
+        )
+    
+    total_transactions_pending = requisition_qs.filter(
         status__startswith="pending"
     ).count()
 
-    workflow_overdue = ApprovalTrail.objects.filter(
-        requisition__requested_by__company=user.company,
+    workflow_overdue = approval_trail_qs.filter(
         requisition__status="pending",
         requisition__next_approver__isnull=False
     ).count()
@@ -82,7 +93,7 @@ def dashboard(request):
     treasury_pending = 0
     if Payment:
         paid_reqs = Payment.objects.values_list('requisition_id', flat=True)
-        treasury_pending = Requisition.objects.current_company().filter(
+        treasury_pending = requisition_qs.filter(
             status="pending"
         ).exclude(transaction_id__in=paid_reqs).count()
 
@@ -90,10 +101,18 @@ def dashboard(request):
     # Pending approvals for approvers only
     # ----------------------------
     if user_role in APPROVER_ROLES:
-        pending_for_user = Requisition.objects.current_company().filter(
-            status="pending",
-            next_approver=user
-        ).exclude(requested_by=user)  # no-self-approval
+        # Centralized approvers see all pending requisitions across all companies
+        # Regular approvers see only their company's requisitions
+        if is_centralized:
+            pending_for_user = Requisition.objects.filter(
+                status="pending",
+                next_approver=user
+            ).exclude(requested_by=user)  # no-self-approval
+        else:
+            pending_for_user = Requisition.objects.current_company().filter(
+                status="pending",
+                next_approver=user
+            ).exclude(requested_by=user)  # no-self-approval
         show_pending_section = pending_for_user.exists()
     else:
         pending_for_user = Requisition.objects.none()
@@ -103,9 +122,15 @@ def dashboard(request):
     # Reviewed requisitions ready for payment (Treasury only)
     # ----------------------------
     if user_role == 'treasury':
-        ready_for_payment = Requisition.objects.current_company().filter(
-            status="reviewed"
-        ).select_related('requested_by')
+        # Centralized treasury sees all companies, regular treasury sees their company only
+        if is_centralized:
+            ready_for_payment = Requisition.objects.filter(
+                status="reviewed"
+            ).select_related('requested_by', 'requested_by__company')
+        else:
+            ready_for_payment = Requisition.objects.current_company().filter(
+                status="reviewed"
+            ).select_related('requested_by')
         show_payment_section = ready_for_payment.exists()
     else:
         ready_for_payment = Requisition.objects.none()
@@ -120,6 +145,8 @@ def dashboard(request):
     context = {
         "user": user,
         "user_role": user_role,
+        "is_centralized": is_centralized,
+        "scope_label": "Company-Wide" if is_centralized else user.company.name if user.company else "Personal",
         "navigation": navigation,
         "show_no_apps_cta": show_no_apps_cta,
         "total_transactions_pending": total_transactions_pending,

@@ -17,6 +17,7 @@ User = get_user_model()
 @login_required
 def transactions_home(request):
     user = request.user
+    is_centralized = getattr(user, "is_centralized_approver", False)
 
     # Define approver roles (case-insensitive)
     # Note: application role 'staff' is NOT an approver by design.
@@ -32,25 +33,41 @@ def transactions_home(request):
     ]
     is_approver = user.role.lower() in APPROVER_ROLES
 
-    # Multi-Tenancy: Filter requisitions by user's company
-    my_requisitions = Requisition.objects.current_company().filter(
-        requested_by=user
-    ).order_by('-created_at')
+    # Multi-Tenancy: Filter requisitions by user's company (unless centralized)
+    if is_centralized:
+        my_requisitions = Requisition.objects.filter(
+            requested_by=user
+        ).order_by('-created_at')
+    else:
+        my_requisitions = Requisition.objects.current_company().filter(
+            requested_by=user
+        ).order_by('-created_at')
 
     # Treasury sees reviewed requisitions ready for payment
     if user.role.lower() == 'treasury':
-        ready_for_payment = Requisition.objects.current_company().filter(
-            status="reviewed"
-        ).select_related('requested_by').order_by('-created_at')
+        if is_centralized:
+            ready_for_payment = Requisition.objects.filter(
+                status="reviewed"
+            ).select_related('requested_by', 'requested_by__company').order_by('-created_at')
+        else:
+            ready_for_payment = Requisition.objects.current_company().filter(
+                status="reviewed"
+            ).select_related('requested_by').order_by('-created_at')
         show_payment_section = ready_for_payment.exists()
         pending_for_me = Requisition.objects.none()
         show_pending_section = False
     elif is_approver:
-        # Other approvers see pending approvals (within their company)
-        pending_for_me = Requisition.objects.current_company().filter(
-            status__in=["pending", "pending_urgency_confirmation"],
-            next_approver=user
-        ).exclude(requested_by=user).order_by('-created_at')
+        # Other approvers see pending approvals (within their company or all if centralized)
+        if is_centralized:
+            pending_for_me = Requisition.objects.filter(
+                status__in=["pending", "pending_urgency_confirmation"],
+                next_approver=user
+            ).exclude(requested_by=user).select_related('requested_by', 'requested_by__company').order_by('-created_at')
+        else:
+            pending_for_me = Requisition.objects.current_company().filter(
+                status__in=["pending", "pending_urgency_confirmation"],
+                next_approver=user
+            ).exclude(requested_by=user).order_by('-created_at')
         show_pending_section = pending_for_me.exists()
         ready_for_payment = Requisition.objects.none()
         show_payment_section = False
@@ -63,6 +80,8 @@ def transactions_home(request):
     context = {
         "user": user,
         "is_approver": is_approver,
+        "is_centralized": is_centralized,
+        "scope_label": "Company-Wide" if is_centralized else (user.company.name if user.company else "Personal"),
         "requisitions": my_requisitions,
         "pending_for_me": pending_for_me,
         "show_pending_section": show_pending_section,
