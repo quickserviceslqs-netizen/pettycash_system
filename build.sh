@@ -18,6 +18,7 @@ python manage.py migrate treasury 0004 --fake 2>/dev/null || true
 python manage.py migrate treasury 0005 --fake 2>/dev/null || true
 python manage.py migrate treasury 0006 --fake 2>/dev/null || true
 python manage.py migrate treasury 0007 --fake 2>/dev/null || true
+python manage.py migrate treasury 0008 --fake 2>/dev/null || true
 
 # Run all migrations (new ones will apply, existing ones are faked)
 python manage.py migrate --no-input
