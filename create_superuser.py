@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """
-One-time script to create superuser on Render
-Run this once, then delete it
+One-time script to create superuser
 """
 import os
 import django
@@ -11,17 +10,28 @@ django.setup()
 
 from accounts.models import User
 
-# Check if superuser exists
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser(
-        username='admin',
-        email='admin@pettycash.com',
-        password='Admin@123456',  # CHANGE THIS AFTER FIRST LOGIN!
-        first_name='System',
-        last_name='Administrator'
-    )
-    print("✅ Superuser 'admin' created successfully!")
-    print("⚠️ Default password: Admin@123456")
-    print("🔒 CHANGE THIS PASSWORD IMMEDIATELY after first login!")
-else:
-    print("ℹ️ Superuser 'admin' already exists")
+# Create a new fresh superuser
+username = 'superadmin'
+email = 'superadmin@pettycash.com'
+password = 'Super@123456'
+
+# Delete if exists
+User.objects.filter(username=username).delete()
+
+# Create new superuser
+superuser = User.objects.create_superuser(
+    username=username,
+    email=email,
+    password=password,
+    first_name='Super',
+    last_name='Admin'
+)
+
+print(f'✓ Superuser created successfully!')
+print(f'Username: {username}')
+print(f'Password: {password}')
+print(f'Email: {email}')
+print(f'Is superuser: {superuser.is_superuser}')
+print(f'Is staff: {superuser.is_staff}')
+print(f'Is active: {superuser.is_active}')
+
