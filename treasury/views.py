@@ -15,7 +15,7 @@ Endpoints:
 from rest_framework import viewsets, serializers, status
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, DjangoModelPermissionsWithView
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
@@ -31,7 +31,7 @@ from treasury.services.payment_service import (
     PaymentExecutionService, ReconciliationService, OTPService
 )
 from treasury.services.mpesa_service import process_mpesa_callback
-from treasury.permissions import DjangoModelPermissionsWithViewWithView, RequireAppAccess
+from treasury.permissions import DjangoModelPermissionsWithView, RequireAppAccess
 
 
 # ============================================================================
