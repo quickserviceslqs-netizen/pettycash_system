@@ -2,7 +2,31 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, Permission
 from django.utils.html import format_html
-from .models import User
+from .models import User, App
+
+
+@admin.register(App)
+class AppAdmin(admin.ModelAdmin):
+    """Admin for managing available applications."""
+    list_display = ('display_name', 'name', 'url', 'is_active', 'user_count')
+    list_filter = ('is_active',)
+    search_fields = ('name', 'display_name', 'description')
+    ordering = ('display_name',)
+    
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'display_name', 'url', 'description', 'is_active')
+        }),
+    )
+    
+    def user_count(self, obj):
+        """Show how many users have this app assigned."""
+        count = obj.users.count()
+        return format_html(
+            '<span style="font-weight: bold;">{}</span> users',
+            count
+        )
+    user_count.short_description = 'Assigned Users'
 
 
 class UserRoleFilter(admin.SimpleListFilter):
@@ -48,7 +72,11 @@ class UserAdmin(BaseUserAdmin):
                 'role', 'company', 'region', 'branch', 
                 'department', 'cost_center', 'position_title'
             ),
-            'description': 'User role determines app access and approval permissions.'
+            'description': 'User role determines default app access and approval permissions.'
+        }),
+        ('App Access', {
+            'fields': ('assigned_apps',),
+            'description': 'Assign specific applications this user can access. Use Django permissions below to control what they can do within each app (add/view/change/delete).'
         }),
         ('Special Permissions', {
             'fields': ('is_centralized_approver',),
@@ -59,7 +87,8 @@ class UserAdmin(BaseUserAdmin):
                 'is_active', 'is_staff', 'is_superuser', 
                 'groups', 'user_permissions'
             ),
-            'classes': ('collapse',)
+            'classes': ('collapse',),
+            'description': 'Django Admin access and granular permissions. Use user_permissions to control add/view/change/delete actions within assigned apps.'
         }),
         ('Important Dates', {
             'fields': ('last_login', 'date_joined'),
@@ -70,9 +99,11 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('username', 'password1', 'password2', 'email', 'role', 'company'),
+            'fields': ('username', 'password1', 'password2', 'email', 'role', 'company', 'assigned_apps'),
         }),
     )
+    
+    filter_horizontal = ('assigned_apps', 'groups', 'user_permissions')  # Better UI for many-to-many
     
     readonly_fields = ('last_login', 'date_joined')
     
@@ -107,17 +138,25 @@ class UserAdmin(BaseUserAdmin):
     role_badge.short_description = 'Role'
     
     def accessible_apps(self, obj):
-        """Show which apps this user can access based on role."""
-        from accounts.views import ROLE_ACCESS
-        apps = ROLE_ACCESS.get(obj.role_key, [])
-        if not apps:
-            return format_html('<span style="color:#dc3545;">No apps</span>')
+        """Show which apps this user has assigned."""
+        apps = obj.assigned_apps.filter(is_active=True)
+        if not apps.exists():
+            # Fallback to role-based access
+            from accounts.views import ROLE_ACCESS
+            role_apps = ROLE_ACCESS.get(obj.role_key, [])
+            if not role_apps:
+                return format_html('<span style="color:#dc3545;">No apps</span>')
+            app_list = role_apps
+            note = '<br><small class="text-muted">(from role)</small>'
+        else:
+            app_list = [app.name for app in apps]
+            note = ''
         
         app_badges = []
-        for app in apps:
+        for app in app_list:
             app_badges.append(f'<span style="background:#e9ecef; padding:2px 6px; border-radius:3px; margin:2px; display:inline-block; font-size:11px;">{app}</span>')
         
-        return format_html(' '.join(app_badges))
+        return format_html(' '.join(app_badges) + note)
     accessible_apps.short_description = 'Accessible Apps'
     
     # Enhanced actions

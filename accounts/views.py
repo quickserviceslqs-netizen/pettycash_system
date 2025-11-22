@@ -62,11 +62,23 @@ def dashboard(request):
     is_centralized = getattr(user, "is_centralized_approver", False)
 
     # ----------------------------
-    # Apps navigation
+    # Apps navigation - use assigned_apps instead of ROLE_ACCESS
     # ----------------------------
-    apps = ROLE_ACCESS.get(user_role, [])
-    navigation = [{"name": app.capitalize(), "url": f"/{app}/"} for app in apps]
-    show_no_apps_cta = not apps
+    # Get apps assigned to this user
+    assigned_apps = user.assigned_apps.filter(is_active=True).values_list('name', flat=True)
+    
+    # Fallback to role-based access if no apps assigned (backward compatibility)
+    if not assigned_apps:
+        assigned_apps = ROLE_ACCESS.get(user_role, [])
+    
+    navigation = [
+        {
+            "name": app.capitalize() if isinstance(app, str) else app, 
+            "url": f"/{app}/"
+        } 
+        for app in assigned_apps
+    ]
+    show_no_apps_cta = not navigation
 
     # ----------------------------
     # Dashboard stats (personalized for each user)

@@ -3,6 +3,58 @@ from django.db import models
 from organization.models import Company, Region, Branch, Department, CostCenter, Position
 
 
+class App(models.Model):
+    """
+    Represents an application module that can be assigned to users.
+    Replaces hardcoded ROLE_ACCESS mapping with flexible app assignments.
+    """
+    APP_CHOICES = [
+        ('transactions', 'Transactions'),
+        ('treasury', 'Treasury'),
+        ('workflow', 'Workflow'),
+        ('reports', 'Reports'),
+    ]
+    
+    name = models.CharField(
+        max_length=50, 
+        choices=APP_CHOICES, 
+        unique=True,
+        help_text="Internal app name (lowercase)"
+    )
+    display_name = models.CharField(
+        max_length=100,
+        help_text="User-friendly display name"
+    )
+    url = models.CharField(
+        max_length=200,
+        help_text="URL path for this app (e.g., /transactions/)"
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="What this app does"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether this app is currently available"
+    )
+    
+    class Meta:
+        ordering = ['display_name']
+        verbose_name = "Application"
+        verbose_name_plural = "Applications"
+    
+    def __str__(self):
+        return self.display_name
+    
+    def save(self, *args, **kwargs):
+        # Auto-set display name and URL from choices if not provided
+        if not self.display_name:
+            self.display_name = self.name.capitalize()
+        if not self.url:
+            self.url = f"/{self.name}/"
+        super().save(*args, **kwargs)
+
+
 class User(AbstractUser):
 
     ROLE_CHOICES = [
@@ -37,6 +89,15 @@ class User(AbstractUser):
     is_centralized_approver = models.BooleanField(
         default=False,
         help_text="If True, this user can approve requisitions for the whole company regardless of branch/region/department."
+    )
+    
+    # ✅ Flexible app assignments - replace hardcoded ROLE_ACCESS
+    # Users can be assigned specific apps, and Django permissions control what they can do within those apps
+    assigned_apps = models.ManyToManyField(
+        App,
+        blank=True,
+        related_name='users',
+        help_text="Applications this user has access to. Use Django permissions to control add/view/change/delete within each app."
     )
 
     def __str__(self):
