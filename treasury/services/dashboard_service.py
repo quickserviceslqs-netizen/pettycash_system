@@ -79,8 +79,7 @@ class DashboardService:
         month_start = today.replace(day=1)
         
         # Today's payments (linked via requisition -> company/region/branch)
-        payments_today_q = Payment.objects.filter(status='success', created_at__date=today)
-        payments_today_q = payments_today_q.filter(requisition__company=company)
+        payments_today_q = Payment.objects.current_company().filter(status='success', created_at__date=today)
         if region_id:
             payments_today_q = payments_today_q.filter(requisition__region_id=region_id)
         if branch_id:
@@ -92,8 +91,7 @@ class DashboardService:
         )['total'] or Decimal('0.00')
         
         # Week's payments
-        payments_week_q = Payment.objects.filter(status='success', created_at__date__gte=week_start)
-        payments_week_q = payments_week_q.filter(requisition__company=company)
+        payments_week_q = Payment.objects.current_company().filter(status='success', created_at__date__gte=week_start)
         if region_id:
             payments_week_q = payments_week_q.filter(requisition__region_id=region_id)
         if branch_id:
@@ -105,8 +103,7 @@ class DashboardService:
         )['total'] or Decimal('0.00')
         
         # Month's payments
-        payments_month_q = Payment.objects.filter(status='success', created_at__date__gte=month_start)
-        payments_month_q = payments_month_q.filter(requisition__company=company)
+        payments_month_q = Payment.objects.current_company().filter(status='success', created_at__date__gte=month_start)
         if region_id:
             payments_month_q = payments_month_q.filter(requisition__region_id=region_id)
         if branch_id:
@@ -216,7 +213,7 @@ class DashboardService:
         if branch_id:
             requisitions = requisitions.filter(branch_id=branch_id)
         
-        payments = Payment.objects.filter(
+        payments = Payment.objects.current_company().filter(
             requisition__in=requisitions,
             status='pending'
         ).select_related('requisition', 'executor')[:limit]
@@ -235,7 +232,7 @@ class DashboardService:
         if branch_id:
             requisitions = requisitions.filter(branch_id=branch_id)
         
-        payments = Payment.objects.filter(
+        payments = Payment.objects.current_company().filter(
             requisition__in=requisitions,
             status__in=['success', 'failed']
         ).select_related('requisition').order_by('-updated_at')[:limit]

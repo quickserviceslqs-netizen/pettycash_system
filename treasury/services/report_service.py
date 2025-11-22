@@ -27,8 +27,7 @@ class ReportService:
         Generate payment summary report for date range.
         """
         # Payments linked via requisition (company/region/branch)
-        query = Payment.objects.filter(
-            requisition__company_id=company_id,
+        query = Payment.objects.current_company().filter(
             created_at__date__gte=start_date,
             created_at__date__lte=end_date,
             status__in=['success', 'failed']

@@ -203,12 +203,15 @@ class PaymentViewSet(viewsets.ModelViewSet):
     lookup_field = 'payment_id'
     
     def get_queryset(self):
-        """Filter payments based on user role."""
+        """Filter payments based on user role and company."""
         user = self.request.user
+        # Start with company-scoped queryset
+        base_qs = Payment.objects.current_company()
+        
         if user.is_staff or user.is_superuser:
-            return Payment.objects.all()
+            return base_qs
         # Non-staff can only see their requisitions' payments
-        return Payment.objects.filter(requisition__requester=user)
+        return base_qs.filter(requisition__requested_by=user)
     
     @action(detail=True, methods=['post'])
     def send_otp(self, request, payment_id=None):

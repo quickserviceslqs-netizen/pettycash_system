@@ -2,6 +2,7 @@
 from django.db import models
 from django.conf import settings
 from organization.models import Company
+from pettycash_system.managers import CompanyManager
 
 class Report(models.Model):
     STATUS_CHOICES = [
@@ -18,9 +19,8 @@ class Report(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
-    # Multi-Tenancy: Company-aware manager (uncomment when ready)
-    # from pettycash_system.managers import CompanyManager
-    # objects = CompanyManager()
+    # Multi-Tenancy: Company-aware manager
+    objects = CompanyManager()
 
     def __str__(self):
         return f"{self.title} ({self.status})"
