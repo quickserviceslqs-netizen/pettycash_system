@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 # Role access mapping: which apps are visible to which roles
 # ---------------------------------------------------------------------
 ROLE_ACCESS = {
-    "superuser": ["transactions", "treasury", "workflow", "reports"],  # Full system access
+    # Note: 'superuser' role intentionally excluded - they use Django Admin only, not user dashboard
     "admin": ["transactions", "treasury", "workflow", "reports"],
     "staff": ["transactions"],  # Removed treasury for regular staff
     "treasury": ["treasury", "workflow", "transactions"],  # Phase 5: Treasury needs workflow for approval/validation
@@ -20,8 +20,7 @@ ROLE_ACCESS = {
 
 # Roles that can approve requisitions
 APPROVER_ROLES = {
-    "superuser",  # Superuser can approve for emergency/override purposes
-    "admin",
+    "admin",  # Admin handles escalations and overrides
     "treasury",
     "fp&a",
     "department_head",
@@ -86,9 +85,10 @@ def dashboard(request):
         status__startswith="pending"
     ).exclude(requested_by=user).count()
     
-    # For Treasury, FP&A, CFO, CEO, Superuser: Company-wide metrics (they need operational/strategic visibility)
+    # For Treasury, FP&A, CFO, CEO: Company-wide metrics (they need operational/strategic visibility)
     # Workflow overdue and reports pending are relevant to these oversight roles
-    if user_role in ['superuser', 'treasury', 'fp&a', 'cfo', 'ceo'] or is_centralized:
+    # Note: Superuser excluded - they use Django Admin, not user dashboard
+    if user_role in ['treasury', 'fp&a', 'cfo', 'ceo'] or is_centralized:
         if is_centralized:
             total_transactions_pending = Requisition.objects.filter(status__startswith="pending").count()
             workflow_overdue = ApprovalTrail.objects.filter(
@@ -183,7 +183,7 @@ def dashboard(request):
         # Company-wide metrics (for Treasury, FP&A, CEO, centralized approvers)
         "total_transactions_pending": total_transactions_pending,
         "workflow_overdue": workflow_overdue,
-        "show_company_metrics": user_role in ['superuser', 'treasury', 'fp&a', 'cfo', 'ceo'] or is_centralized,
+        "show_company_metrics": user_role in ['treasury', 'fp&a', 'cfo', 'ceo'] or is_centralized,
         "company_breakdown": company_breakdown if user_role == 'treasury' and is_centralized else [],
         "reports_pending": reports_pending,
         "pending_for_user": pending_for_user,
