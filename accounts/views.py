@@ -68,34 +68,49 @@ def dashboard(request):
     show_no_apps_cta = not apps
 
     # ----------------------------
-    # Dashboard stats (company-wide for centralized, company-scoped for others)
+    # Dashboard stats (personalized for each user)
     # ----------------------------
-    if is_centralized:
-        # Centralized approvers see ALL companies' metrics
-        requisition_qs = Requisition.objects.all()
-        approval_trail_qs = ApprovalTrail.objects.all()
-    else:
-        # Regular users see only their company's metrics
-        requisition_qs = Requisition.objects.current_company()
-        approval_trail_qs = ApprovalTrail.objects.filter(
-            requisition__requested_by__company=user.company
-        )
+    # Show only metrics relevant to the specific user's role
     
-    total_transactions_pending = requisition_qs.filter(
+    # My Transactions (created by me)
+    my_transactions_pending = Requisition.objects.filter(
+        requested_by=user,
         status__startswith="pending"
     ).count()
-
-    workflow_overdue = approval_trail_qs.filter(
-        requisition__status="pending",
-        requisition__next_approver__isnull=False
-    ).count()
-
-    treasury_pending = 0
-    if Payment:
-        paid_reqs = Payment.objects.values_list('requisition_id', flat=True)
-        treasury_pending = requisition_qs.filter(
-            status="pending"
-        ).exclude(transaction_id__in=paid_reqs).count()
+    
+    # Pending on My Approval (assigned to me as next approver)
+    pending_my_approval = Requisition.objects.filter(
+        next_approver=user,
+        status__startswith="pending"
+    ).exclude(requested_by=user).count()
+    
+    # For Treasury: Payments ready for me to execute
+    ready_for_payment_count = 0
+    if user_role == 'treasury':
+        if is_centralized:
+            ready_for_payment_count = Requisition.objects.filter(status="reviewed").count()
+        else:
+            ready_for_payment_count = Requisition.objects.current_company().filter(status="reviewed").count()
+    
+    # For FP&A and CEO: Company-wide overview (they need strategic visibility)
+    if user_role in ['fp&a', 'ceo'] or is_centralized:
+        if is_centralized:
+            total_transactions_pending = Requisition.objects.filter(status__startswith="pending").count()
+            workflow_overdue = ApprovalTrail.objects.filter(
+                requisition__status="pending",
+                requisition__next_approver__isnull=False
+            ).count()
+        else:
+            total_transactions_pending = Requisition.objects.current_company().filter(status__startswith="pending").count()
+            workflow_overdue = ApprovalTrail.objects.filter(
+                requisition__requested_by__company=user.company,
+                requisition__status="pending",
+                requisition__next_approver__isnull=False
+            ).count()
+    else:
+        # Regular users: no need for total company metrics
+        total_transactions_pending = 0
+        workflow_overdue = 0
 
     # ----------------------------
     # Pending approvals for approvers only
@@ -149,9 +164,14 @@ def dashboard(request):
         "scope_label": "Company-Wide" if is_centralized else user.company.name if user.company else "Personal",
         "navigation": navigation,
         "show_no_apps_cta": show_no_apps_cta,
+        # Personal metrics
+        "my_transactions_pending": my_transactions_pending,
+        "pending_my_approval": pending_my_approval,
+        "ready_for_payment_count": ready_for_payment_count,
+        # Company-wide metrics (only for strategic roles)
         "total_transactions_pending": total_transactions_pending,
-        "treasury_pending": treasury_pending,
         "workflow_overdue": workflow_overdue,
+        "show_company_metrics": user_role in ['fp&a', 'ceo'] or is_centralized,
         "reports_pending": reports_pending,
         "pending_for_user": pending_for_user,
         "show_pending_section": show_pending_section,
