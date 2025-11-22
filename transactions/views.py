@@ -8,6 +8,8 @@ from django.db import transaction
 from .models import Requisition, ApprovalTrail
 from treasury.models import Payment
 from django.contrib.auth import get_user_model
+from accounts.permissions import get_user_apps
+
 User = get_user_model()
 
 
@@ -16,6 +18,12 @@ User = get_user_model()
 # -----------------------------
 @login_required
 def transactions_home(request):
+    # Check if user has 'transactions' app assigned
+    user_apps = get_user_apps(request.user)
+    if 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to Transactions app.")
+        return redirect('dashboard')
+    
     # Check if user has permission to view requisitions
     if not request.user.has_perm('transactions.view_requisition'):
         messages.error(request, "You don't have permission to view transactions.")
@@ -102,6 +110,12 @@ def transactions_home(request):
 # -----------------------------
 @login_required
 def requisition_detail(request, requisition_id):
+    # Check if user has 'transactions' app assigned
+    user_apps = get_user_apps(request.user)
+    if 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to Transactions app.")
+        return redirect('dashboard')
+    
     # Check if user has permission to view requisitions
     if not request.user.has_perm('transactions.view_requisition'):
         messages.error(request, "You don't have permission to view requisitions.")
@@ -153,6 +167,12 @@ def requisition_detail(request, requisition_id):
 # -----------------------------
 @login_required
 def create_requisition(request):
+    # Check if user has 'transactions' app assigned
+    user_apps = get_user_apps(request.user)
+    if 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to Transactions app.")
+        return redirect('dashboard')
+    
     # Check if user has permission to add requisitions
     if not request.user.has_perm('transactions.add_requisition'):
         messages.error(request, "You don't have permission to create requisitions.")
@@ -200,6 +220,12 @@ def create_requisition(request):
 @transaction.atomic
 def approve_requisition(request, requisition_id):
     """Approve a requisition with atomic transaction and row locking"""
+    # Check if user has 'workflow' app assigned (approvers use workflow)
+    user_apps = get_user_apps(request.user)
+    if 'workflow' not in user_apps and 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to approve requisitions.")
+        return redirect('dashboard')
+    
     # Check if user has permission to change requisitions (approve)
     if not request.user.has_perm('transactions.change_requisition'):
         messages.error(request, "You don't have permission to approve requisitions.")
@@ -281,6 +307,12 @@ def approve_requisition(request, requisition_id):
 @transaction.atomic
 def reject_requisition(request, requisition_id):
     """Reject a requisition with atomic transaction"""
+    # Check if user has 'workflow' app assigned (approvers use workflow)
+    user_apps = get_user_apps(request.user)
+    if 'workflow' not in user_apps and 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to reject requisitions.")
+        return redirect('dashboard')
+    
     # Check if user has permission to change requisitions (reject)
     if not request.user.has_perm('transactions.change_requisition'):
         messages.error(request, "You don't have permission to reject requisitions.")
