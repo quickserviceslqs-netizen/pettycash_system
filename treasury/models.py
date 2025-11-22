@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from transactions.models import Requisition
 from organization.models import Company, Region, Branch
-from pettycash_system.managers import CompanyManager
+from pettycash_system.managers import CompanyManager, PaymentManager
 
 
 class TreasuryFund(models.Model):
@@ -106,6 +106,8 @@ class Payment(models.Model):
     # Multi-Tenancy: Filter by company via requisition
     # Payment doesn't have direct company FK, filtered via requisition__requested_by__company
     # For explicit filtering: Payment.objects.filter(requisition__requested_by__company=company)
+    # Company-aware manager for convenience
+    objects = PaymentManager()
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
