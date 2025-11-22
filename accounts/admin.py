@@ -141,22 +141,15 @@ class UserAdmin(BaseUserAdmin):
         """Show which apps this user has assigned."""
         apps = obj.assigned_apps.filter(is_active=True)
         if not apps.exists():
-            # Fallback to role-based access
-            from accounts.views import ROLE_ACCESS
-            role_apps = ROLE_ACCESS.get(obj.role_key, [])
-            if not role_apps:
-                return format_html('<span style="color:#dc3545;">No apps</span>')
-            app_list = role_apps
-            note = '<br><small class="text-muted">(from role)</small>'
-        else:
-            app_list = [app.name for app in apps]
-            note = ''
+            return format_html('<span style="color:#dc3545;">No apps assigned</span>')
+        
+        app_list = [app.name for app in apps]
         
         app_badges = []
         for app in app_list:
             app_badges.append(f'<span style="background:#e9ecef; padding:2px 6px; border-radius:3px; margin:2px; display:inline-block; font-size:11px;">{app}</span>')
         
-        return format_html(' '.join(app_badges) + note)
+        return format_html(' '.join(app_badges))
     accessible_apps.short_description = 'Accessible Apps'
     
     # Enhanced actions

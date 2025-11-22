@@ -24,15 +24,8 @@ def require_app_access(app_name):
         def wrapped_view(request, *args, **kwargs):
             user = request.user
             
-            # Check if user has this app assigned
+            # Check if user has this app assigned (NO fallback to roles)
             has_app = user.assigned_apps.filter(name=app_name, is_active=True).exists()
-            
-            # Fallback to role-based access
-            if not has_app:
-                from accounts.views import ROLE_ACCESS
-                user_role = getattr(user, "role", "").lower().strip()
-                role_apps = ROLE_ACCESS.get(user_role, [])
-                has_app = app_name in role_apps
             
             if not has_app:
                 messages.error(request, f"You don't have access to {app_name.capitalize()} app.")
@@ -99,20 +92,13 @@ def check_permission(user, permission_codename, app_label=None):
 def get_user_apps(user):
     """
     Get list of apps a user has access to.
-    Returns app names as list of strings.
+    Returns app names as list of strings (NO role fallback).
     
     Usage:
         apps = get_user_apps(request.user)
         if 'treasury' in apps:
             # Show treasury features
     """
-    # Get assigned apps
+    # Get assigned apps only
     assigned = list(user.assigned_apps.filter(is_active=True).values_list('name', flat=True))
-    
-    # Fallback to role-based if no apps assigned
-    if not assigned:
-        from accounts.views import ROLE_ACCESS
-        user_role = getattr(user, "role", "").lower().strip()
-        assigned = ROLE_ACCESS.get(user_role, [])
-    
     return assigned
