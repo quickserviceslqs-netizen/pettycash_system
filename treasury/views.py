@@ -15,7 +15,7 @@ Endpoints:
 from rest_framework import viewsets, serializers, status
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
@@ -102,6 +102,7 @@ class ReplenishmentRequestSerializer(serializers.ModelSerializer):
 class TreasuryFundViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Retrieve treasury fund information and balance.
+    Requires: treasury.view_treasuryfund permission
     
     Actions:
     - list: Get all funds
@@ -110,7 +111,7 @@ class TreasuryFundViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = TreasuryFund.objects.all()
     serializer_class = TreasuryFundSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
     lookup_field = 'fund_id'
     
     @action(detail=True, methods=['get'])
@@ -188,6 +189,7 @@ class TreasuryFundViewSet(viewsets.ReadOnlyModelViewSet):
 class PaymentViewSet(viewsets.ModelViewSet):
     """
     Payment lifecycle management.
+    Requires: treasury permissions (view_payment, add_payment, change_payment, delete_payment)
     
     Actions:
     - list: Get all payments
@@ -200,7 +202,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
     """
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
     lookup_field = 'payment_id'
     
     def get_queryset(self):
@@ -386,7 +388,7 @@ class VarianceAdjustmentViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = VarianceAdjustment.objects.all()
     serializer_class = VarianceAdjustmentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
     lookup_field = 'variance_id'
     
     @action(detail=True, methods=['post'])
@@ -423,7 +425,7 @@ class ReplenishmentRequestViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = ReplenishmentRequest.objects.all()
     serializer_class = ReplenishmentRequestSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
     lookup_field = 'request_id'
 
 
@@ -438,7 +440,7 @@ class LedgerEntryViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = LedgerEntry.objects.all()
     serializer_class = LedgerEntrySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
     lookup_field = 'ledger_id'
     
     @action(detail=False, methods=['get'])
@@ -545,7 +547,7 @@ class DashboardViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = TreasuryDashboard.objects.all()
     serializer_class = TreasuryDashboardSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
     lookup_field = 'dashboard_id'
     
     @action(detail=False, methods=['get'])
@@ -631,7 +633,7 @@ class AlertsViewSet(viewsets.ModelViewSet):
     """
     queryset = Alert.objects.all()
     serializer_class = AlertSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
     lookup_field = 'alert_id'
     
     @action(detail=False, methods=['get'])
@@ -683,7 +685,7 @@ class PaymentTrackingViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = PaymentTracking.objects.all()
     serializer_class = PaymentTrackingSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
     lookup_field = 'tracking_id'
     
     @action(detail=False, methods=['get'])
@@ -713,7 +715,7 @@ class ReportingViewSet(viewsets.ViewSet):
     - forecast: Get replenishment forecast
     - export: Export report to CSV/PDF
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, DjangoModelPermissions]
     
     @action(detail=False, methods=['get'])
     def payment_summary(self, request):
