@@ -6,6 +6,7 @@ from organization.models import Company, Region, Branch, Department, CostCenter,
 class User(AbstractUser):
 
     ROLE_CHOICES = [
+        ('superuser', 'Superuser'),  # System administrator - no org structure required
         ('admin', 'Admin'),
         ('staff', 'Staff'),
         ('treasury', 'Treasury'),
@@ -20,6 +21,7 @@ class User(AbstractUser):
 
     role = models.CharField(max_length=30, choices=ROLE_CHOICES, default='staff')
 
+    # Organization structure fields - NOT required for superuser role
     company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
