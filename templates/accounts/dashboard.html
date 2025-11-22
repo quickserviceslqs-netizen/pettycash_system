@@ -57,15 +57,28 @@
         </div>
         
         <!-- Personal Metrics: Pending My Approval -->
-        {% if is_approver %}
+        {% if is_approver and user_role != 'treasury' %}
         <div class="stat-card" style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#d1ecf1; text-align:center;">
             <h4 style="margin-bottom:10px; color:#0c5460;">Pending My Approval</h4>
             <p style="font-size:1.5rem; font-weight:bold; color:#0c5460;">{{ pending_my_approval }}</p>
             <p style="font-size:0.85rem; color:#0c5460; margin-top:5px;">Assigned to me</p>
         </div>
         {% endif %}
-        
-        <!-- Treasury: Ready for Payment -->
+    </section>
+
+    <!-- Company-Wide Metrics (For Treasury, FP&A, CEO, Centralized Approvers) -->
+    {% if show_company_metrics %}
+    <h3 style="margin-bottom:15px; color:#333; border-top:2px solid #ddd; padding-top:30px;">
+        {% if user_role == 'treasury' %}
+            Treasury Overview
+        {% else %}
+            Company Overview
+        {% endif %}
+        <span style="font-size:0.9rem; color:#666; font-weight:normal;">
+            ({{ scope_label }})
+        </span>
+    </h3>
+    <section class="dashboard-stats" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:40px;">
         {% if user_role == 'treasury' %}
         <div class="stat-card" style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#d4edda; text-align:center;">
             <h4 style="margin-bottom:10px; color:#155724;">Ready for Payment</h4>
@@ -73,17 +86,7 @@
             <p style="font-size:0.85rem; color:#155724; margin-top:5px;">Awaiting execution</p>
         </div>
         {% endif %}
-    </section>
-
-    <!-- Company-Wide Metrics (Only for FP&A, CEO, Centralized Approvers) -->
-    {% if show_company_metrics %}
-    <h3 style="margin-bottom:15px; color:#333; border-top:2px solid #ddd; padding-top:30px;">
-        Company Overview 
-        <span style="font-size:0.9rem; color:#666; font-weight:normal;">
-            ({{ scope_label }})
-        </span>
-    </h3>
-    <section class="dashboard-stats" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:40px;">
+        
         <div class="stat-card" style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#f8f9fa; text-align:center;">
             <h4 style="margin-bottom:10px;">Total Pending Transactions</h4>
             <p style="font-size:1.2rem; font-weight:bold;">{{ total_transactions_pending }}</p>
@@ -97,6 +100,22 @@
             <p style="font-size:1.2rem; font-weight:bold;">{{ reports_pending }}</p>
         </div>
     </section>
+    
+    <!-- Company Breakdown for Centralized Treasury -->
+    {% if company_breakdown %}
+    <div style="margin-top:20px; padding:15px; background:#e7f1ff; border:1px solid #0d6efd; border-radius:8px;">
+        <h4 style="margin-bottom:15px; color:#0d6efd;">Payments Ready by Company</h4>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:15px;">
+            {% for company in company_breakdown %}
+            <div style="padding:12px; background:#fff; border-radius:5px; text-align:center;">
+                <p style="font-weight:bold; margin-bottom:5px; color:#333;">{{ company.name }}</p>
+                <p style="font-size:1.3rem; font-weight:bold; color:#0d6efd;">{{ company.ready_for_payment }}</p>
+                <p style="font-size:0.8rem; color:#666;">ready to execute</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
     {% endif %}
 
     <!-- Phase 4: Pending Approvals (Only for Non-Treasury Approvers) -->
