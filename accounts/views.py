@@ -84,9 +84,9 @@ def dashboard(request):
         status__startswith="pending"
     ).exclude(requested_by=user).count()
     
-    # For Treasury, FP&A, CEO: Company-wide metrics (they need operational/strategic visibility)
+    # For Treasury, FP&A, CFO, CEO: Company-wide metrics (they need operational/strategic visibility)
     # Workflow overdue and reports pending are relevant to these oversight roles
-    if user_role in ['treasury', 'fp&a', 'ceo'] or is_centralized:
+    if user_role in ['treasury', 'fp&a', 'cfo', 'ceo'] or is_centralized:
         if is_centralized:
             total_transactions_pending = Requisition.objects.filter(status__startswith="pending").count()
             workflow_overdue = ApprovalTrail.objects.filter(
@@ -181,7 +181,7 @@ def dashboard(request):
         # Company-wide metrics (for Treasury, FP&A, CEO, centralized approvers)
         "total_transactions_pending": total_transactions_pending,
         "workflow_overdue": workflow_overdue,
-        "show_company_metrics": user_role in ['treasury', 'fp&a', 'ceo'] or is_centralized,
+        "show_company_metrics": user_role in ['treasury', 'fp&a', 'cfo', 'ceo'] or is_centralized,
         "company_breakdown": company_breakdown if user_role == 'treasury' and is_centralized else [],
         "reports_pending": reports_pending,
         "pending_for_user": pending_for_user,
