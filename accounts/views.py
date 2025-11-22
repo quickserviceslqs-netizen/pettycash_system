@@ -78,49 +78,63 @@ def dashboard(request):
 
     # ----------------------------
     # Dashboard stats (personalized for each user)
+    # Only show metrics for apps/models user has permission to view
     # ----------------------------
-    # Show only metrics relevant to the specific user's role
     
-    # My Transactions (created by me)
-    my_transactions_pending = Requisition.objects.filter(
-        requested_by=user,
-        status__startswith="pending"
-    ).count()
+    # My Transactions (created by me) - only if user can view requisitions
+    if user.has_perm('transactions.view_requisition'):
+        my_transactions_pending = Requisition.objects.filter(
+            requested_by=user,
+            status__startswith="pending"
+        ).count()
+    else:
+        my_transactions_pending = 0
     
-    # Pending on My Approval (assigned to me as next approver)
-    pending_my_approval = Requisition.objects.filter(
-        next_approver=user,
-        status__startswith="pending"
-    ).exclude(requested_by=user).count()
+    # Pending on My Approval (assigned to me as next approver) - only if user can change requisitions
+    if user.has_perm('transactions.change_requisition'):
+        pending_my_approval = Requisition.objects.filter(
+            next_approver=user,
+            status__startswith="pending"
+        ).exclude(requested_by=user).count()
+    else:
+        pending_my_approval = 0
     
-    # For Treasury, FP&A, CFO, CEO: Company-wide metrics (they need operational/strategic visibility)
-    # Workflow overdue and reports pending are relevant to these oversight roles
-    # Note: Superuser excluded - they use Django Admin, not user dashboard
+    # Company-wide metrics - only for users with view permissions
     if user_role in ['treasury', 'fp&a', 'cfo', 'ceo'] or is_centralized:
-        if is_centralized:
+        if is_centralized and user.has_perm('transactions.view_requisition'):
             total_transactions_pending = Requisition.objects.filter(status__startswith="pending").count()
             workflow_overdue = ApprovalTrail.objects.filter(
                 requisition__status="pending",
                 requisition__next_approver__isnull=False
             ).count()
-            ready_for_payment_count = Requisition.objects.filter(status="reviewed").count()
-        else:
+        elif user.has_perm('transactions.view_requisition'):
             total_transactions_pending = Requisition.objects.current_company().filter(status__startswith="pending").count()
             workflow_overdue = ApprovalTrail.objects.filter(
                 requisition__requested_by__company=user.company,
                 requisition__status="pending",
                 requisition__next_approver__isnull=False
             ).count()
-            ready_for_payment_count = Requisition.objects.current_company().filter(status="reviewed").count()
+        else:
+            total_transactions_pending = 0
+            workflow_overdue = 0
+        
+        # Payment metrics - only if user can view payments
+        if Payment and user.has_perm('treasury.view_payment'):
+            if is_centralized:
+                ready_for_payment_count = Requisition.objects.filter(status="reviewed").count()
+            else:
+                ready_for_payment_count = Requisition.objects.current_company().filter(status="reviewed").count()
+        else:
+            ready_for_payment_count = 0
     else:
-        # Regular users: no need for total company metrics
+        # Regular users: no company metrics
         total_transactions_pending = 0
         workflow_overdue = 0
         ready_for_payment_count = 0
     
-    # For centralized Treasury: breakdown by company
+    # For centralized Treasury: breakdown by company (only if can view payments)
     company_breakdown = []
-    if user_role == 'treasury' and is_centralized:
+    if user_role == 'treasury' and is_centralized and user.has_perm('treasury.view_payment'):
         from organization.models import Company
         companies = Company.objects.all()
         for company in companies:
@@ -133,9 +147,9 @@ def dashboard(request):
             })
 
     # ----------------------------
-    # Pending approvals for approvers only
+    # Pending approvals for approvers only (must have change permission)
     # ----------------------------
-    if user_role in APPROVER_ROLES:
+    if user_role in APPROVER_ROLES and user.has_perm('transactions.change_requisition'):
         # Centralized approvers see all pending requisitions across all companies
         # Regular approvers see only their company's requisitions
         if is_centralized:
@@ -154,9 +168,9 @@ def dashboard(request):
         show_pending_section = False
 
     # ----------------------------
-    # Reviewed requisitions ready for payment (Treasury only)
+    # Reviewed requisitions ready for payment (Treasury only, must have view permission)
     # ----------------------------
-    if user_role == 'treasury':
+    if user_role == 'treasury' and user.has_perm('treasury.view_payment'):
         # Centralized treasury sees all companies, regular treasury sees their company only
         if is_centralized:
             ready_for_payment = Requisition.objects.filter(
@@ -172,10 +186,13 @@ def dashboard(request):
         show_payment_section = False
 
     # ----------------------------
-    # Reports pending (placeholder)
+    # Reports pending (only if user can view reports)
     # ----------------------------
-    reports_pending = 0
-    # reports_pending = Report.objects.filter(status='pending').count()  # Uncomment if Report model exists
+    if user.has_perm('reports.view_report'):
+        reports_pending = 0
+        # reports_pending = Report.objects.filter(status='pending').count()  # Uncomment if Report model exists
+    else:
+        reports_pending = 0
 
     context = {
         "user": user,
