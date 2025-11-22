@@ -112,7 +112,7 @@ class TreasuryFundViewSet(viewsets.ReadOnlyModelViewSet):
     - retrieve: Get specific fund
     - balance: Get current balance for a fund
     """
-    queryset = TreasuryFund.objects.all()
+    queryset = TreasuryFund.objects.none()
     serializer_class = TreasuryFundSerializer
     permission_classes = [IsAuthenticated, RequireAppAccess, DjangoModelPermissionsWithView]
     required_app = 'treasury'
@@ -396,7 +396,7 @@ class VarianceAdjustmentViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = VarianceAdjustment.objects.all()
     serializer_class = VarianceAdjustmentSerializer
     permission_classes = [IsAuthenticated, RequireAppAccess, DjangoModelPermissionsWithView]
-    required_app = treasury
+    required_app = 'treasury'
     lookup_field = 'variance_id'
     
     @action(detail=True, methods=['post'])
@@ -434,7 +434,7 @@ class ReplenishmentRequestViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ReplenishmentRequest.objects.all()
     serializer_class = ReplenishmentRequestSerializer
     permission_classes = [IsAuthenticated, RequireAppAccess, DjangoModelPermissionsWithView]
-    required_app = treasury
+    required_app = 'treasury'
     lookup_field = 'request_id'
 
 
@@ -450,7 +450,7 @@ class LedgerEntryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = LedgerEntry.objects.all()
     serializer_class = LedgerEntrySerializer
     permission_classes = [IsAuthenticated, RequireAppAccess, DjangoModelPermissionsWithView]
-    required_app = treasury
+    required_app = 'treasury'
     lookup_field = 'ledger_id'
     
     @action(detail=False, methods=['get'])
@@ -558,7 +558,7 @@ class DashboardViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = TreasuryDashboard.objects.all()
     serializer_class = TreasuryDashboardSerializer
     permission_classes = [IsAuthenticated, RequireAppAccess, DjangoModelPermissionsWithView]
-    required_app = treasury
+    required_app = 'treasury'
     lookup_field = 'dashboard_id'
     
     @action(detail=False, methods=['get'])
@@ -645,7 +645,7 @@ class AlertsViewSet(viewsets.ModelViewSet):
     queryset = Alert.objects.all()
     serializer_class = AlertSerializer
     permission_classes = [IsAuthenticated, RequireAppAccess, DjangoModelPermissionsWithView]
-    required_app = treasury
+    required_app = 'treasury'
     lookup_field = 'alert_id'
     
     @action(detail=False, methods=['get'])
@@ -698,7 +698,7 @@ class PaymentTrackingViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = PaymentTracking.objects.all()
     serializer_class = PaymentTrackingSerializer
     permission_classes = [IsAuthenticated, RequireAppAccess, DjangoModelPermissionsWithView]
-    required_app = treasury
+    required_app = 'treasury'
     lookup_field = 'tracking_id'
     
     @action(detail=False, methods=['get'])
@@ -729,8 +729,8 @@ class ReportingViewSet(viewsets.ViewSet):
     - export: Export report to CSV/PDF
     """
     permission_classes = [IsAuthenticated, RequireAppAccess, DjangoModelPermissionsWithView]
-    required_app = treasury
-    
+    required_app = 'treasury'
+
     @action(detail=False, methods=['get'])
     def payment_summary(self, request):
         """Get payment summary report."""
