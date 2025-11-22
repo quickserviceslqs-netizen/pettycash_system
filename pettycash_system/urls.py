@@ -4,6 +4,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 from accounts import views as account_views
 
+# Configure Django Admin
+admin.site.site_header = "Petty Cash System Administration"
+admin.site.site_title = "Petty Cash Admin"
+admin.site.index_title = "Welcome to Petty Cash System Admin"
+admin.site.site_url = "/dashboard/"  # "View Site" link goes to user dashboard
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 

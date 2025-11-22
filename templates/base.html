@@ -171,7 +171,7 @@
                             <!-- Admin Panel -->
                             {% if user.is_staff %}
                             <li class="nav-item">
-                                <a class="nav-link" href="/admin/">
+                                <a class="nav-link" href="{% url 'admin:index' %}">
                                     <i class="bi bi-sliders"></i> Admin
                                 </a>
                             </li>
