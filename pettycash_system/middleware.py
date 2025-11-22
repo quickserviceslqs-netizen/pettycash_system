@@ -19,6 +19,16 @@ def get_current_user():
     return getattr(_thread_locals, 'user', None)
 
 
+def set_current_company(company):
+    """Set the current company in thread-local storage (for testing)."""
+    _thread_locals.company = company
+
+
+def set_current_user(user):
+    """Set the current user in thread-local storage (for testing)."""
+    _thread_locals.user = user
+
+
 class CompanyMiddleware(MiddlewareMixin):
     """
     Middleware to set the current company context for each request.
