@@ -62,10 +62,12 @@
                     <div class="alert alert-warning">
                         <h5><i class="bi bi-exclamation-triangle"></i> Important Notes</h5>
                         <ul class="mb-0">
-                            <li><strong>Usernames:</strong> Auto-generated from first and last name (e.g., JohnDoe, JaneSmith)</li>
+                            <li><strong>Usernames:</strong> Auto-generated as <code>FirstInitial.LastName</code> (e.g., <code>A.Cheloti</code> for Amos Cheloti)</li>
                             <li><strong>Passwords:</strong> Users set their own password via invitation link</li>
                             <li><strong>Duplicate Check:</strong> System prevents duplicate emails</li>
-                            <li><strong>Organizations:</strong> Company, Department, Branch must already exist in system</li>
+                            <li><strong>Multi-Company:</strong> Template includes ALL companies, branches, departments, regions</li>
+                            <li><strong>Exact Names Required:</strong> Company, Department, Branch must EXACTLY match (copy from template list)</li>
+                            <li><strong>Region Filtering:</strong> Use region_name to filter branches by region</li>
                             <li><strong>Apps:</strong> Use app names: treasury, workflow, reports, settings</li>
                             <li><strong>Roles:</strong> Must be one of: REQUESTER, APPROVER, FINANCE, ADMIN</li>
                         </ul>
@@ -85,30 +87,33 @@
                                             <th>last_name</th>
                                             <th>role</th>
                                             <th>company_name</th>
-                                            <th>department_name</th>
+                                            <th>region_name</th>
                                             <th>branch_name</th>
+                                            <th>department_name</th>
                                             <th>assigned_apps</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr class="table-success">
-                                            <td>john.doe@example.com</td>
-                                            <td>John</td>
-                                            <td>Doe</td>
+                                            <td>amos.cheloti@example.com</td>
+                                            <td>Amos</td>
+                                            <td>Cheloti</td>
                                             <td>REQUESTER</td>
                                             <td>Quick Services LQS</td>
+                                            <td>East Africa</td>
+                                            <td>Nairobi Branch</td>
                                             <td>Finance</td>
-                                            <td>Head Office</td>
                                             <td>treasury,workflow</td>
                                         </tr>
                                         <tr class="table-success">
-                                            <td>jane.smith@example.com</td>
+                                            <td>jane.doe@example.com</td>
                                             <td>Jane</td>
-                                            <td>Smith</td>
+                                            <td>Doe</td>
                                             <td>APPROVER</td>
                                             <td>Quick Services LQS</td>
-                                            <td>Finance</td>
-                                            <td>Head Office</td>
+                                            <td>East Africa</td>
+                                            <td>Mombasa Branch</td>
+                                            <td>Operations</td>
                                             <td>treasury,workflow,reports</td>
                                         </tr>
                                     </tbody>
@@ -116,8 +121,9 @@
                             </div>
                             <p class="text-muted mb-0">
                                 <small>
-                                    <strong>Result:</strong> Username will be <code>JohnDoe</code> and <code>JaneSmith</code>. 
-                                    If duplicates exist, system adds number suffix (e.g., JohnDoe1, JohnDoe2).
+                                    <strong>Result:</strong> Username will be <code>A.Cheloti</code> and <code>J.Doe</code>. 
+                                    If duplicates exist, system adds number suffix (e.g., A.Cheloti1, A.Cheloti2).
+                                    <br><strong>Note:</strong> Region helps filter branches when multiple branches have same name.
                                 </small>
                             </p>
                         </div>
@@ -125,13 +131,20 @@
                     
                     <div class="card mt-3">
                         <div class="card-header">
-                            <i class="bi bi-gear"></i> Available Organizations
+                            <i class="bi bi-gear"></i> Multi-Company/Branch/Region System
                         </div>
                         <div class="card-body">
+                            <div class="alert alert-info mb-3">
+                                <strong><i class="bi bi-info-circle"></i> Organization Mapping:</strong>
+                                <p class="mb-0">
+                                    The downloaded template includes a complete list of ALL companies, regions, branches, 
+                                    and departments in your system. Use this reference to map users to the correct organization.
+                                </p>
+                            </div>
                             <div class="row">
-                                <div class="col-md-4">
-                                    <h6>Companies</h6>
-                                    <ul class="small">
+                                <div class="col-md-3">
+                                    <h6>Companies ({{ companies.count }})</h6>
+                                    <ul class="small" style="max-height: 200px; overflow-y: auto;">
                                         {% for company in companies %}
                                         <li><code>{{ company.name }}</code></li>
                                         {% empty %}
@@ -139,9 +152,9 @@
                                         {% endfor %}
                                     </ul>
                                 </div>
-                                <div class="col-md-4">
-                                    <h6>Departments</h6>
-                                    <ul class="small">
+                                <div class="col-md-3">
+                                    <h6>Departments ({{ departments.count }})</h6>
+                                    <ul class="small" style="max-height: 200px; overflow-y: auto;">
                                         {% for dept in departments %}
                                         <li><code>{{ dept.name }}</code></li>
                                         {% empty %}
@@ -149,9 +162,9 @@
                                         {% endfor %}
                                     </ul>
                                 </div>
-                                <div class="col-md-4">
-                                    <h6>Branches</h6>
-                                    <ul class="small">
+                                <div class="col-md-3">
+                                    <h6>Branches ({{ branches.count }})</h6>
+                                    <ul class="small" style="max-height: 200px; overflow-y: auto;">
                                         {% for branch in branches %}
                                         <li><code>{{ branch.name }}</code></li>
                                         {% empty %}
@@ -159,6 +172,22 @@
                                         {% endfor %}
                                     </ul>
                                 </div>
+                                <div class="col-md-3">
+                                    <h6>Regions</h6>
+                                    <ul class="small" style="max-height: 200px; overflow-y: auto;">
+                                        {% for branch in branches %}
+                                            {% if branch.region %}
+                                            <li><code>{{ branch.region.name }}</code></li>
+                                            {% endif %}
+                                        {% empty %}
+                                        <li class="text-muted">No regions found</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <strong><i class="bi bi-exclamation-triangle"></i> Copy Exact Names:</strong>
+                                Names are case-sensitive. Copy exactly from the template's organization list to avoid errors.
                             </div>
                         </div>
                     </div>

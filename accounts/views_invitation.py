@@ -277,16 +277,20 @@ def signup(request, token):
         password = request.POST.get('password')
         password_confirm = request.POST.get('password_confirm')
         
-        # Auto-generate username from initials (FirstLast format)
+        # Auto-generate username in format: FirstInitial.LastName (e.g., A.Cheloti)
         first_name = invitation.first_name.strip()
         last_name = invitation.last_name.strip()
-        base_username = f"{first_name}{last_name}".replace(' ', '')
+        
+        # Get first initial and full last name
+        first_initial = first_name[0].upper() if first_name else 'U'
+        clean_last_name = last_name.replace(' ', '').replace('-', '').replace("'", '')
+        base_username = f"{first_initial}.{clean_last_name}"
         
         # Ensure unique username by adding number suffix if needed
         username = base_username
         counter = 1
         while User.objects.filter(username__iexact=username).exists():
-            username = f"{base_username}{counter}"
+            username = f"{first_initial}.{clean_last_name}{counter}"
             counter += 1
         
         # Validate password

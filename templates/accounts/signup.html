@@ -29,7 +29,8 @@
                             <strong><i class="bi bi-info-circle"></i> Account Details</strong>
                             <ul class="mb-0 mt-2">
                                 <li><strong>Name:</strong> {{ invitation.first_name }} {{ invitation.last_name }}</li>
-                                <li><strong>Username:</strong> Will be auto-generated as <code>{{ invitation.first_name }}{{ invitation.last_name }}</code></li>
+                                <li><strong>Username:</strong> Will be auto-generated as <code>{{ invitation.first_name|slice:":1"|upper }}.{{ invitation.last_name }}</code></li>
+                                <li><small class="text-muted">Example: Amos Cheloti → A.Cheloti</small></li>
                                 <li><small class="text-muted">To change your name, contact your administrator after signup</small></li>
                             </ul>
                         </div>

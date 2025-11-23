@@ -24,53 +24,133 @@ from settings_manager.views import log_activity
 @permission_required('accounts.add_userinvitation', raise_exception=True)
 def download_template(request):
     """
-    Download CSV template for bulk user import
+    Download CSV template for bulk user import with organization reference
     """
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="user_import_template.csv"'
     
     writer = csv.writer(response)
     
-    # Write header row with instructions
+    # Write header row
     writer.writerow([
         'email', 'first_name', 'last_name', 'role', 
-        'company_name', 'department_name', 'branch_name', 
+        'company_name', 'region_name', 'branch_name', 'department_name',
         'assigned_apps'
     ])
     
-    # Write example rows
+    # Get actual organizations from database for reference
+    companies = Company.objects.all().values_list('name', flat=True)[:5]
+    departments = Department.objects.all().values_list('name', flat=True)[:5]
+    branches = Branch.objects.all().values_list('name', flat=True)[:5]
+    
+    # Write example rows with real org data if available
+    company_example = companies[0] if companies else 'Quick Services LQS'
+    dept_example = departments[0] if departments else 'Finance'
+    branch_example = branches[0] if branches else 'Head Office'
+    
     writer.writerow([
-        'john.doe@example.com',
-        'John',
-        'Doe',
+        'amos.cheloti@example.com',
+        'Amos',
+        'Cheloti',
         'REQUESTER',
-        'Quick Services LQS',
-        'Finance',
-        'Head Office',
-        'treasury,workflow'  # Comma-separated app names
+        company_example,
+        'East Africa',  # region example
+        branch_example,
+        dept_example,
+        'treasury,workflow'
     ])
     writer.writerow([
-        'jane.smith@example.com',
+        'jane.doe@example.com',
         'Jane',
-        'Smith',
+        'Doe',
         'APPROVER',
-        'Quick Services LQS',
-        'Finance',
-        'Head Office',
+        company_example,
+        'East Africa',
+        branch_example,
+        dept_example,
         'treasury,workflow,reports'
     ])
     
-    # Add instructions as comments
+    # Add blank separator
     writer.writerow([])
-    writer.writerow(['INSTRUCTIONS:'])
-    writer.writerow(['- Delete the example rows above before uploading'])
-    writer.writerow(['- email: Must be valid and unique'])
-    writer.writerow(['- first_name, last_name: User\'s full name'])
-    writer.writerow(['- role: REQUESTER, APPROVER, FINANCE, or ADMIN'])
-    writer.writerow(['- company_name, department_name, branch_name: Must exist in system'])
-    writer.writerow(['- assigned_apps: Comma-separated app names (treasury, workflow, reports, etc.)'])
-    writer.writerow(['- Username will be auto-generated as FirstnameLast name (e.g., JohnDoe)'])
-    writer.writerow(['- User will receive invitation email to set their password'])
+    writer.writerow([])
+    
+    # INSTRUCTIONS SECTION
+    writer.writerow(['════════════════════════════════════════════════════════════════'])
+    writer.writerow(['INSTRUCTIONS - DELETE ALL ROWS BELOW BEFORE UPLOADING'])
+    writer.writerow(['════════════════════════════════════════════════════════════════'])
+    writer.writerow([])
+    writer.writerow(['FIELD REQUIREMENTS:'])
+    writer.writerow(['- email: Must be valid and unique (user@company.com)'])
+    writer.writerow(['- first_name: User\'s first name (e.g., Amos)'])
+    writer.writerow(['- last_name: User\'s last name (e.g., Cheloti)'])
+    writer.writerow(['- role: REQUESTER | APPROVER | FINANCE | ADMIN'])
+    writer.writerow(['- company_name: Must EXACTLY match existing company (see list below)'])
+    writer.writerow(['- region_name: Region name (optional, see list below)'])
+    writer.writerow(['- branch_name: Must EXACTLY match existing branch (see list below)'])
+    writer.writerow(['- department_name: Must EXACTLY match existing department (see list below)'])
+    writer.writerow(['- assigned_apps: Comma-separated (treasury,workflow,reports,settings)'])
+    writer.writerow([])
+    writer.writerow(['USERNAME FORMAT:'])
+    writer.writerow(['- Auto-generated as: FirstInitial.LastName'])
+    writer.writerow(['- Example: Amos Cheloti → A.Cheloti'])
+    writer.writerow(['- Example: Jane Doe → J.Doe'])
+    writer.writerow(['- Duplicates get number suffix: A.Cheloti1, A.Cheloti2'])
+    writer.writerow([])
+    writer.writerow(['PASSWORD:'])
+    writer.writerow(['- Users will receive email invitation to set their own password'])
+    writer.writerow([])
+    writer.writerow([])
+    
+    # AVAILABLE ORGANIZATIONS SECTION
+    writer.writerow(['════════════════════════════════════════════════════════════════'])
+    writer.writerow(['AVAILABLE ORGANIZATIONS (Copy exact names from here)'])
+    writer.writerow(['════════════════════════════════════════════════════════════════'])
+    writer.writerow([])
+    
+    # List all companies
+    writer.writerow(['COMPANIES (company_name):'])
+    all_companies = Company.objects.all().order_by('name')
+    for company in all_companies:
+        writer.writerow([f'  → {company.name}'])
+    if not all_companies.exists():
+        writer.writerow(['  (No companies found - create companies first)'])
+    writer.writerow([])
+    
+    # List all departments
+    writer.writerow(['DEPARTMENTS (department_name):'])
+    all_departments = Department.objects.all().order_by('name')
+    for dept in all_departments:
+        writer.writerow([f'  → {dept.name}'])
+    if not all_departments.exists():
+        writer.writerow(['  (No departments found - create departments first)'])
+    writer.writerow([])
+    
+    # List all branches
+    writer.writerow(['BRANCHES (branch_name):'])
+    all_branches = Branch.objects.all().order_by('name')
+    for branch in all_branches:
+        region_info = f' (Region: {branch.region.name})' if hasattr(branch, 'region') and branch.region else ''
+        writer.writerow([f'  → {branch.name}{region_info}'])
+    if not all_branches.exists():
+        writer.writerow(['  (No branches found - create branches first)'])
+    writer.writerow([])
+    
+    # Available roles
+    writer.writerow(['AVAILABLE ROLES (role):'])
+    writer.writerow(['  → REQUESTER (Creates requisitions)'])
+    writer.writerow(['  → APPROVER (Approves requisitions)'])
+    writer.writerow(['  → FINANCE (Finance operations)'])
+    writer.writerow(['  → ADMIN (System administration)'])
+    writer.writerow([])
+    
+    # Available apps
+    writer.writerow(['AVAILABLE APPS (assigned_apps):'])
+    writer.writerow(['  → treasury (Treasury Management)'])
+    writer.writerow(['  → workflow (Workflow & Approvals)'])
+    writer.writerow(['  → reports (Reporting & Analytics)'])
+    writer.writerow(['  → settings (System Settings)'])
+    writer.writerow(['  Use comma-separated for multiple: treasury,workflow,reports'])
     
     return response
 
@@ -139,28 +219,60 @@ def bulk_import(request):
                         company = None
                         department = None
                         branch = None
+                        region_name = row.get('region_name', '').strip() if row.get('region_name') else None
                         
                         if row.get('company_name'):
+                            company_name = row['company_name'].strip()
                             try:
-                                company = Company.objects.get(name=row['company_name'].strip())
+                                company = Company.objects.get(name=company_name)
                             except Company.DoesNotExist:
-                                errors.append(f"Row {row_num}: Company '{row['company_name']}' not found")
-                                error_count += 1
-                                continue
+                                # Try case-insensitive match
+                                companies = Company.objects.filter(name__iexact=company_name)
+                                if companies.exists():
+                                    company = companies.first()
+                                else:
+                                    errors.append(f"Row {row_num}: Company '{company_name}' not found. Check exact spelling.")
+                                    error_count += 1
+                                    continue
                         
                         if row.get('department_name'):
+                            dept_name = row['department_name'].strip()
                             try:
-                                department = Department.objects.get(name=row['department_name'].strip())
+                                department = Department.objects.get(name=dept_name)
                             except Department.DoesNotExist:
-                                errors.append(f"Row {row_num}: Department '{row['department_name']}' not found")
-                                error_count += 1
-                                continue
+                                # Try case-insensitive match
+                                departments = Department.objects.filter(name__iexact=dept_name)
+                                if departments.exists():
+                                    department = departments.first()
+                                else:
+                                    errors.append(f"Row {row_num}: Department '{dept_name}' not found. Check exact spelling.")
+                                    error_count += 1
+                                    continue
                         
                         if row.get('branch_name'):
+                            branch_name = row['branch_name'].strip()
                             try:
-                                branch = Branch.objects.get(name=row['branch_name'].strip())
+                                # If region specified, filter by region too
+                                if region_name:
+                                    branch = Branch.objects.get(name=branch_name, region__name=region_name)
+                                else:
+                                    branch = Branch.objects.get(name=branch_name)
                             except Branch.DoesNotExist:
-                                errors.append(f"Row {row_num}: Branch '{row['branch_name']}' not found")
+                                # Try case-insensitive match
+                                if region_name:
+                                    branches = Branch.objects.filter(name__iexact=branch_name, region__name__iexact=region_name)
+                                else:
+                                    branches = Branch.objects.filter(name__iexact=branch_name)
+                                
+                                if branches.exists():
+                                    branch = branches.first()
+                                else:
+                                    region_hint = f" in region '{region_name}'" if region_name else ""
+                                    errors.append(f"Row {row_num}: Branch '{branch_name}'{region_hint} not found. Check exact spelling.")
+                                    error_count += 1
+                                    continue
+                            except Branch.MultipleObjectsReturned:
+                                errors.append(f"Row {row_num}: Multiple branches named '{branch_name}' found. Please specify region_name.")
                                 error_count += 1
                                 continue
                         
@@ -194,6 +306,11 @@ def bulk_import(request):
                                 f'/accounts/signup/{invitation.token}/'
                             )
                             
+                            # Generate username preview for email
+                            first_initial = first_name[0].upper() if first_name else 'U'
+                            clean_last = last_name.replace(' ', '').replace('-', '').replace("'", '')
+                            username_preview = f"{first_initial}.{clean_last}"
+                            
                             send_mail(
                                 subject=f'Invitation to join {company.name if company else "the system"}',
                                 message=f'''
@@ -204,7 +321,7 @@ You've been invited to join as a {invitation.get_role_display()}.
 Click here to complete your registration:
 {invitation_url}
 
-Your username will be auto-generated as: {first_name}{last_name}
+Your username will be auto-generated as: {username_preview}
 You will set your password during registration.
 
 This invitation expires on {expires_at.strftime("%B %d, %Y at %I:%M %p")}.

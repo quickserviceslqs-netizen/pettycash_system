@@ -28,6 +28,15 @@ john.doe@example.com,John,Doe,REQUESTER,Quick Services LQS,Finance,Head Office,t
 jane.smith@example.com,Jane,Smith,APPROVER,Quick Services LQS,Finance,Head Office,treasury,workflow,reports
 ```
 
+**Updated Format (v2.1):**
+```csv
+email,first_name,last_name,role,company_name,region_name,branch_name,department_name,assigned_apps
+amos.cheloti@company.com,Amos,Cheloti,REQUESTER,Quick Services LQS,East Africa,Nairobi Branch,Finance,treasury,workflow
+jane.doe@company.com,Jane,Doe,APPROVER,Quick Services LQS,East Africa,Mombasa Branch,Finance,treasury,workflow,reports
+```
+
+**Note:** Column order changed to group organizational hierarchy logically.
+
 ### 4. Upload File
 - Delete example rows before uploading
 - Upload completed CSV file
@@ -40,31 +49,85 @@ jane.smith@example.com,Jane,Smith,APPROVER,Quick Services LQS,Finance,Head Offic
 
 | Field | Required | Format | Example |
 |-------|----------|--------|---------|
-| `email` | ✅ Yes | Valid email | `john.doe@example.com` |
-| `first_name` | ✅ Yes | Text | `John` |
-| `last_name` | ✅ Yes | Text | `Doe` |
+| `email` | ✅ Yes | Valid email | `amos.cheloti@company.com` |
+| `first_name` | ✅ Yes | Text | `Amos` |
+| `last_name` | ✅ Yes | Text | `Cheloti` |
 | `role` | ✅ Yes | REQUESTER/APPROVER/FINANCE/ADMIN | `REQUESTER` |
-| `company_name` | No | Must exist in system | `Quick Services LQS` |
-| `department_name` | No | Must exist in system | `Finance` |
-| `branch_name` | No | Must exist in system | `Head Office` |
+| `company_name` | No | Must EXACTLY match existing | `Quick Services LQS` |
+| `region_name` | No | Region name (for branch filtering) | `East Africa` |
+| `branch_name` | No | Must EXACTLY match existing | `Nairobi Branch` |
+| `department_name` | No | Must EXACTLY match existing | `Finance` |
 | `assigned_apps` | No | Comma-separated app names | `treasury,workflow,reports` |
+
+**Important:** Company, Region, Branch, Department names are **case-sensitive** and must match EXACTLY.
+
+---
+
+## 🗺️ Multi-Company / Multi-Branch / Multi-Region Support
+
+### Organization Hierarchy:
+```
+Company
+  └── Region
+       └── Branch
+            └── Department
+```
+
+### How It Works:
+
+1. **Download Template** - Includes complete list of ALL organizations
+2. **Find Your Organizations** - Scroll to "AVAILABLE ORGANIZATIONS" section in CSV
+3. **Copy Exact Names** - Copy company/branch/department names exactly (case-sensitive)
+4. **Use Region Filter** - Specify region if multiple branches have same name
+
+### Example CSV with Multi-Branch:
+
+```csv
+email,first_name,last_name,role,company_name,region_name,branch_name,department_name,assigned_apps
+user1@co.com,Amos,Cheloti,REQUESTER,Quick Services LQS,East Africa,Nairobi Branch,Finance,treasury
+user2@co.com,Jane,Doe,APPROVER,Quick Services LQS,East Africa,Mombasa Branch,Operations,treasury,workflow
+user3@co.com,Bob,Smith,FINANCE,ABC Corporation,West Africa,Lagos Branch,Finance,treasury,reports
+```
+
+**Result:**
+- Amos → Company: Quick Services LQS, Region: East Africa, Branch: Nairobi
+- Jane → Company: Quick Services LQS, Region: East Africa, Branch: Mombasa
+- Bob → Company: ABC Corporation, Region: West Africa, Branch: Lagos
+
+### When to Use `region_name`:
+
+✅ **Use region when:**
+- Multiple branches have the same name (e.g., "Head Office" in different regions)
+- You want to ensure correct branch mapping
+- Template shows multiple matches for branch name
+
+❌ **Skip region when:**
+- Branch name is unique across all regions
+- Only one branch with that name exists
 
 ---
 
 ## 🎯 Username Auto-Generation
 
-**Format:** `FirstnameLastname` (no spaces)
+**Format:** `FirstInitial.LastName` (Professional corporate standard)
 
 ### Examples:
-- John Doe → `JohnDoe`
-- Jane Smith → `JaneSmith`
-- Mary-Ann O'Connor → `MaryAnnOConnor`
+- Amos Cheloti → `A.Cheloti`
+- Jane Doe → `J.Doe`
+- Mary-Ann O'Connor → `M.OConnor`
+- John Smith → `J.Smith`
 
 ### Duplicate Handling:
 If username exists, adds number suffix:
-- First: `JohnDoe`
-- Second: `JohnDoe1`
-- Third: `JohnDoe2`
+- First: `A.Cheloti`
+- Second: `A.Cheloti1`
+- Third: `A.Cheloti2`
+
+**Why This Format?**
+- ✅ Professional and concise
+- ✅ Easy to type and remember
+- ✅ Industry standard (Initial.Surname)
+- ✅ Handles duplicates cleanly
 
 ---
 
@@ -207,29 +270,33 @@ Timestamp: 2024-11-23 14:30:00
 
 ### Scenario 1: New Department (10 Users)
 ```csv
-email,first_name,last_name,role,company_name,department_name,branch_name,assigned_apps
-user1@company.com,Alice,Johnson,REQUESTER,Quick Services LQS,Marketing,Head Office,treasury
-user2@company.com,Bob,Williams,REQUESTER,Quick Services LQS,Marketing,Head Office,treasury
-user3@company.com,Carol,Brown,APPROVER,Quick Services LQS,Marketing,Head Office,treasury,workflow
-...
+email,first_name,last_name,role,company_name,region_name,branch_name,department_name,assigned_apps
+alice.j@co.com,Alice,Johnson,REQUESTER,Quick Services LQS,East Africa,Nairobi Branch,Marketing,treasury
+bob.w@co.com,Bob,Williams,REQUESTER,Quick Services LQS,East Africa,Nairobi Branch,Marketing,treasury
+carol.b@co.com,Carol,Brown,APPROVER,Quick Services LQS,East Africa,Nairobi Branch,Marketing,treasury,workflow
 ```
 
-### Scenario 2: Mixed Roles
+**Result:** Usernames will be `A.Johnson`, `B.Williams`, `C.Brown`
+
+### Scenario 2: Multi-Company Setup
 ```csv
-email,first_name,last_name,role,company_name,department_name,branch_name,assigned_apps
-requester@co.com,John,Doe,REQUESTER,Quick Services LQS,Finance,Head Office,treasury
-approver@co.com,Jane,Smith,APPROVER,Quick Services LQS,Finance,Head Office,treasury,workflow
-finance@co.com,Bob,Jones,FINANCE,Quick Services LQS,Finance,Head Office,treasury,workflow,reports
-admin@co.com,Alice,White,ADMIN,Quick Services LQS,Finance,Head Office,treasury,workflow,reports,settings
+email,first_name,last_name,role,company_name,region_name,branch_name,department_name,assigned_apps
+amos.c@qslqs.com,Amos,Cheloti,REQUESTER,Quick Services LQS,East Africa,Nairobi Branch,Finance,treasury
+jane.d@abc.com,Jane,Doe,APPROVER,ABC Corporation,West Africa,Lagos Branch,Finance,treasury,workflow
+bob.j@xyz.com,Bob,Jones,FINANCE,XYZ Limited,Central Africa,Kampala Branch,Finance,treasury,reports
 ```
 
-### Scenario 3: Multiple Branches
+**Result:** Three different companies, three different regions, usernames: `A.Cheloti`, `J.Doe`, `B.Jones`
+
+### Scenario 3: Same Branch Name, Different Regions
 ```csv
-email,first_name,last_name,role,company_name,department_name,branch_name,assigned_apps
-user1@co.com,Tom,Green,REQUESTER,Quick Services LQS,Sales,New York,treasury
-user2@co.com,Sam,Blue,REQUESTER,Quick Services LQS,Sales,Los Angeles,treasury
-user3@co.com,Pat,Red,REQUESTER,Quick Services LQS,Sales,Chicago,treasury
+email,first_name,last_name,role,company_name,region_name,branch_name,department_name,assigned_apps
+tom.g@co.com,Tom,Green,REQUESTER,Quick Services LQS,East Africa,Head Office,Sales,treasury
+sam.b@co.com,Sam,Blue,REQUESTER,Quick Services LQS,West Africa,Head Office,Sales,treasury
+pat.r@co.com,Pat,Red,REQUESTER,Quick Services LQS,Central Africa,Head Office,Sales,treasury
 ```
+
+**Result:** Same company, same branch name ("Head Office"), but different regions. Region filter ensures correct mapping.
 
 ---
 
