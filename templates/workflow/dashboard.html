@@ -161,9 +161,14 @@
                                         {% if threshold.requires_cfo %}
                                         <span class="badge bg-danger" title="CFO approval required">
                                             <i class="bi bi-shield-fill-check"></i> CFO Required
+                                        </span><br>
+                                        {% endif %}
+                                        {% if threshold.requires_ceo %}
+                                        <span class="badge bg-dark" title="CEO approval required">
+                                            <i class="bi bi-person-fill-check"></i> CEO Required
                                         </span>
                                         {% endif %}
-                                        {% if not threshold.allow_urgent_fasttrack and not threshold.requires_cfo %}
+                                        {% if not threshold.allow_urgent_fasttrack and not threshold.requires_cfo and not threshold.requires_ceo %}
                                         <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>

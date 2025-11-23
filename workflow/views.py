@@ -103,6 +103,7 @@ def threshold_edit(request, threshold_id):
             threshold.priority = request.POST.get('priority')
             threshold.allow_urgent_fasttrack = request.POST.get('allow_urgent_fasttrack') == 'on'
             threshold.requires_cfo = request.POST.get('requires_cfo') == 'on'
+            threshold.requires_ceo = request.POST.get('requires_ceo') == 'on'
             threshold.is_active = request.POST.get('is_active') == 'on'
             
             # Get roles sequence from JSON

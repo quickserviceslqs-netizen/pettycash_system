@@ -149,6 +149,14 @@
                             </label>
                         </div>
                         
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="requires_ceo" 
+                                   name="requires_ceo" {% if threshold.requires_ceo %}checked{% endif %}>
+                            <label class="form-check-label" for="requires_ceo">
+                                <i class="bi bi-person-fill-check text-dark"></i> Requires CEO Approval
+                            </label>
+                        </div>
+                        
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="is_active" 
                                    name="is_active" {% if threshold.is_active %}checked{% endif %}>

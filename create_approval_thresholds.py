@@ -61,6 +61,7 @@ def create_sample_thresholds():
             "roles_sequence": ["regional_manager", "cfo", "ceo"],
             "allow_urgent_fasttrack": False,
             "requires_cfo": True,
+            "requires_ceo": True,
             "priority": 4,
             "is_active": True
         }

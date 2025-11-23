@@ -24,6 +24,10 @@ class ApprovalThreshold(models.Model):
         default=False,
         help_text="True if CFO approval is mandatory (usually Tier 4)."
     )
+    requires_ceo = models.BooleanField(
+        default=False,
+        help_text="True if CEO approval is mandatory (usually very high amounts)."
+    )
     priority = models.PositiveIntegerField(
         default=0,
         help_text="Lower = higher priority when multiple thresholds overlap."
