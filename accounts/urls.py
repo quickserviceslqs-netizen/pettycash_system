@@ -84,7 +84,6 @@ urlpatterns = [
     # --------------------------
     # Admin Dashboard & User Management
     # --------------------------
-    path('admin-dashboard/', views_admin.admin_dashboard, name='admin_dashboard'),
     path('manage-users/', views_admin.manage_users, name='manage_users'),
     path('users/<int:user_id>/edit-permissions/', views_admin.edit_user_permissions, name='edit_user_permissions'),
     path('users/<int:user_id>/toggle-status/', views_admin.toggle_user_status, name='toggle_user_status'),

@@ -196,6 +196,25 @@ def dashboard(request):
     else:
         reports_pending = 0
 
+    # ----------------------------
+    # Admin/Staff User Management Stats (for users with change_user permission)
+    # ----------------------------
+    admin_stats = {}
+    if user.has_perm('accounts.change_user'):
+        from accounts.models import User, App
+        from accounts.models_device import UserInvitation
+        from django.db.models import Count
+        
+        admin_stats = {
+            'total_users': User.objects.count(),
+            'active_users': User.objects.filter(is_active=True).count(),
+            'pending_invitations': UserInvitation.objects.filter(status='pending').count(),
+            'users_by_role': User.objects.values('role').annotate(count=Count('id')).order_by('-count')[:5],
+            'show_admin_section': True,
+        }
+    else:
+        admin_stats = {'show_admin_section': False}
+
     context = {
         "user": user,
         "user_role": user_role,
@@ -218,6 +237,8 @@ def dashboard(request):
         "ready_for_payment": ready_for_payment,
         "show_payment_section": show_payment_section,
         "is_approver": user_role in APPROVER_ROLES,
+        # Admin user management stats
+        **admin_stats,
     }
 
     return render(request, "accounts/dashboard.html", context)

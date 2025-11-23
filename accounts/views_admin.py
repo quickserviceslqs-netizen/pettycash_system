@@ -1,6 +1,7 @@
 """
 Admin Dashboard Views
 User-friendly interface for managing users, permissions, and app access
+Admin stats are integrated into the main dashboard (accounts/views.py)
 """
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
@@ -9,50 +10,6 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from accounts.models import User, App
 from organization.models import Company, Branch, Department
-
-
-@login_required
-@permission_required('accounts.change_user', raise_exception=True)
-def admin_dashboard(request):
-    """Main admin dashboard for user and permission management"""
-    
-    # User statistics
-    total_users = User.objects.count()
-    active_users = User.objects.filter(is_active=True).count()
-    staff_users = User.objects.filter(is_staff=True).count()
-    
-    # Users by role
-    users_by_role = User.objects.values('role').annotate(count=Count('id')).order_by('-count')
-    
-    # Users by company
-    users_by_company = User.objects.filter(company__isnull=False).values(
-        'company__name'
-    ).annotate(count=Count('id')).order_by('-count')[:5]
-    
-    # App statistics
-    apps = App.objects.filter(is_active=True)
-    app_stats = []
-    for app in apps:
-        app_stats.append({
-            'name': app.display_name,
-            'user_count': app.users.count(),
-            'is_active': app.is_active
-        })
-    
-    # Recent users (last 10)
-    recent_users = User.objects.order_by('-date_joined')[:10]
-    
-    context = {
-        'total_users': total_users,
-        'active_users': active_users,
-        'staff_users': staff_users,
-        'users_by_role': users_by_role,
-        'users_by_company': users_by_company,
-        'app_stats': app_stats,
-        'recent_users': recent_users,
-    }
-    
-    return render(request, 'accounts/admin_dashboard.html', context)
 
 
 @login_required
