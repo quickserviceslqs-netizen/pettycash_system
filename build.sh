@@ -26,6 +26,9 @@ python manage.py migrate --no-input
 # Create default approval thresholds (workflow app)
 python create_approval_thresholds.py
 
+# Seed default system settings (settings_manager app)
+python manage.py seed_settings
+
 # Note: Create superuser manually via Django Admin or Render shell
 # python manage.py createsuperuser
 
