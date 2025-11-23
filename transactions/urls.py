@@ -12,12 +12,28 @@ from transactions.views import (
     request_changes,  # Approver requests changes from requester
     submit_changes,  # Requester submits requested changes
 )
+from transactions.views_admin import (
+    manage_requisitions,
+    create_requisition as create_req_admin,
+    view_requisition,
+    approve_requisition as approve_req_admin,
+    reject_requisition as reject_req_admin,
+)
 from accounts.permissions import require_app_access
+
+app_name = 'transactions'
 
 # ---------------------------------------------------------------------
 # URL patterns - using app assignment + Django permissions
 # ---------------------------------------------------------------------
 urlpatterns = [
+    # Admin requisition management
+    path('admin/requisitions/', manage_requisitions, name='manage_requisitions'),
+    path('admin/requisitions/create/', create_req_admin, name='create_requisition'),
+    path('admin/requisitions/<str:transaction_id>/', view_requisition, name='view_requisition'),
+    path('admin/requisitions/<str:transaction_id>/approve/', approve_req_admin, name='approve_requisition'),
+    path('admin/requisitions/<str:transaction_id>/reject/', reject_req_admin, name='reject_requisition'),
+    
     # Main transactions page - requires transactions app + view permission
     path('', transactions_home, name='transactions-home'),
     

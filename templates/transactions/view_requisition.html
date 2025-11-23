@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Requisition Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Requisition Details</h2>
+        <a href="{% url 'transactions:manage_requisitions' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Requisitions
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Main Details -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Requisition #{{ requisition.transaction_id|truncatechars:20 }}</h5>
+                    <div>
+                        {% if requisition.status == 'pending' or requisition.status == 'pending_urgency_confirmation' %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% elif requisition.status == 'paid' %}
+                            <span class="badge bg-success">Paid</span>
+                        {% elif requisition.status == 'rejected' %}
+                            <span class="badge bg-danger">Rejected</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ requisition.get_status_display }}</span>
+                        {% endif %}
+                        {% if requisition.is_urgent %}
+                            <span class="badge bg-danger">⚡ URGENT</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Requested By:</dt>
+                        <dd class="col-sm-9">
+                            {{ requisition.requested_by.get_full_name }} ({{ requisition.requested_by.role }})
+                        </dd>
+                        
+                        <dt class="col-sm-3">Amount:</dt>
+                        <dd class="col-sm-9"><strong class="text-success fs-4">${{ requisition.amount|floatformat:2 }}</strong></dd>
+                        
+                        <dt class="col-sm-3">Origin:</dt>
+                        <dd class="col-sm-9"><span class="badge bg-info">{{ requisition.get_origin_type_display }}</span></dd>
+                        
+                        <dt class="col-sm-3">Company:</dt>
+                        <dd class="col-sm-9">{{ requisition.company.name|default:"-" }}</dd>
+                        
+                        <dt class="col-sm-3">Region:</dt>
+                        <dd class="col-sm-9">{{ requisition.region.name|default:"-" }}</dd>
+                        
+                        <dt class="col-sm-3">Branch:</dt>
+                        <dd class="col-sm-9">{{ requisition.branch.name|default:"-" }}</dd>
+                        
+                        <dt class="col-sm-3">Department:</dt>
+                        <dd class="col-sm-9">{{ requisition.department.name|default:"-" }}</dd>
+                        
+                        <dt class="col-sm-3">Applied Threshold:</dt>
+                        <dd class="col-sm-9">
+                            {% if requisition.applied_threshold %}
+                                <span class="badge bg-secondary">{{ requisition.applied_threshold.name }}</span>
+                            {% else %}
+                                <span class="text-muted">Not applied</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-3">Created:</dt>
+                        <dd class="col-sm-9">{{ requisition.created_at|date:"M d, Y g:i A" }}</dd>
+                        
+                        <dt class="col-sm-3">Last Updated:</dt>
+                        <dd class="col-sm-9">{{ requisition.updated_at|date:"M d, Y g:i A" }}</dd>
+                    </dl>
+                    
+                    <hr>
+                    
+                    <h6>Purpose:</h6>
+                    <div class="bg-light p-3 rounded">
+                        <p class="mb-0">{{ requisition.purpose }}</p>
+                    </div>
+                    
+                    {% if requisition.is_urgent and requisition.urgency_reason %}
+                        <h6 class="mt-3">Urgency Reason:</h6>
+                        <div class="bg-warning p-3 rounded">
+                            <p class="mb-0">{{ requisition.urgency_reason }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Approval Trail -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Approval Trail</h5>
+                </div>
+                <div class="card-body">
+                    {% if approval_trail %}
+                        <div class="timeline">
+                            {% for trail in approval_trail %}
+                                <div class="timeline-item mb-3">
+                                    <div class="d-flex">
+                                        <div class="me-3">
+                                            {% if trail.action == 'approved' %}
+                                                <i class="fas fa-check-circle text-success fa-2x"></i>
+                                            {% elif trail.action == 'rejected' %}
+                                                <i class="fas fa-times-circle text-danger fa-2x"></i>
+                                            {% elif trail.action == 'validated' %}
+                                                <i class="fas fa-clipboard-check text-info fa-2x"></i>
+                                            {% elif trail.action == 'paid' %}
+                                                <i class="fas fa-money-bill text-success fa-2x"></i>
+                                            {% else %}
+                                                <i class="fas fa-circle text-secondary fa-2x"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between">
+                                                <div>
+                                                    <strong>{{ trail.user.get_full_name }}</strong> ({{ trail.role }})
+                                                    <span class="badge bg-primary ms-2">{{ trail.get_action_display }}</span>
+                                                </div>
+                                                <small class="text-muted">{{ trail.timestamp|date:"M d, Y g:i A" }}</small>
+                                            </div>
+                                            {% if trail.comment %}
+                                                <p class="mt-2 mb-0"><em>"{{ trail.comment }}"</em></p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No approval actions yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payments -->
+            {% if payments %}
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Payments</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Payment ID</th>
+                                        <th>Amount</th>
+                                        <th>Method</th>
+                                        <th>Status</th>
+                                        <th>Executor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in payments %}
+                                        <tr>
+                                            <td><code>{{ payment.payment_id|truncatechars:12 }}</code></td>
+                                            <td>${{ payment.amount|floatformat:2 }}</td>
+                                            <td>{{ payment.get_method_display }}</td>
+                                            <td><span class="badge bg-{{ payment.status }}">{{ payment.get_status_display }}</span></td>
+                                            <td>{{ payment.executor.get_full_name|default:"-" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Actions Sidebar -->
+        <div class="col-md-4">
+            {% if can_approve %}
+                <div class="card bg-warning mb-3">
+                    <div class="card-body">
+                        <h5>⚠️ Pending Your Approval</h5>
+                        <p>This requisition is waiting for your review.</p>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'transactions:approve_requisition' requisition.transaction_id %}" class="btn btn-success">
+                                <i class="fas fa-check"></i> Approve
+                            </a>
+                            <a href="{% url 'transactions:reject_requisition' requisition.transaction_id %}" class="btn btn-danger">
+                                <i class="fas fa-times"></i> Reject
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5>Workflow Status</h5>
+                    <p><strong>Next Approver:</strong><br>
+                        {% if requisition.next_approver %}
+                            {{ requisition.next_approver.get_full_name }} ({{ requisition.next_approver.role }})
+                        {% else %}
+                            <span class="text-muted">Workflow complete</span>
+                        {% endif %}
+                    </p>
+                    
+                    {% if requisition.workflow_sequence %}
+                        <p><strong>Remaining Approvers:</strong></p>
+                        <ul class="list-unstyled">
+                            {% for role in requisition.workflow_sequence %}
+                                <li><span class="badge bg-secondary">{{ forloop.counter }}. {{ role }}</span></li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card bg-info text-white mt-3">
+                <div class="card-body">
+                    <h5>Transaction Info</h5>
+                    <p><strong>ID:</strong> <code class="text-white">{{ requisition.transaction_id }}</code></p>
+                    <p class="mb-0"><strong>Status:</strong> {{ requisition.get_status_display }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

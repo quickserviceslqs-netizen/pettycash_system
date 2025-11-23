@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Requisitions{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Requisition Management</h2>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6>Total Requisitions</h6>
+                    <h3>{{ stats.total }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6>Pending</h6>
+                    <h3>{{ stats.pending }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6>Paid</h6>
+                    <h3>{{ stats.paid }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6>My Pending Approvals</h6>
+                    <h3>{{ stats.my_pending_approvals }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <a href="{% url 'transactions:create_requisition' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Requisition
+                    </a>
+                </div>
+            </div>
+            
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">User</label>
+                    <select name="user" class="form-select form-select-sm">
+                        <option value="">All Users</option>
+                        {% for usr in users %}
+                            <option value="{{ usr.id }}" {% if user_filter == usr.id|stringformat:"s" %}selected{% endif %}>
+                                {{ usr.get_full_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Department</label>
+                    <select name="department" class="form-select form-select-sm">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if department_filter == dept.id|stringformat:"s" %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control form-control-sm" 
+                           placeholder="Transaction ID, purpose..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Quick Filters</label>
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" name="my_requisitions" class="form-check-input" id="myReqs"
+                                   {% if my_requisitions %}checked{% endif %}>
+                            <label class="form-check-label" for="myReqs">My Requisitions</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input type="checkbox" name="my_approvals" class="form-check-input" id="myApprovals"
+                                   {% if my_approvals %}checked{% endif %}>
+                            <label class="form-check-label" for="myApprovals">My Approvals</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <button type="submit" class="btn btn-secondary btn-sm">Apply Filters</button>
+                    <a href="{% url 'transactions:manage_requisitions' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Requisitions Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if requisitions %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Requested By</th>
+                                <th>Amount</th>
+                                <th>Purpose</th>
+                                <th>Threshold</th>
+                                <th>Status</th>
+                                <th>Next Approver</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in requisitions %}
+                                <tr>
+                                    <td><code>{{ req.transaction_id|truncatechars:12 }}</code></td>
+                                    <td>
+                                        <small>{{ req.requested_by.get_full_name }}</small><br>
+                                        <small class="text-muted">{{ req.requested_by.role }}</small>
+                                    </td>
+                                    <td><strong>${{ req.amount|floatformat:2 }}</strong></td>
+                                    <td><small>{{ req.purpose|truncatewords:8 }}</small></td>
+                                    <td>
+                                        {% if req.applied_threshold %}
+                                            <small class="badge bg-secondary">{{ req.applied_threshold.name }}</small>
+                                        {% else %}
+                                            <small class="text-muted">-</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if req.status == 'draft' %}
+                                            <span class="badge bg-secondary">Draft</span>
+                                        {% elif req.status == 'pending' or req.status == 'pending_urgency_confirmation' %}
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        {% elif req.status == 'paid' %}
+                                            <span class="badge bg-success">Paid</span>
+                                        {% elif req.status == 'rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% else %}
+                                            <span class="badge bg-info">{{ req.get_status_display }}</span>
+                                        {% endif %}
+                                        {% if req.is_urgent %}
+                                            <span class="badge bg-danger">⚡ URGENT</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if req.next_approver %}
+                                            <small>{{ req.next_approver.get_full_name }}</small>
+                                        {% else %}
+                                            <small class="text-muted">-</small>
+                                        {% endif %}
+                                    </td>
+                                    <td><small>{{ req.created_at|date:"M d, Y" }}</small></td>
+                                    <td>
+                                        <a href="{% url 'transactions:view_requisition' req.transaction_id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted mt-2"><small>Showing up to 200 recent requisitions</small></p>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No requisitions found. 
+                    <a href="{% url 'transactions:create_requisition' %}">Create your first requisition</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

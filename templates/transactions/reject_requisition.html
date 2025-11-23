@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Reject Requisition{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Reject Requisition</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> <strong>Warning:</strong> You are about to reject this requisition. This action will end the approval workflow.
+                    </div>
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Requisition ID:</dt>
+                        <dd class="col-sm-8"><code>{{ requisition.transaction_id }}</code></dd>
+
+                        <dt class="col-sm-4">Requested By:</dt>
+                        <dd class="col-sm-8">{{ requisition.requested_by.get_full_name }}</dd>
+
+                        <dt class="col-sm-4">Amount:</dt>
+                        <dd class="col-sm-8"><strong class="text-danger">${{ requisition.amount|floatformat:2 }}</strong></dd>
+
+                        <dt class="col-sm-4">Purpose:</dt>
+                        <dd class="col-sm-8">{{ requisition.purpose|truncatewords:20 }}</dd>
+                    </dl>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+                            <textarea name="comment" id="comment" class="form-control" rows="4" placeholder="Please provide a reason for rejecting this requisition..." required></textarea>
+                            <small class="text-muted">This reason will be visible to the requester and recorded in the approval trail.</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'transactions:view_requisition' requisition.transaction_id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-ban"></i> Reject Requisition
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
