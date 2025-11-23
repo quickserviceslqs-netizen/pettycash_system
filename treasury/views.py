@@ -1017,3 +1017,85 @@ def mpesa_callback(request):
             'ResultCode': 1,
             'ResultDesc': f'Error processing callback: {str(e)}'
         })
+
+
+# ============================================================================
+# HTML Template Views with Permission Checks
+# ============================================================================
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from accounts.permissions import require_app_access, get_user_apps
+
+
+@login_required
+@require_app_access('treasury')
+def treasury_dashboard(request):
+    """Treasury dashboard view - requires treasury app assignment"""
+    # Additional permission check
+    if not request.user.has_perm('treasury.view_treasuryfund'):
+        messages.error(request, "You don't have permission to view treasury dashboard. Required: treasury.view_treasuryfund")
+        return redirect('dashboard')
+    
+    return render(request, 'treasury/dashboard.html')
+
+
+@login_required
+@require_app_access('treasury')
+def payment_execute(request):
+    """Payment execution view - requires treasury app assignment and change_payment permission"""
+    if not request.user.has_perm('treasury.change_payment'):
+        messages.error(request, "You don't have permission to execute payments. Required: treasury.change_payment")
+        return redirect('dashboard')
+    
+    return render(request, 'treasury/payment_execute.html')
+
+
+@login_required
+@require_app_access('treasury')
+def funds_view(request):
+    """Treasury funds management view - requires treasury app assignment"""
+    if not request.user.has_perm('treasury.view_treasuryfund'):
+        messages.error(request, "You don't have permission to view treasury funds. Required: treasury.view_treasuryfund")
+        return redirect('dashboard')
+    
+    return render(request, 'treasury/funds.html')
+
+
+@login_required
+@require_app_access('treasury')
+def alerts_view(request):
+    """Alerts view - requires treasury app assignment"""
+    if not request.user.has_perm('treasury.view_alert'):
+        messages.error(request, "You don't have permission to view alerts. Required: treasury.view_alert")
+        return redirect('dashboard')
+    
+    return render(request, 'treasury/alerts.html')
+
+
+@login_required
+@require_app_access('treasury')
+def variances_view(request):
+    """Variances view - requires treasury app assignment"""
+    if not request.user.has_perm('treasury.view_varianceadjustment'):
+        messages.error(request, "You don't have permission to view variances. Required: treasury.view_varianceadjustment")
+        return redirect('dashboard')
+    
+    return render(request, 'treasury/variances.html')
+
+
+@login_required
+def treasury_home(request):
+    """
+    Treasury home - checks if user has treasury app access and redirects accordingly
+    """
+    # Check if user has treasury app
+    apps = get_user_apps(request.user)
+    
+    if 'treasury' not in apps:
+        messages.error(request, "You don't have access to Treasury app.")
+        return redirect('dashboard')
+    
+    # Redirect to treasury dashboard
+    return redirect('treasury:dashboard_view')

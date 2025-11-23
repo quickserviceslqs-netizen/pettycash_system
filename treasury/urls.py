@@ -1,11 +1,13 @@
 from django.urls import path, include
-from django.views.generic import TemplateView, RedirectView
+from django.views.generic import RedirectView
 from rest_framework.routers import DefaultRouter
 from treasury.views import (
     TreasuryFundViewSet, PaymentViewSet, 
     VarianceAdjustmentViewSet, ReplenishmentRequestViewSet,
     LedgerEntryViewSet, DashboardViewSet, AlertsViewSet,
-    PaymentTrackingViewSet, ReportingViewSet, mpesa_callback
+    PaymentTrackingViewSet, ReportingViewSet, mpesa_callback,
+    treasury_home, treasury_dashboard, payment_execute, 
+    funds_view, alerts_view, variances_view
 )
 
 # Setup DRF router for API endpoints
@@ -22,15 +24,15 @@ router.register(r'alerts', AlertsViewSet, basename='alert')
 router.register(r'tracking', PaymentTrackingViewSet, basename='tracking')
 router.register(r'reports', ReportingViewSet, basename='report')
 
-# HTML Views for Phase 6
+# HTML Views for Phase 6 - with permission checks
 html_patterns = [
-    # Default index for /treasury/ -> redirect to treasury dashboard
-    path('', RedirectView.as_view(url='dashboard/', permanent=False), name='index'),
-    path('dashboard/', TemplateView.as_view(template_name='treasury/dashboard.html'), name='dashboard_view'),
-    path('payment-execute/', TemplateView.as_view(template_name='treasury/payment_execute.html'), name='payment_execute'),
-    path('funds/', TemplateView.as_view(template_name='treasury/funds.html'), name='funds_view'),
-    path('alerts/', TemplateView.as_view(template_name='treasury/alerts.html'), name='alerts_view'),
-    path('variances/', TemplateView.as_view(template_name='treasury/variances.html'), name='variances_view'),
+    # Default index for /treasury/ -> check access and redirect
+    path('', treasury_home, name='index'),
+    path('dashboard/', treasury_dashboard, name='dashboard_view'),
+    path('payment-execute/', payment_execute, name='payment_execute'),
+    path('funds/', funds_view, name='funds_view'),
+    path('alerts/', alerts_view, name='alerts_view'),
+    path('variances/', variances_view, name='variances_view'),
 ]
 
 # URL patterns
