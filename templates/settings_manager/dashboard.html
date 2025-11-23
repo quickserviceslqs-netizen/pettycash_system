@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}System Settings - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-gear-fill"></i> System Settings</h2>
+                <div>
+                    <a href="{% url 'settings_manager:activity_logs' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-clock-history"></i> Activity Logs
+                    </a>
+                    <a href="{% url 'settings_manager:system_info' %}" class="btn btn-outline-info">
+                        <i class="bi bi-info-circle"></i> System Info
+                    </a>
+                </div>
+            </div>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Category Filter -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="category" class="form-label">Filter by Category</label>
+                            <select name="category" id="category" class="form-select" onchange="this.form.submit()">
+                                <option value="">All Categories</option>
+                                <option value="email" {% if selected_category == 'email' %}selected{% endif %}>Email</option>
+                                <option value="approval" {% if selected_category == 'approval' %}selected{% endif %}>Approval</option>
+                                <option value="payment" {% if selected_category == 'payment' %}selected{% endif %}>Payment</option>
+                                <option value="security" {% if selected_category == 'security' %}selected{% endif %}>Security</option>
+                                <option value="notifications" {% if selected_category == 'notifications' %}selected{% endif %}>Notifications</option>
+                                <option value="general" {% if selected_category == 'general' %}selected{% endif %}>General</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Settings by Category -->
+            {% regroup settings by category as category_list %}
+            {% for category in category_list %}
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-{% if category.grouper == 'email' %}envelope{% elif category.grouper == 'approval' %}check-circle{% elif category.grouper == 'payment' %}currency-dollar{% elif category.grouper == 'security' %}shield-lock{% elif category.grouper == 'notifications' %}bell{% else %}gear{% endif %}"></i>
+                            {{ category.grouper|title }} Settings
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 25%;">Setting</th>
+                                        <th style="width: 35%;">Description</th>
+                                        <th style="width: 20%;">Current Value</th>
+                                        <th style="width: 10%;">Status</th>
+                                        <th style="width: 10%;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for setting in category.list %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ setting.display_name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ setting.key }}</small>
+                                                {% if setting.requires_restart %}
+                                                    <br>
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="bi bi-exclamation-triangle"></i> Restart Required
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <small>{{ setting.description }}</small>
+                                            </td>
+                                            <td>
+                                                {% if setting.is_sensitive %}
+                                                    <span class="text-muted">
+                                                        <i class="bi bi-eye-slash"></i> ••••••••
+                                                    </span>
+                                                {% else %}
+                                                    <code>{{ setting.value|truncatewords:5 }}</code>
+                                                {% endif %}
+                                                {% if setting.value != setting.default_value %}
+                                                    <br>
+                                                    <small class="text-info">
+                                                        <i class="bi bi-info-circle"></i> Modified from default
+                                                    </small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if setting.is_active %}
+                                                    <span class="badge bg-success">Active</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Inactive</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if setting.editable_by_admin %}
+                                                    <a href="{% url 'settings_manager:edit_setting' setting.id %}" 
+                                                       class="btn btn-sm btn-outline-primary" 
+                                                       title="Edit Setting">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                {% else %}
+                                                    <button class="btn btn-sm btn-outline-secondary" disabled title="Not editable">
+                                                        <i class="bi bi-lock"></i>
+                                                    </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No settings found. Run the seed command to create default settings.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

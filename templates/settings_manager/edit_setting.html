@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Setting - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-pencil-square"></i> Edit Setting
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Setting Info (Read-only) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Setting Name</label>
+                            <input type="text" class="form-control" value="{{ setting.display_name }}" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Key</label>
+                            <input type="text" class="form-control" value="{{ setting.key }}" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Description</label>
+                            <textarea class="form-control" rows="2" readonly>{{ setting.description }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Category</label>
+                                <input type="text" class="form-control" value="{{ setting.get_category_display }}" readonly>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Type</label>
+                                <input type="text" class="form-control" value="{{ setting.get_setting_type_display }}" readonly>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Editable Fields -->
+                        <div class="mb-3">
+                            <label for="value" class="form-label fw-bold">
+                                Current Value 
+                                {% if setting.is_sensitive %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-shield-lock"></i> Sensitive
+                                    </span>
+                                {% endif %}
+                            </label>
+                            
+                            {% if setting.setting_type == 'boolean' %}
+                                <select name="value" id="value" class="form-select" required>
+                                    <option value="true" {% if setting.value == 'true' or setting.value == 'True' %}selected{% endif %}>True</option>
+                                    <option value="false" {% if setting.value == 'false' or setting.value == 'False' %}selected{% endif %}>False</option>
+                                </select>
+                            {% elif setting.setting_type == 'integer' %}
+                                <input type="number" name="value" id="value" class="form-control" value="{{ setting.value }}" required>
+                            {% elif setting.setting_type == 'json' %}
+                                <textarea name="value" id="value" class="form-control font-monospace" rows="5" required>{{ setting.value }}</textarea>
+                                <small class="form-text text-muted">Enter valid JSON format</small>
+                            {% elif setting.setting_type == 'email' %}
+                                <input type="email" name="value" id="value" class="form-control" value="{{ setting.value }}" required>
+                            {% elif setting.setting_type == 'url' %}
+                                <input type="url" name="value" id="value" class="form-control" value="{{ setting.value }}" required>
+                            {% else %}
+                                <input type="text" name="value" id="value" class="form-control" value="{{ setting.value }}" required>
+                            {% endif %}
+                            
+                            <small class="form-text text-muted">
+                                Default value: <code>{{ setting.default_value }}</code>
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                       {% if setting.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">
+                                    Active
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">Inactive settings won't be used by the system</small>
+                        </div>
+
+                        {% if setting.requires_restart %}
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Note:</strong> Changes to this setting require a system restart to take effect.
+                            </div>
+                        {% endif %}
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'settings_manager:dashboard' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Last Modified Info -->
+                    <hr class="my-4">
+                    <div class="small text-muted">
+                        <p class="mb-1">
+                            <i class="bi bi-clock"></i> Created: {{ setting.created_at|date:"M d, Y H:i" }}
+                        </p>
+                        <p class="mb-0">
+                            <i class="bi bi-clock-history"></i> Last Modified: {{ setting.updated_at|date:"M d, Y H:i" }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

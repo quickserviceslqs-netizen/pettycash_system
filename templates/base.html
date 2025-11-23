@@ -176,6 +176,15 @@
                                 </a>
                             </li>
                             {% endif %}
+
+                            <!-- System Settings -->
+                            {% if user.is_staff or user.role == 'admin' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'settings_manager:dashboard' %}">
+                                    <i class="bi bi-gear-fill"></i> Settings
+                                </a>
+                            </li>
+                            {% endif %}
                         {% endif %}
                     </ul>
 

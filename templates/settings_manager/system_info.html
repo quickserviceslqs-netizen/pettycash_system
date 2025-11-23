@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}System Information - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-info-circle-fill"></i> System Information</h2>
+                <a href="{% url 'settings_manager:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Settings
+                </a>
+            </div>
+
+            <!-- Django Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-code-square"></i> Django Framework</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Version:</dt>
+                                <dd class="col-sm-8"><code>{{ django_version }}</code></dd>
+                                
+                                <dt class="col-sm-4">Debug Mode:</dt>
+                                <dd class="col-sm-8">
+                                    {% if debug_mode %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-exclamation-triangle"></i> Enabled
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Disabled
+                                        </span>
+                                    {% endif %}
+                                </dd>
+                                
+                                <dt class="col-sm-4">Database:</dt>
+                                <dd class="col-sm-8"><code>{{ database_engine }}</code></dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Time Zone:</dt>
+                                <dd class="col-sm-8"><code>{{ timezone }}</code></dd>
+                                
+                                <dt class="col-sm-4">Language:</dt>
+                                <dd class="col-sm-8"><code>{{ language }}</code></dd>
+                                
+                                <dt class="col-sm-4">Secret Key:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="text-muted">
+                                        <i class="bi bi-shield-lock-fill"></i> ••••••••••••••••
+                                    </span>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Python Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-code"></i> Python Runtime</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Version:</dt>
+                                <dd class="col-sm-8"><code>{{ python_version }}</code></dd>
+                                
+                                <dt class="col-sm-4">Implementation:</dt>
+                                <dd class="col-sm-8"><code>{{ python_implementation }}</code></dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Executable:</dt>
+                                <dd class="col-sm-8"><small class="font-monospace">{{ python_executable }}</small></dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-laptop"></i> Operating System</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">System:</dt>
+                                <dd class="col-sm-8"><code>{{ platform_system }}</code></dd>
+                                
+                                <dt class="col-sm-4">Release:</dt>
+                                <dd class="col-sm-8"><code>{{ platform_release }}</code></dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Architecture:</dt>
+                                <dd class="col-sm-8"><code>{{ platform_machine }}</code></dd>
+                                
+                                <dt class="col-sm-4">Processor:</dt>
+                                <dd class="col-sm-8"><small><code>{{ platform_processor }}</code></small></dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Installed Apps -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-app-indicator"></i> Installed Django Apps</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for app in installed_apps %}
+                            <div class="col-md-3 mb-2">
+                                <span class="badge bg-light text-dark border">{{ app }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middleware -->
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-layers"></i> Middleware Stack</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="list-group list-group-numbered">
+                        {% for mw in middleware %}
+                            <li class="list-group-item">
+                                <small class="font-monospace">{{ mw }}</small>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-primary">{{ total_users }}</h3>
+                            <p class="text-muted mb-0">Total Users</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-success">{{ active_users }}</h3>
+                            <p class="text-muted mb-0">Active Users</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-info">{{ total_settings }}</h3>
+                            <p class="text-muted mb-0">System Settings</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-warning">{{ total_logs }}</h3>
+                            <p class="text-muted mb-0">Activity Logs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Activity Logs - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-clock-history"></i> Activity Logs</h2>
+                <a href="{% url 'settings_manager:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Settings
+                </a>
+            </div>
+
+            <!-- Filter Form -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="action" class="form-label">Action</label>
+                            <select name="action" id="action" class="form-select">
+                                <option value="">All Actions</option>
+                                <option value="create" {% if selected_action == 'create' %}selected{% endif %}>Create</option>
+                                <option value="update" {% if selected_action == 'update' %}selected{% endif %}>Update</option>
+                                <option value="delete" {% if selected_action == 'delete' %}selected{% endif %}>Delete</option>
+                                <option value="view" {% if selected_action == 'view' %}selected{% endif %}>View</option>
+                                <option value="login" {% if selected_action == 'login' %}selected{% endif %}>Login</option>
+                                <option value="logout" {% if selected_action == 'logout' %}selected{% endif %}>Logout</option>
+                                <option value="approve" {% if selected_action == 'approve' %}selected{% endif %}>Approve</option>
+                                <option value="reject" {% if selected_action == 'reject' %}selected{% endif %}>Reject</option>
+                                <option value="export" {% if selected_action == 'export' %}selected{% endif %}>Export</option>
+                                <option value="import" {% if selected_action == 'import' %}selected{% endif %}>Import</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="user" class="form-label">User</label>
+                            <select name="user" id="user" class="form-select">
+                                <option value="">All Users</option>
+                                {% for u in users %}
+                                    <option value="{{ u.id }}" {% if selected_user == u.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ u.get_full_name }} ({{ u.email }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="days" class="form-label">Time Period</label>
+                            <select name="days" id="days" class="form-select">
+                                <option value="7" {% if selected_days == '7' %}selected{% endif %}>Last 7 days</option>
+                                <option value="30" {% if selected_days == '30' %}selected{% endif %}>Last 30 days</option>
+                                <option value="90" {% if selected_days == '90' %}selected{% endif %}>Last 90 days</option>
+                                <option value="365" {% if selected_days == '365' %}selected{% endif %}>Last year</option>
+                                <option value="">All time</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="bi bi-filter"></i> Apply Filters
+                            </button>
+                            <a href="{% url 'settings_manager:activity_logs' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Activity Logs Table -->
+            <div class="card">
+                <div class="card-body">
+                    {% if logs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 12%;">Timestamp</th>
+                                        <th style="width: 15%;">User</th>
+                                        <th style="width: 10%;">Action</th>
+                                        <th style="width: 15%;">Target</th>
+                                        <th style="width: 30%;">Changes</th>
+                                        <th style="width: 10%;">IP Address</th>
+                                        <th style="width: 8%;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs %}
+                                        <tr>
+                                            <td>
+                                                <small>{{ log.timestamp|date:"M d, Y" }}<br>{{ log.timestamp|date:"H:i:s" }}</small>
+                                            </td>
+                                            <td>
+                                                <strong>{{ log.user.get_full_name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ log.user.email }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if log.action == 'create' %}bg-success
+                                                    {% elif log.action == 'update' %}bg-primary
+                                                    {% elif log.action == 'delete' %}bg-danger
+                                                    {% elif log.action == 'approve' %}bg-info
+                                                    {% elif log.action == 'reject' %}bg-warning
+                                                    {% else %}bg-secondary
+                                                    {% endif %}">
+                                                    {{ log.get_action_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if log.content_type %}
+                                                    <small>
+                                                        {{ log.content_type.model|title }}
+                                                        {% if log.object_id %}#{{ log.object_id }}{% endif %}
+                                                    </small>
+                                                {% else %}
+                                                    <span class="text-muted">N/A</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if log.changes %}
+                                                    <small class="font-monospace">{{ log.changes|truncatewords:10 }}</small>
+                                                    {% if log.changes|length > 50 %}
+                                                        <button class="btn btn-sm btn-link p-0" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#changesModal{{ log.id }}">
+                                                            View Full
+                                                        </button>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <small class="font-monospace">{{ log.ip_address|default:"-" }}</small>
+                                            </td>
+                                            <td>
+                                                {% if log.success %}
+                                                    <i class="bi bi-check-circle-fill text-success" title="Success"></i>
+                                                {% else %}
+                                                    <i class="bi bi-x-circle-fill text-danger" title="Failed"></i>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+
+                                        <!-- Modal for full changes -->
+                                        {% if log.changes and log.changes|length > 50 %}
+                                            <div class="modal fade" id="changesModal{{ log.id }}" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Change Details</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <pre class="font-monospace small">{{ log.changes }}</pre>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if is_paginated %}
+                            <nav aria-label="Activity log pagination">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_days %}&days={{ selected_days }}{% endif %}">First</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_days %}&days={{ selected_days }}{% endif %}">Previous</a>
+                                        </li>
+                                    {% endif %}
+
+                                    <li class="page-item active">
+                                        <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                                    </li>
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_days %}&days={{ selected_days }}{% endif %}">Next</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if selected_action %}&action={{ selected_action }}{% endif %}{% if selected_user %}&user={{ selected_user }}{% endif %}{% if selected_days %}&days={{ selected_days }}{% endif %}">Last</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No activity logs found matching your filters.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
