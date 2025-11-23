@@ -2,6 +2,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from organization.models import Company, Region, Branch, Department, CostCenter, Position
 
+# Import device management models
+from .models_device import UserInvitation, WhitelistedDevice, DeviceAccessAttempt
+
 
 class App(models.Model):
     """

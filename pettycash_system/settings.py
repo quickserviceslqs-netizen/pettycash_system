@@ -18,6 +18,10 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-%7!es6s0(ak^5(mmz_uh6
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.railway.app,.render.com,.onrender.com').split(',')
 
+# Site URL for email invitations
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
+SITE_NAME = os.environ.get('SITE_NAME', 'Petty Cash System')
+
 # CSRF & Security for production
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000,https://*.onrender.com').split(',')
 if not DEBUG:

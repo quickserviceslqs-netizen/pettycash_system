@@ -330,6 +330,15 @@ class Command(BaseCommand):
                 'default_value': 'true',
             },
             {
+                'key': 'INVITATION_EXPIRY_DAYS',
+                'display_name': 'User Invitation Expiry (Days)',
+                'description': 'Number of days before invitation links expire',
+                'category': 'security',
+                'setting_type': 'integer',
+                'value': '7',
+                'default_value': '7',
+            },
+            {
                 'key': 'ENABLE_TRANSACTION_SIGNING',
                 'display_name': 'Enable Digital Transaction Signing',
                 'description': 'Require digital signature for high-value transactions',

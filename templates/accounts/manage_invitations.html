@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Invitations{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-envelope-paper"></i> User Invitations</h2>
+        <a href="{% url 'invite_user' %}" class="btn btn-primary">
+            <i class="bi bi-envelope-plus"></i> Send New Invitation
+        </a>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="text-muted">Pending</h6>
+                    <h2 class="mb-0">{{ pending_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h6 class="text-muted">Accepted</h6>
+                    <h2 class="mb-0">{{ accepted_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h6 class="text-muted">Expired</h6>
+                    <h2 class="mb-0">{{ expired_count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Invitations Table -->
+    <div class="card shadow">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">All Invitations</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Email</th>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Invited By</th>
+                            <th>Expires</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invitation in invitations %}
+                        <tr>
+                            <td>
+                                <i class="bi bi-envelope"></i> {{ invitation.email }}
+                            </td>
+                            <td>{{ invitation.first_name }} {{ invitation.last_name }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ invitation.get_role_display }}</span>
+                            </td>
+                            <td>
+                                {% if invitation.status == 'pending' %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-clock"></i> Pending
+                                </span>
+                                {% elif invitation.status == 'accepted' %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Accepted
+                                </span>
+                                {% elif invitation.status == 'expired' %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle"></i> Expired
+                                </span>
+                                {% elif invitation.status == 'revoked' %}
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-slash-circle"></i> Revoked
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ invitation.invited_by.get_display_name }}</td>
+                            <td>
+                                <small class="{% if invitation.expires_at < now %}text-danger{% endif %}">
+                                    {{ invitation.expires_at|date:"M d, Y g:i A" }}
+                                </small>
+                            </td>
+                            <td>
+                                {% if invitation.status == 'pending' %}
+                                <div class="btn-group btn-group-sm">
+                                    <form method="post" action="{% url 'resend_invitation' invitation.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-primary btn-sm" title="Resend Email">
+                                            <i class="bi bi-arrow-clockwise"></i>
+                                        </button>
+                                    </form>
+                                    <form method="post" action="{% url 'revoke_invitation' invitation.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                                onclick="return confirm('Revoke this invitation?')" title="Revoke">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                {% elif invitation.status == 'accepted' and invitation.user %}
+                                <a href="{% url 'manage_user_devices' invitation.user.id %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-laptop"></i> View Devices
+                                </a>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p class="mt-2">No invitations yet. Send your first invitation!</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

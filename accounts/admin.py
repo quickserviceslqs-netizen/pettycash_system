@@ -3,6 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, Permission
 from django.utils.html import format_html
 from .models import User, App
+from .models_device import UserInvitation, WhitelistedDevice, DeviceAccessAttempt
 
 
 @admin.register(App)
@@ -213,3 +214,115 @@ class GroupAdmin(admin.ModelAdmin):
 # Unregister the default Group admin and register our custom one
 admin.site.unregister(Group)
 admin.site.register(Group, GroupAdmin)
+
+
+# ===================================================================
+# Device Management & Invitation Admin
+# ===================================================================
+
+@admin.register(UserInvitation)
+class UserInvitationAdmin(admin.ModelAdmin):
+    """Admin for managing user invitations."""
+    list_display = (
+        'email', 'first_name', 'last_name', 'role', 
+        'status_badge', 'invited_by', 'created_at', 'expires_at'
+    )
+    list_filter = ('status', 'role', 'created_at')
+    search_fields = ('email', 'first_name', 'last_name')
+    readonly_fields = ('token', 'created_at', 'accepted_at')
+    ordering = ('-created_at',)
+    
+    fieldsets = (
+        ('Recipient Information', {
+            'fields': ('email', 'first_name', 'last_name', 'role')
+        }),
+        ('Organization', {
+            'fields': ('company', 'department', 'branch', 'assigned_apps')
+        }),
+        ('Invitation Status', {
+            'fields': ('status', 'token', 'created_at', 'expires_at', 'accepted_at')
+        }),
+        ('Relationships', {
+            'fields': ('invited_by', 'user')
+        }),
+    )
+    
+    def status_badge(self, obj):
+        """Show status with color badge."""
+        colors = {
+            'pending': 'warning',
+            'accepted': 'success',
+            'expired': 'danger',
+            'revoked': 'secondary'
+        }
+        color = colors.get(obj.status, 'secondary')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 3px;">{}</span>',
+            {'warning': '#ffc107', 'success': '#28a745', 'danger': '#dc3545', 'secondary': '#6c757d'}[color],
+            obj.status.upper()
+        )
+    status_badge.short_description = 'Status'
+
+
+@admin.register(WhitelistedDevice)
+class WhitelistedDeviceAdmin(admin.ModelAdmin):
+    """Admin for managing whitelisted devices."""
+    list_display = (
+        'user', 'device_name', 'ip_address', 'location',
+        'is_primary', 'is_active', 'registered_at', 'last_used_at'
+    )
+    list_filter = ('is_active', 'is_primary', 'registration_method', 'registered_at')
+    search_fields = ('user__username', 'user__email', 'device_name', 'ip_address', 'location')
+    readonly_fields = ('registered_at', 'last_used_at')
+    ordering = ('-registered_at',)
+    
+    fieldsets = (
+        ('Device Information', {
+            'fields': ('user', 'device_name', 'user_agent', 'ip_address', 'location')
+        }),
+        ('Status', {
+            'fields': ('is_active', 'is_primary', 'registration_method')
+        }),
+        ('Timestamps', {
+            'fields': ('registered_at', 'last_used_at')
+        }),
+        ('Notes', {
+            'fields': ('notes',),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(DeviceAccessAttempt)
+class DeviceAccessAttemptAdmin(admin.ModelAdmin):
+    """Admin for viewing device access attempts (security audit)."""
+    list_display = (
+        'attempted_at', 'user', 'device_name', 'ip_address', 
+        'location', 'was_allowed_badge', 'request_path'
+    )
+    list_filter = ('was_allowed', 'attempted_at')
+    search_fields = ('user__username', 'ip_address', 'device_name', 'location')
+    readonly_fields = ('user', 'ip_address', 'device_name', 'user_agent', 'location', 
+                       'was_allowed', 'reason', 'attempted_at', 'request_path')
+    ordering = ('-attempted_at',)
+    
+    def was_allowed_badge(self, obj):
+        """Show access result with color badge."""
+        if obj.was_allowed:
+            return format_html(
+                '<span style="background-color: #28a745; color: white; padding: 3px 10px; border-radius: 3px;">✓ ALLOWED</span>'
+            )
+        else:
+            return format_html(
+                '<span style="background-color: #dc3545; color: white; padding: 3px 10px; border-radius: 3px;">✗ BLOCKED</span>'
+            )
+    was_allowed_badge.short_description = 'Result'
+    
+    def has_add_permission(self, request):
+        """Disable manual creation - these are system-generated logs."""
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """Disable editing - these are immutable audit logs."""
+        return False
+

@@ -1,6 +1,7 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
+from . import views_invitation
 
 urlpatterns = [
     # --------------------------
@@ -49,4 +50,21 @@ urlpatterns = [
     path('', views.dashboard, name='accounts-dashboard'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('role-redirect/', views.role_based_redirect, name='role_redirect'),
+    
+    # --------------------------
+    # User Invitations & Signup
+    # --------------------------
+    path('invite/', views_invitation.send_invitation, name='invite_user'),
+    path('invitations/', views_invitation.manage_invitations, name='manage_invitations'),
+    path('invitations/<int:invitation_id>/revoke/', views_invitation.revoke_invitation, name='revoke_invitation'),
+    path('invitations/<int:invitation_id>/resend/', views_invitation.resend_invitation, name='resend_invitation'),
+    path('signup/<uuid:token>/', views_invitation.signup, name='signup'),
+    
+    # --------------------------
+    # Device Management
+    # --------------------------
+    path('my-devices/', views_invitation.my_devices, name='my_devices'),
+    path('devices/<int:device_id>/deactivate/', views_invitation.deactivate_device, name='deactivate_device'),
+    path('devices/<int:device_id>/set-primary/', views_invitation.set_primary_device, name='set_primary_device'),
+    path('users/<int:user_id>/devices/', views_invitation.manage_user_devices, name='manage_user_devices'),
 ]

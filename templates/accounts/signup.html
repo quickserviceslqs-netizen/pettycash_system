@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Complete Your Registration{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3><i class="bi bi-person-plus-fill"></i> Complete Your Registration</h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> <strong>Welcome!</strong><br>
+                        You've been invited as a <strong>{{ invitation.get_role_display }}</strong>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" value="{{ invitation.email }}" disabled>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username *</label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   placeholder="Choose a username" required autofocus>
+                            <small class="text-muted">Use letters, numbers, and @/./+/-/_ only</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password *</label>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   minlength="{{ min_password_length }}" required>
+                            <small class="text-muted">
+                                Minimum {{ min_password_length }} characters
+                                {% if require_complexity == 'true' %}
+                                - Must include uppercase, lowercase, and numbers
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password_confirm" class="form-label">Confirm Password *</label>
+                            <input type="password" class="form-control" id="password_confirm" name="password_confirm" 
+                                   minlength="{{ min_password_length }}" required>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <h6><i class="bi bi-shield-check"></i> Security Information</h6>
+                            <ul class="small mb-0">
+                                <li>Your current device will be automatically whitelisted</li>
+                                <li>Device info: <code id="deviceInfo">Detecting...</code></li>
+                                <li>Your IP address and location will be logged for security</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Create Account & Whitelist Device
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            This invitation expires on {{ invitation.expires_at|date:"M d, Y g:i A" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Detect and display device info
+document.addEventListener('DOMContentLoaded', function() {
+    const ua = navigator.userAgent;
+    let device = 'Unknown Device';
+    
+    // Detect OS
+    if (ua.indexOf('Windows NT 10') > -1 || ua.indexOf('Windows NT 11') > -1) {
+        device = 'Windows 10/11';
+    } else if (ua.indexOf('Windows') > -1) {
+        device = 'Windows';
+    } else if (ua.indexOf('Mac') > -1) {
+        device = 'macOS';
+    } else if (ua.indexOf('Linux') > -1) {
+        device = 'Linux';
+    } else if (ua.indexOf('Android') > -1) {
+        device = 'Android';
+    } else if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) {
+        device = 'iOS';
+    }
+    
+    // Detect Browser
+    if (ua.indexOf('Edg') > -1) {
+        device += ' - Edge';
+    } else if (ua.indexOf('Chrome') > -1) {
+        device += ' - Chrome';
+    } else if (ua.indexOf('Firefox') > -1) {
+        device += ' - Firefox';
+    } else if (ua.indexOf('Safari') > -1) {
+        device += ' - Safari';
+    }
+    
+    document.getElementById('deviceInfo').textContent = device;
+});
+
+// Password match validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const confirm = document.getElementById('password_confirm').value;
+    
+    if (password !== confirm) {
+        e.preventDefault();
+        alert('Passwords do not match!');
+        return false;
+    }
+});
+</script>
+{% endblock %}

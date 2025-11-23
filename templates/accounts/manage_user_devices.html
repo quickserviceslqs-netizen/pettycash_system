@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Devices - {{ managed_user.get_display_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'manage_invitations' %}">Invitations</a></li>
+            <li class="breadcrumb-item active">{{ managed_user.get_display_name }}</li>
+        </ol>
+    </nav>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-laptop"></i> Device Management</h2>
+            <p class="text-muted mb-0">
+                User: <strong>{{ managed_user.get_display_name }}</strong> ({{ managed_user.username }})
+            </p>
+        </div>
+    </div>
+    
+    <!-- Whitelisted Devices -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Whitelisted Devices ({{ devices.count }})</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Device</th>
+                            <th>IP Address</th>
+                            <th>Location</th>
+                            <th>Registered</th>
+                            <th>Last Used</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for device in devices %}
+                        <tr>
+                            <td>
+                                <i class="bi bi-laptop"></i> <strong>{{ device.device_name }}</strong>
+                                {% if device.is_primary %}
+                                <span class="badge bg-primary ms-1">Primary</span>
+                                {% endif %}
+                            </td>
+                            <td><code>{{ device.ip_address }}</code></td>
+                            <td>
+                                {% if device.location %}
+                                <small><i class="bi bi-geo-alt"></i> {{ device.location }}</small>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ device.registered_at|date:"M d, Y" }}</small><br>
+                                <small class="text-muted">via {{ device.get_registration_method_display }}</small>
+                            </td>
+                            <td><small>{{ device.last_used_at|date:"M d, Y g:i A" }}</small></td>
+                            <td>
+                                {% if device.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No devices registered yet
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Access Attempts -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Recent Access Attempts (Last 20)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Device</th>
+                            <th>IP Address</th>
+                            <th>Location</th>
+                            <th>Path</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attempt in access_attempts %}
+                        <tr class="{% if not attempt.was_allowed %}table-danger{% endif %}">
+                            <td><small>{{ attempt.attempted_at|date:"M d g:i A" }}</small></td>
+                            <td><small>{{ attempt.device_name }}</small></td>
+                            <td><code>{{ attempt.ip_address }}</code></td>
+                            <td><small>{{ attempt.location|default:"-" }}</small></td>
+                            <td><small><code>{{ attempt.request_path }}</code></small></td>
+                            <td>
+                                {% if attempt.was_allowed %}
+                                <span class="badge bg-success">✓ Allowed</span>
+                                {% else %}
+                                <span class="badge bg-danger">✗ Blocked</span>
+                                <br><small class="text-muted">{{ attempt.reason }}</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No access attempts logged
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
