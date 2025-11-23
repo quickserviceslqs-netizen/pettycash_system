@@ -179,7 +179,7 @@
                                     </td>
                                     <td>
                                         {% if user.is_superuser or perms.workflow.change_approvalthreshold %}
-                                        <a href="/admin/workflow/approvalthreshold/{{ threshold.id }}/change/" 
+                                        <a href="{% url 'workflow:threshold_edit' threshold.id %}" 
                                            class="btn btn-sm btn-outline-primary" 
                                            title="Edit">
                                             <i class="bi bi-pencil"></i>

@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Approval Threshold{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<style>
+.sortable-list {
+    list-style: none;
+    padding: 0;
+    min-height: 50px;
+}
+
+.sortable-item {
+    padding: 12px 15px;
+    margin: 8px 0;
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.sortable-item:hover {
+    background: #e9ecef;
+    border-color: #0d6efd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sortable-item.sortable-ghost {
+    opacity: 0.4;
+    background: #0d6efd;
+    color: white;
+}
+
+.sortable-item.sortable-drag {
+    opacity: 1;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.drag-handle {
+    cursor: grab;
+    color: #6c757d;
+    font-size: 1.2em;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.available-roles {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.role-badge {
+    font-size: 0.95em;
+    padding: 8px 12px;
+}
+
+.remove-btn {
+    padding: 2px 8px;
+    font-size: 0.85em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'workflow:dashboard' %}">Workflow</a></li>
+                    <li class="breadcrumb-item active">{{ threshold.name }}</li>
+                </ol>
+            </nav>
+            <h2>
+                <i class="bi bi-pencil-square"></i> Edit Approval Threshold
+            </h2>
+            <p class="text-muted">Drag and drop to reorder approvers, or add/remove roles</p>
+        </div>
+    </div>
+
+    <form method="post" id="thresholdForm">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- Left Column - Basic Info -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Basic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Threshold Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ threshold.name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="origin_type" class="form-label">Origin Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="origin_type" name="origin_type" required>
+                                <option value="ANY" {% if threshold.origin_type == 'ANY' %}selected{% endif %}>Any</option>
+                                <option value="BRANCH" {% if threshold.origin_type == 'BRANCH' %}selected{% endif %}>Branch</option>
+                                <option value="HQ" {% if threshold.origin_type == 'HQ' %}selected{% endif %}>HQ</option>
+                                <option value="FIELD" {% if threshold.origin_type == 'FIELD' %}selected{% endif %}>Field</option>
+                            </select>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="min_amount" class="form-label">Min Amount ($) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" class="form-control" id="min_amount" 
+                                       name="min_amount" value="{{ threshold.min_amount }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="max_amount" class="form-label">Max Amount ($) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" class="form-control" id="max_amount" 
+                                       name="max_amount" value="{{ threshold.max_amount }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="priority" name="priority" 
+                                   value="{{ threshold.priority }}" required>
+                            <small class="text-muted">Lower number = higher priority</small>
+                        </div>
+                        
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="allow_urgent_fasttrack" 
+                                   name="allow_urgent_fasttrack" {% if threshold.allow_urgent_fasttrack %}checked{% endif %}>
+                            <label class="form-check-label" for="allow_urgent_fasttrack">
+                                <i class="bi bi-lightning-fill text-warning"></i> Allow Urgent Fast-Track
+                            </label>
+                        </div>
+                        
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="requires_cfo" 
+                                   name="requires_cfo" {% if threshold.requires_cfo %}checked{% endif %}>
+                            <label class="form-check-label" for="requires_cfo">
+                                <i class="bi bi-shield-fill-check text-danger"></i> Requires CFO Approval
+                            </label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_active" 
+                                   name="is_active" {% if threshold.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">
+                                <i class="bi bi-check-circle-fill text-success"></i> Active
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - Approval Sequence -->
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="bi bi-arrow-down-up"></i> Approval Sequence
+                            <small class="text-muted">(Drag to reorder)</small>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <input type="hidden" id="roles_sequence" name="roles_sequence" value="">
+                        
+                        <ul id="approversList" class="sortable-list">
+                            {% for role in threshold.roles_sequence %}
+                            <li class="sortable-item" data-role="{{ role }}">
+                                <div>
+                                    <span class="drag-handle">
+                                        <i class="bi bi-grip-vertical"></i>
+                                    </span>
+                                    <span class="badge bg-primary role-badge">{{ role|title }}</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-btn" onclick="removeRole('{{ role }}')">
+                                    <i class="bi bi-x-lg"></i> Remove
+                                </button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        
+                        {% if not threshold.roles_sequence %}
+                        <div class="alert alert-warning" id="emptyWarning">
+                            <i class="bi bi-exclamation-triangle"></i> No approvers added yet. Add roles from the list below.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-person-plus"></i> Available Roles</h5>
+                    </div>
+                    <div class="card-body available-roles">
+                        <div class="d-grid gap-2">
+                            {% for role_key, role_name in available_roles %}
+                            <button type="button" class="btn btn-outline-secondary btn-sm text-start" 
+                                    onclick="addRole('{{ role_key }}', '{{ role_name }}')" 
+                                    id="role-{{ role_key }}">
+                                <i class="bi bi-plus-circle"></i> {{ role_name }}
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'workflow:dashboard' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Initialize SortableJS
+const approversList = document.getElementById('approversList');
+const sortable = Sortable.create(approversList, {
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    handle: '.drag-handle',
+    onEnd: function() {
+        updateRolesSequence();
+    }
+});
+
+// Update hidden input with current order
+function updateRolesSequence() {
+    const items = approversList.querySelectorAll('.sortable-item');
+    const roles = Array.from(items).map(item => item.dataset.role);
+    document.getElementById('roles_sequence').value = JSON.stringify(roles);
+    
+    // Hide/show empty warning
+    const emptyWarning = document.getElementById('emptyWarning');
+    if (emptyWarning) {
+        emptyWarning.style.display = roles.length > 0 ? 'none' : 'block';
+    }
+    
+    // Update available roles buttons
+    updateAvailableRoles();
+}
+
+// Add role to sequence
+function addRole(roleKey, roleName) {
+    const li = document.createElement('li');
+    li.className = 'sortable-item';
+    li.dataset.role = roleKey;
+    li.innerHTML = `
+        <div>
+            <span class="drag-handle">
+                <i class="bi bi-grip-vertical"></i>
+            </span>
+            <span class="badge bg-primary role-badge">${roleName}</span>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger remove-btn" onclick="removeRole('${roleKey}')">
+            <i class="bi bi-x-lg"></i> Remove
+        </button>
+    `;
+    
+    approversList.appendChild(li);
+    updateRolesSequence();
+}
+
+// Remove role from sequence
+function removeRole(roleKey) {
+    const items = approversList.querySelectorAll('.sortable-item');
+    items.forEach(item => {
+        if (item.dataset.role === roleKey) {
+            item.remove();
+        }
+    });
+    updateRolesSequence();
+}
+
+// Update available roles (disable already added ones)
+function updateAvailableRoles() {
+    const items = approversList.querySelectorAll('.sortable-item');
+    const addedRoles = Array.from(items).map(item => item.dataset.role);
+    
+    // Enable/disable buttons based on whether role is already added
+    const allRoleButtons = document.querySelectorAll('[id^="role-"]');
+    allRoleButtons.forEach(button => {
+        const roleKey = button.id.replace('role-', '');
+        if (addedRoles.includes(roleKey)) {
+            button.disabled = true;
+            button.classList.remove('btn-outline-secondary');
+            button.classList.add('btn-secondary', 'disabled');
+            button.innerHTML = button.innerHTML.replace('bi-plus-circle', 'bi-check-circle');
+        } else {
+            button.disabled = false;
+            button.classList.remove('btn-secondary', 'disabled');
+            button.classList.add('btn-outline-secondary');
+            button.innerHTML = button.innerHTML.replace('bi-check-circle', 'bi-plus-circle');
+        }
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateRolesSequence();
+});
+
+// Validate form before submit
+document.getElementById('thresholdForm').addEventListener('submit', function(e) {
+    const rolesInput = document.getElementById('roles_sequence');
+    if (!rolesInput.value || JSON.parse(rolesInput.value).length === 0) {
+        e.preventDefault();
+        alert('Please add at least one approver to the sequence.');
+        return false;
+    }
+});
+</script>
+{% endblock %}
