@@ -46,6 +46,7 @@
                                 <option value="requisition" {% if selected_category == 'requisition' %}selected{% endif %}>Requisition</option>
                                 <option value="treasury" {% if selected_category == 'treasury' %}selected{% endif %}>Treasury</option>
                                 <option value="workflow" {% if selected_category == 'workflow' %}selected{% endif %}>Workflow</option>
+                                <option value="organization" {% if selected_category == 'organization' %}selected{% endif %}>Organization</option>
                             </select>
                         </div>
                     </form>
@@ -58,7 +59,7 @@
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
-                            <i class="bi bi-{% if category.grouper == 'email' %}envelope{% elif category.grouper == 'approval' %}check-circle{% elif category.grouper == 'payment' %}currency-dollar{% elif category.grouper == 'security' %}shield-lock{% elif category.grouper == 'notifications' %}bell{% elif category.grouper == 'reporting' %}graph-up{% elif category.grouper == 'requisition' %}file-text{% elif category.grouper == 'treasury' %}piggy-bank{% elif category.grouper == 'workflow' %}diagram-3{% else %}gear{% endif %}"></i>
+                            <i class="bi bi-{% if category.grouper == 'email' %}envelope{% elif category.grouper == 'approval' %}check-circle{% elif category.grouper == 'payment' %}currency-dollar{% elif category.grouper == 'security' %}shield-lock{% elif category.grouper == 'notifications' %}bell{% elif category.grouper == 'reporting' %}graph-up{% elif category.grouper == 'requisition' %}file-text{% elif category.grouper == 'treasury' %}piggy-bank{% elif category.grouper == 'workflow' %}diagram-3{% elif category.grouper == 'organization' %}people{% else %}gear{% endif %}"></i>
                             {{ category.grouper|title }} Settings
                         </h5>
                     </div>

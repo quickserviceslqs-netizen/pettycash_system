@@ -22,6 +22,7 @@ class SystemSetting(models.Model):
         ('requisition', 'Requisition Management'),
         ('treasury', 'Treasury Operations'),
         ('workflow', 'Workflow Automation'),
+        ('organization', 'Users & Organization'),
     ]
     
     SETTING_TYPE_CHOICES = [
