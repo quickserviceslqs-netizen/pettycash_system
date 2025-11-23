@@ -357,3 +357,197 @@ def delete_position(request, position_id):
         return redirect('organization:manage_positions')
     
     return redirect('organization:manage_positions')
+
+
+# ===========================
+# Company Management
+# ===========================
+
+@login_required
+@user_passes_test(is_admin_user)
+def manage_companies(request):
+    """Manage companies"""
+    companies = Company.objects.annotate(
+        region_count=Count('regions', distinct=True)
+    ).order_by('name')
+    
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        companies = companies.filter(
+            Q(name__icontains=search_query) |
+            Q(code__icontains=search_query)
+        )
+    
+    context = {
+        'companies': companies,
+        'search_query': search_query,
+    }
+    return render(request, 'organization/manage_companies.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def create_company(request):
+    """Create new company"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        code = request.POST.get('code')
+        
+        try:
+            company = Company.objects.create(name=name, code=code)
+            messages.success(request, f"Company '{company.name}' created successfully.")
+            return redirect('organization:manage_companies')
+        except Exception as e:
+            messages.error(request, f"Error creating company: {str(e)}")
+    
+    return render(request, 'organization/create_company.html')
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def edit_company(request, company_id):
+    """Edit existing company"""
+    company = get_object_or_404(Company, id=company_id)
+    
+    if request.method == 'POST':
+        company.name = request.POST.get('name')
+        company.code = request.POST.get('code')
+        
+        try:
+            company.save()
+            messages.success(request, f"Company '{company.name}' updated successfully.")
+            return redirect('organization:manage_companies')
+        except Exception as e:
+            messages.error(request, f"Error updating company: {str(e)}")
+    
+    context = {'company': company}
+    return render(request, 'organization/edit_company.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def delete_company(request, company_id):
+    """Delete company"""
+    if request.method == 'POST':
+        company = get_object_or_404(Company, id=company_id)
+        
+        # Check if company has regions
+        region_count = company.regions.count()
+        if region_count > 0:
+            messages.error(request, f"Cannot delete company '{company.name}' - it has {region_count} region(s).")
+            return redirect('organization:manage_companies')
+        
+        name = company.name
+        company.delete()
+        messages.success(request, f"Company '{name}' deleted successfully.")
+    
+    return redirect('organization:manage_companies')
+
+
+# ===========================
+# Branch Management
+# ===========================
+
+@login_required
+@user_passes_test(is_admin_user)
+def manage_branches(request):
+    """Manage branches"""
+    branches = Branch.objects.select_related('region', 'region__company').annotate(
+        department_count=Count('departments', distinct=True)
+    ).order_by('region__company__name', 'region__name', 'name')
+    
+    region_filter = request.GET.get('region', '')
+    search_query = request.GET.get('search', '').strip()
+    
+    if region_filter:
+        branches = branches.filter(region_id=region_filter)
+    
+    if search_query:
+        branches = branches.filter(
+            Q(name__icontains=search_query) |
+            Q(code__icontains=search_query)
+        )
+    
+    context = {
+        'branches': branches,
+        'regions': Region.objects.select_related('company').order_by('company__name', 'name'),
+        'search_query': search_query,
+        'region_filter': region_filter,
+    }
+    return render(request, 'organization/manage_branches.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def create_branch(request):
+    """Create new branch"""
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        code = request.POST.get('code')
+        phone = request.POST.get('phone')
+        region_id = request.POST.get('region')
+        
+        try:
+            branch = Branch.objects.create(
+                name=name, 
+                code=code, 
+                phone=phone,
+                region_id=region_id
+            )
+            messages.success(request, f"Branch '{branch.name}' created successfully.")
+            return redirect('organization:manage_branches')
+        except Exception as e:
+            messages.error(request, f"Error creating branch: {str(e)}")
+    
+    context = {
+        'regions': Region.objects.select_related('company').order_by('company__name', 'name')
+    }
+    return render(request, 'organization/create_branch.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def edit_branch(request, branch_id):
+    """Edit existing branch"""
+    branch = get_object_or_404(Branch, id=branch_id)
+    
+    if request.method == 'POST':
+        branch.name = request.POST.get('name')
+        branch.code = request.POST.get('code')
+        branch.phone = request.POST.get('phone')
+        region_id = request.POST.get('region')
+        if region_id:
+            branch.region_id = region_id
+        
+        try:
+            branch.save()
+            messages.success(request, f"Branch '{branch.name}' updated successfully.")
+            return redirect('organization:manage_branches')
+        except Exception as e:
+            messages.error(request, f"Error updating branch: {str(e)}")
+    
+    context = {
+        'branch': branch,
+        'regions': Region.objects.select_related('company').order_by('company__name', 'name')
+    }
+    return render(request, 'organization/edit_branch.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def delete_branch(request, branch_id):
+    """Delete branch"""
+    if request.method == 'POST':
+        branch = get_object_or_404(Branch, id=branch_id)
+        
+        # Check if branch has departments
+        dept_count = branch.departments.count()
+        if dept_count > 0:
+            messages.error(request, f"Cannot delete branch '{branch.name}' - it has {dept_count} department(s).")
+            return redirect('organization:manage_branches')
+        
+        name = branch.name
+        branch.delete()
+        messages.success(request, f"Branch '{name}' deleted successfully.")
+    
+    return redirect('organization:manage_branches')

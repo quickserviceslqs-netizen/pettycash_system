@@ -571,6 +571,62 @@ def create_department(request):
 
 @login_required
 @user_passes_test(is_admin_user)
+def edit_department(request, department_id):
+    """Edit existing department"""
+    department = get_object_or_404(Department, id=department_id)
+    
+    if request.method == 'POST':
+        try:
+            old_name = department.name
+            old_branch = department.branch
+            
+            department.name = request.POST.get('name')
+            branch_id = request.POST.get('branch')
+            if branch_id:
+                department.branch_id = branch_id
+            
+            department.save()
+            
+            log_activity(request.user, 'update', content_type='Department', object_id=department.id,
+                        object_repr=str(department), description=f'Updated department: {department.name}',
+                        changes={'old_name': old_name, 'new_name': department.name, 
+                                'old_branch': str(old_branch), 'new_branch': str(department.branch)}, 
+                        request=request)
+            messages.success(request, f'Department {department.name} updated successfully.')
+            return redirect('settings_manager:manage_departments')
+            
+        except Exception as e:
+            messages.error(request, f'Error updating department: {str(e)}')
+            log_activity(request.user, 'update', content_type='Department', object_id=department.id,
+                        description=f'Failed to update department', 
+                        success=False, error_message=str(e), request=request)
+    
+    context = {
+        'department': department,
+        'branches': Branch.objects.all().select_related('region'),
+    }
+    return render(request, 'settings_manager/edit_department.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def delete_department(request, department_id):
+    """Delete department"""
+    department = get_object_or_404(Department, id=department_id)
+    
+    if request.method == 'POST':
+        name = department.name
+        department.delete()
+        
+        log_activity(request.user, 'delete', content_type='Department',
+                    description=f'Deleted department: {name}', request=request)
+        messages.success(request, f'Department {name} deleted successfully.')
+    
+    return redirect('settings_manager:manage_departments')
+
+
+@login_required
+@user_passes_test(is_admin_user)
 def manage_regions(request):
     """Region management interface"""
     regions = Region.objects.all().select_related('company').order_by('name')
@@ -581,6 +637,100 @@ def manage_regions(request):
     }
     
     return render(request, 'settings_manager/manage_regions.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def create_region(request):
+    """Create new region"""
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name')
+            code = request.POST.get('code')
+            company_id = request.POST.get('company')
+            
+            region = Region.objects.create(
+                name=name,
+                code=code,
+                company_id=company_id
+            )
+            
+            log_activity(request.user, 'create', content_type='Region', object_id=region.id,
+                        object_repr=str(region), description=f'Created region: {region.name}',
+                        changes={'name': region.name, 'code': region.code, 'company': str(region.company)}, 
+                        request=request)
+            messages.success(request, f'Region {region.name} created successfully.')
+            return redirect('settings_manager:manage_regions')
+            
+        except Exception as e:
+            messages.error(request, f'Error creating region: {str(e)}')
+            log_activity(request.user, 'create', content_type='Region',
+                        description=f'Failed to create region', 
+                        success=False, error_message=str(e), request=request)
+    
+    context = {
+        'companies': Company.objects.all(),
+    }
+    return render(request, 'settings_manager/create_region.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def edit_region(request, region_id):
+    """Edit existing region"""
+    region = get_object_or_404(Region, id=region_id)
+    
+    if request.method == 'POST':
+        try:
+            old_name = region.name
+            old_code = region.code
+            old_company = region.company
+            
+            region.name = request.POST.get('name')
+            region.code = request.POST.get('code')
+            company_id = request.POST.get('company')
+            if company_id:
+                region.company_id = company_id
+            
+            region.save()
+            
+            log_activity(request.user, 'update', content_type='Region', object_id=region.id,
+                        object_repr=str(region), description=f'Updated region: {region.name}',
+                        changes={'old_name': old_name, 'new_name': region.name,
+                                'old_code': old_code, 'new_code': region.code,
+                                'old_company': str(old_company), 'new_company': str(region.company)}, 
+                        request=request)
+            messages.success(request, f'Region {region.name} updated successfully.')
+            return redirect('settings_manager:manage_regions')
+            
+        except Exception as e:
+            messages.error(request, f'Error updating region: {str(e)}')
+            log_activity(request.user, 'update', content_type='Region', object_id=region.id,
+                        description=f'Failed to update region', 
+                        success=False, error_message=str(e), request=request)
+    
+    context = {
+        'region': region,
+        'companies': Company.objects.all(),
+    }
+    return render(request, 'settings_manager/edit_region.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def delete_region(request, region_id):
+    """Delete region"""
+    region = get_object_or_404(Region, id=region_id)
+    
+    if request.method == 'POST':
+        name = region.name
+        region.delete()
+        
+        log_activity(request.user, 'delete', content_type='Region',
+                    description=f'Deleted region: {name}', request=request)
+        messages.success(request, f'Region {name} deleted successfully.')
+    
+    return redirect('settings_manager:manage_regions')
 
 
 @login_required

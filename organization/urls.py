@@ -5,6 +5,18 @@ from . import views_admin
 app_name = 'organization'
 
 urlpatterns = [
+    # Company Management
+    path('companies/', views_admin.manage_companies, name='manage_companies'),
+    path('companies/create/', views_admin.create_company, name='create_company'),
+    path('companies/<int:company_id>/edit/', views_admin.edit_company, name='edit_company'),
+    path('companies/<int:company_id>/delete/', views_admin.delete_company, name='delete_company'),
+    
+    # Branch Management
+    path('branches/', views_admin.manage_branches, name='manage_branches'),
+    path('branches/create/', views_admin.create_branch, name='create_branch'),
+    path('branches/<int:branch_id>/edit/', views_admin.edit_branch, name='edit_branch'),
+    path('branches/<int:branch_id>/delete/', views_admin.delete_branch, name='delete_branch'),
+    
     # Cost Center Management
     path('cost-centers/', views_admin.manage_cost_centers, name='manage_cost_centers'),
     path('cost-centers/create/', views_admin.create_cost_center, name='create_cost_center'),

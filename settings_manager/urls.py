@@ -30,7 +30,12 @@ urlpatterns = [
     # Department Management
     path('data/departments/', views.manage_departments, name='manage_departments'),
     path('data/departments/create/', views.create_department, name='create_department'),
+    path('data/departments/edit/<int:department_id>/', views.edit_department, name='edit_department'),
+    path('data/departments/delete/<int:department_id>/', views.delete_department, name='delete_department'),
     
     # Region Management
     path('data/regions/', views.manage_regions, name='manage_regions'),
+    path('data/regions/create/', views.create_region, name='create_region'),
+    path('data/regions/edit/<int:region_id>/', views.edit_region, name='edit_region'),
+    path('data/regions/delete/<int:region_id>/', views.delete_region, name='delete_region'),
 ]
