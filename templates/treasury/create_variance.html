@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Variance Adjustment{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Create Variance Adjustment</h2>
+        <a href="{% url 'treasury:manage_variances' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Variances
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" id="varianceForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Treasury Fund <span class="text-danger">*</span></label>
+                            <select name="fund" class="form-select" required id="fundSelect">
+                                <option value="">Select fund...</option>
+                                {% for fund in funds %}
+                                    <option value="{{ fund.fund_id }}" 
+                                            data-balance="{{ fund.current_balance }}">
+                                        {{ fund }} - Current: ${{ fund.current_balance|floatformat:2 }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Current Balance (Read-Only)</label>
+                                <input type="text" class="form-control" id="currentBalance" readonly value="$0.00">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Adjusted Balance <span class="text-danger">*</span></label>
+                                <input type="number" name="adjusted_amount" class="form-control" 
+                                       step="0.01" min="0" required id="adjustedAmount">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Calculated Variance</label>
+                            <input type="text" class="form-control" id="calculatedVariance" readonly value="$0.00">
+                            <small class="text-muted">Adjusted Balance - Current Balance</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Reason for Adjustment <span class="text-danger">*</span></label>
+                            <textarea name="reason" class="form-control" rows="4" required 
+                                      placeholder="Explain the reason for this variance adjustment..."></textarea>
+                            <small class="text-muted">Provide detailed explanation for audit trail</small>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <h6>⚠️ Important:</h6>
+                            <ul class="mb-0">
+                                <li>Variance adjustments require CFO approval</li>
+                                <li>Provide clear justification for the variance</li>
+                                <li>Adjustment will be recorded in ledger upon approval</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'treasury:manage_variances' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Submit for Approval</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5>What is a Variance?</h5>
+                    <p>A variance adjustment corrects discrepancies between the system balance and actual physical/bank balance.</p>
+                    
+                    <p><strong>Common Reasons:</strong></p>
+                    <ul>
+                        <li>Unrecorded transactions</li>
+                        <li>Bank fees or charges</li>
+                        <li>Manual reconciliation corrections</li>
+                        <li>Lost or damaged cash</li>
+                        <li>Currency exchange differences</li>
+                    </ul>
+
+                    <p><strong>Approval Flow:</strong></p>
+                    <ol>
+                        <li>You create the adjustment</li>
+                        <li>CFO reviews and approves/rejects</li>
+                        <li>If approved, fund balance updates</li>
+                        <li>Ledger entry created for audit</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('fundSelect').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const balance = selectedOption.dataset.balance || '0.00';
+    document.getElementById('currentBalance').value = '$' + parseFloat(balance).toFixed(2);
+    calculateVariance();
+});
+
+document.getElementById('adjustedAmount').addEventListener('input', calculateVariance);
+
+function calculateVariance() {
+    const fundSelect = document.getElementById('fundSelect');
+    const selectedOption = fundSelect.options[fundSelect.selectedIndex];
+    const currentBalance = parseFloat(selectedOption.dataset.balance || 0);
+    const adjustedAmount = parseFloat(document.getElementById('adjustedAmount').value || 0);
+    const variance = adjustedAmount - currentBalance;
+    
+    const varianceElement = document.getElementById('calculatedVariance');
+    varianceElement.value = (variance >= 0 ? '+$' : '-$') + Math.abs(variance).toFixed(2);
+    varianceElement.className = 'form-control ' + (variance < 0 ? 'text-danger' : 'text-success');
+}
+</script>
+{% endblock %}

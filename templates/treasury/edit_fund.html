@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Treasury Fund{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Edit Treasury Fund</h2>
+        <a href="{% url 'treasury:manage_funds' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Funds
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-3">Location (Read-Only)</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Company</label>
+                                <input type="text" class="form-control" value="{{ fund.company.name }}" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Region</label>
+                                <input type="text" class="form-control" 
+                                       value="{% if fund.region %}{{ fund.region.name }}{% else %}HQ / No Region{% endif %}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Branch</label>
+                                <input type="text" class="form-control" 
+                                       value="{% if fund.branch %}{{ fund.branch.name }}{% else %}No Branch{% endif %}" readonly>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3 mt-4">Fund Configuration</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Current Balance</label>
+                                <input type="number" name="current_balance" class="form-control" 
+                                       step="0.01" min="0" value="{{ fund.current_balance }}" required>
+                                <small class="text-muted">Manually adjust current balance</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Reorder Level</label>
+                                <input type="number" name="reorder_level" class="form-control" 
+                                       step="0.01" min="0" value="{{ fund.reorder_level }}" required>
+                                <small class="text-muted">Alert threshold</small>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'treasury:manage_funds' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Update Fund</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5>Fund Information</h5>
+                    <p><strong>Fund ID:</strong> <code>{{ fund.fund_id }}</code></p>
+                    <p><strong>Created:</strong> {{ fund.created_at|date:"M d, Y g:i A" }}</p>
+                    <p><strong>Last Updated:</strong> {{ fund.updated_at|date:"M d, Y g:i A" }}</p>
+                    {% if fund.last_replenished %}
+                        <p><strong>Last Replenished:</strong> {{ fund.last_replenished|date:"M d, Y g:i A" }}</p>
+                    {% else %}
+                        <p><strong>Last Replenished:</strong> Never</p>
+                    {% endif %}
+                    <p><strong>Status:</strong> 
+                        {% if fund.check_reorder_needed %}
+                            <span class="badge bg-danger">⚠️ Low Balance</span>
+                        {% else %}
+                            <span class="badge bg-success">✓ Healthy</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="card bg-warning mt-3">
+                <div class="card-body">
+                    <h5>⚠️ Warning</h5>
+                    <p>Location cannot be changed after creation. If you need a different location, create a new fund.</p>
+                    <p>Manual balance adjustments should be tracked. Consider using Variance Adjustments for audit trail.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

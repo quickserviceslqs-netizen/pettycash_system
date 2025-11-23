@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ledger Entries{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Treasury Ledger</h2>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h6>Total Debits</h6>
+                    <h3>${{ total_debits|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6>Total Credits</h6>
+                    <h3>${{ total_credits|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6>Unreconciled</h6>
+                    <h3>{{ unreconciled_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Fund</label>
+                    <select name="fund" class="form-select">
+                        <option value="">All Funds</option>
+                        {% for fund in funds %}
+                            <option value="{{ fund.fund_id }}" {% if fund_filter == fund.fund_id|stringformat:"s" %}selected{% endif %}>
+                                {{ fund }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Entry Type</label>
+                    <select name="entry_type" class="form-select">
+                        <option value="">All Types</option>
+                        {% for value, label in entry_type_choices %}
+                            <option value="{{ value }}" {% if entry_type_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Reconciled</label>
+                    <select name="reconciled" class="form-select">
+                        <option value="">All</option>
+                        <option value="yes" {% if reconciled_filter == 'yes' %}selected{% endif %}>Reconciled</option>
+                        <option value="no" {% if reconciled_filter == 'no' %}selected{% endif %}>Unreconciled</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-secondary me-2">Filter</button>
+                    <a href="{% url 'treasury:view_ledger' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ledger Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if entries %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Fund</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Description</th>
+                                <th>Reconciled</th>
+                                <th>Reconciled By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in entries %}
+                                <tr>
+                                    <td><small>{{ entry.created_at|date:"M d, Y H:i" }}</small></td>
+                                    <td><small>{{ entry.treasury_fund.company.name|truncatechars:20 }}</small></td>
+                                    <td>
+                                        {% if entry.entry_type == 'debit' %}
+                                            <span class="badge bg-danger">Debit</span>
+                                        {% elif entry.entry_type == 'credit' %}
+                                            <span class="badge bg-success">Credit</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Adjustment</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong class="{% if entry.entry_type == 'debit' %}text-danger{% else %}text-success{% endif %}">
+                                            {% if entry.entry_type == 'debit' %}-{% else %}+{% endif %}${{ entry.amount|floatformat:2 }}
+                                        </strong>
+                                    </td>
+                                    <td><small>{{ entry.description|truncatechars:50 }}</small></td>
+                                    <td>
+                                        {% if entry.reconciled %}
+                                            <span class="badge bg-success">✓ Yes</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">No</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if entry.reconciled_by %}
+                                            <small>{{ entry.reconciled_by.get_full_name|truncatechars:20 }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted mt-2"><small>Showing up to 200 recent entries</small></p>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No ledger entries found.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

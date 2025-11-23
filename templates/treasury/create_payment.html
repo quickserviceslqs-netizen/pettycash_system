@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Payment{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Create Payment</h2>
+        <a href="{% url 'treasury:manage_payments' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Payments
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="mb-3">Requisition Details</h5>
+                    <dl class="row">
+                        <dt class="col-sm-3">Transaction ID:</dt>
+                        <dd class="col-sm-9"><code>{{ requisition.transaction_id }}</code></dd>
+                        
+                        <dt class="col-sm-3">Requested By:</dt>
+                        <dd class="col-sm-9">{{ requisition.requested_by.get_full_name }}</dd>
+                        
+                        <dt class="col-sm-3">Amount:</dt>
+                        <dd class="col-sm-9"><strong>${{ requisition.amount|floatformat:2 }}</strong></dd>
+                        
+                        <dt class="col-sm-3">Purpose:</dt>
+                        <dd class="col-sm-9">{{ requisition.purpose|truncatewords:20 }}</dd>
+                    </dl>
+
+                    <hr>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-3">Payment Information</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Amount <span class="text-danger">*</span></label>
+                                <input type="number" name="amount" class="form-control" 
+                                       step="0.01" min="0" value="{{ requisition.amount }}" required>
+                                <small class="text-muted">Must not exceed requisition amount</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Payment Method <span class="text-danger">*</span></label>
+                                <select name="method" class="form-select" required>
+                                    <option value="">Select method...</option>
+                                    {% for value, label in method_choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Destination <span class="text-danger">*</span></label>
+                            <input type="text" name="destination" class="form-control" required
+                                   placeholder="Phone number, bank account, or recipient name">
+                            <small class="text-muted">For M-PESA: phone number (254XXXXXXXXX), Bank: account number</small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input type="checkbox" name="otp_required" class="form-check-input" id="otpRequired" checked>
+                            <label class="form-check-label" for="otpRequired">
+                                Require 2FA/OTP for execution
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'treasury:manage_payments' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Payment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5>Help</h5>
+                    <p><strong>Payment Methods:</strong></p>
+                    <ul>
+                        <li><strong>M-PESA:</strong> Mobile money transfer (Kenya)</li>
+                        <li><strong>Bank Transfer:</strong> Direct bank deposit</li>
+                        <li><strong>Cash:</strong> Physical cash disbursement</li>
+                    </ul>
+                    <p><strong>2FA/OTP:</strong> Recommended for security. Executor must verify OTP before payment executes.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

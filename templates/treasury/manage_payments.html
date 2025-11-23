@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Payments{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Payment Management</h2>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6>Pending</h6>
+                    <h3>{{ stats.pending }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6>Executing</h6>
+                    <h3>{{ stats.executing }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6>Success</h6>
+                    <h3>{{ stats.success }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h6>Failed</h6>
+                    <h3>{{ stats.failed }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Method</label>
+                    <select name="method" class="form-select">
+                        <option value="">All Methods</option>
+                        {% for value, label in method_choices %}
+                            <option value="{{ value }}" {% if method_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" placeholder="Payment ID, destination, requisition..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-secondary me-2">Filter</button>
+                    <a href="{% url 'treasury:manage_payments' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Payment ID</th>
+                                <th>Requisition</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Destination</th>
+                                <th>Status</th>
+                                <th>Executor</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                                <tr>
+                                    <td><code>{{ payment.payment_id|truncatechars:12 }}</code></td>
+                                    <td><small>{{ payment.requisition.transaction_id|truncatechars:12 }}</small></td>
+                                    <td><strong>${{ payment.amount|floatformat:2 }}</strong></td>
+                                    <td><span class="badge bg-secondary">{{ payment.get_method_display }}</span></td>
+                                    <td><small>{{ payment.destination|truncatechars:20 }}</small></td>
+                                    <td>
+                                        {% if payment.status == 'pending' %}
+                                            <span class="badge bg-warning text-dark">Pending</span>
+                                        {% elif payment.status == 'executing' %}
+                                            <span class="badge bg-info">Executing</span>
+                                        {% elif payment.status == 'success' %}
+                                            <span class="badge bg-success">Success</span>
+                                        {% elif payment.status == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ payment.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if payment.executor %}
+                                            <small>{{ payment.executor.get_full_name }}</small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if payment.status == 'pending' %}
+                                            <a href="{% url 'treasury:execute_payment' payment.payment_id %}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-play"></i> Execute
+                                            </a>
+                                        {% elif payment.status == 'failed' %}
+                                            <button class="btn btn-sm btn-warning" title="Retry payment">
+                                                <i class="fas fa-redo"></i> Retry
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-sm btn-secondary" disabled>-</button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No payments found matching your filters.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

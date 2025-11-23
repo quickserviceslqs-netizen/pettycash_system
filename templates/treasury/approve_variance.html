@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Approve Variance Adjustment{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Review Variance Adjustment</h2>
+        <a href="{% url 'treasury:manage_variances' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Variances
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card border-warning">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">⚠️ Variance Adjustment Review (CFO Approval Required)</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-3">Adjustment Details</h6>
+                    <dl class="row">
+                        <dt class="col-sm-4">Adjustment ID:</dt>
+                        <dd class="col-sm-8"><code>{{ variance.adjustment_id }}</code></dd>
+                        
+                        <dt class="col-sm-4">Treasury Fund:</dt>
+                        <dd class="col-sm-8"><strong>{{ variance.treasury_fund }}</strong></dd>
+                        
+                        <dt class="col-sm-4">Current Balance:</dt>
+                        <dd class="col-sm-8">${{ variance.original_amount|floatformat:2 }}</dd>
+                        
+                        <dt class="col-sm-4">Adjusted Balance:</dt>
+                        <dd class="col-sm-8"><strong>${{ variance.adjusted_amount|floatformat:2 }}</strong></dd>
+                        
+                        <dt class="col-sm-4">Variance Amount:</dt>
+                        <dd class="col-sm-8">
+                            <strong class="{% if variance.variance_amount < 0 %}text-danger{% else %}text-success{% endif %} fs-5">
+                                {% if variance.variance_amount > 0 %}+{% endif %}${{ variance.variance_amount|floatformat:2 }}
+                            </strong>
+                            {% if variance.variance_amount < 0 %}
+                                <span class="badge bg-danger">Deficit</span>
+                            {% else %}
+                                <span class="badge bg-success">Surplus</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">Initiated By:</dt>
+                        <dd class="col-sm-8">{{ variance.initiated_by.get_full_name }} ({{ variance.initiated_by.role }})</dd>
+                        
+                        <dt class="col-sm-4">Date Initiated:</dt>
+                        <dd class="col-sm-8">{{ variance.created_at|date:"M d, Y g:i A" }}</dd>
+                    </dl>
+
+                    <hr>
+
+                    <h6 class="mb-2">Reason for Adjustment:</h6>
+                    <div class="bg-light p-3 rounded">
+                        <p class="mb-0">{{ variance.reason }}</p>
+                    </div>
+
+                    <hr>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="alert alert-info">
+                            <h6>📋 Review Checklist:</h6>
+                            <ul class="mb-0">
+                                <li>Verify the variance amount is justified</li>
+                                <li>Confirm the reason is documented properly</li>
+                                <li>Check if physical verification was performed</li>
+                                <li>Ensure proper authorization from initiator</li>
+                                <li>Review supporting documentation (if any)</li>
+                            </ul>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <h6>⚠️ Impact of Approval:</h6>
+                            <ul class="mb-0">
+                                <li>Fund balance will be updated to <strong>${{ variance.adjusted_amount|floatformat:2 }}</strong></li>
+                                <li>Ledger entry will be created for audit trail</li>
+                                <li>Variance will be marked as reconciled</li>
+                                <li>This action cannot be undone</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'treasury:manage_variances' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" name="action" value="reject" class="btn btn-danger"
+                                    onclick="return confirm('Are you sure you want to REJECT this variance adjustment?');">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                            <button type="submit" name="action" value="approve" class="btn btn-success"
+                                    onclick="return confirm('Are you sure you want to APPROVE this variance adjustment? The fund balance will be updated immediately.');">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-info text-white mb-3">
+                <div class="card-body">
+                    <h5>CFO Reviewer</h5>
+                    <p><strong>Name:</strong> {{ user.get_full_name }}</p>
+                    <p><strong>Role:</strong> {{ user.role|upper }}</p>
+                    <p class="mb-0"><small>Your approval/rejection will be permanently recorded</small></p>
+                </div>
+            </div>
+
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5>Variance Types</h5>
+                    <p><strong>Surplus (+):</strong> More funds than expected. Could indicate:</p>
+                    <ul>
+                        <li>Unrecorded deposits</li>
+                        <li>Interest earned</li>
+                        <li>Currency gains</li>
+                    </ul>
+                    
+                    <p><strong>Deficit (-):</strong> Less funds than expected. Could indicate:</p>
+                    <ul>
+                        <li>Unrecorded withdrawals</li>
+                        <li>Bank fees</li>
+                        <li>Currency losses</li>
+                        <li>Theft or loss</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

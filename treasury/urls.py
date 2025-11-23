@@ -9,6 +9,12 @@ from treasury.views import (
     treasury_home, treasury_dashboard, payment_execute, 
     funds_view, alerts_view, variances_view
 )
+from treasury.views_admin import (
+    manage_funds, create_fund, edit_fund,
+    manage_payments, create_payment, execute_payment,
+    view_ledger,
+    manage_variances, create_variance, approve_variance,
+)
 
 app_name = 'treasury'
 
@@ -35,6 +41,21 @@ html_patterns = [
     path('funds/', funds_view, name='funds_view'),
     path('alerts/', alerts_view, name='alerts_view'),
     path('variances/', variances_view, name='variances_view'),
+    
+    # Admin treasury management
+    path('admin/funds/', manage_funds, name='manage_funds'),
+    path('admin/funds/create/', create_fund, name='create_fund'),
+    path('admin/funds/<uuid:fund_id>/edit/', edit_fund, name='edit_fund'),
+    
+    path('admin/payments/', manage_payments, name='manage_payments'),
+    path('admin/payments/create/<uuid:requisition_id>/', create_payment, name='create_payment'),
+    path('admin/payments/<uuid:payment_id>/execute/', execute_payment, name='execute_payment'),
+    
+    path('admin/ledger/', view_ledger, name='view_ledger'),
+    
+    path('admin/variances/', manage_variances, name='manage_variances'),
+    path('admin/variances/create/', create_variance, name='create_variance'),
+    path('admin/variances/<uuid:variance_id>/approve/', approve_variance, name='approve_variance'),
 ]
 
 # URL patterns

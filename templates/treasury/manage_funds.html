@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Treasury Funds{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Treasury Funds</h2>
+        <a href="{% url 'treasury:create_fund' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create New Fund
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Balance</h5>
+                    <h3>${{ total_balance|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Funds</h5>
+                    <h3>{{ funds|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Low Balance Alerts</h5>
+                    <h3>{{ low_balance_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Company</label>
+                    <select name="company" class="form-select">
+                        <option value="">All Companies</option>
+                        {% for company in companies %}
+                            <option value="{{ company.id }}" {% if company_filter == company.id|stringformat:"s" %}selected{% endif %}>
+                                {{ company.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Region</label>
+                    <select name="region" class="form-select">
+                        <option value="">All Regions</option>
+                        {% for region in regions %}
+                            <option value="{{ region.id }}" {% if region_filter == region.id|stringformat:"s" %}selected{% endif %}>
+                                {{ region.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <div class="form-check mt-2">
+                        <input type="checkbox" name="low_balance" class="form-check-input" id="lowBalance"
+                               {% if low_balance_only %}checked{% endif %}>
+                        <label class="form-check-label" for="lowBalance">
+                            Low Balance Only
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-secondary me-2">Apply Filters</button>
+                    <a href="{% url 'treasury:manage_funds' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Funds Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if funds %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Location</th>
+                                <th>Current Balance</th>
+                                <th>Reorder Level</th>
+                                <th>Status</th>
+                                <th>Last Replenished</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fund in funds %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ fund.company.name }}</strong><br>
+                                        <small class="text-muted">
+                                            {% if fund.branch %}
+                                                {{ fund.branch.name }}
+                                            {% elif fund.region %}
+                                                {{ fund.region.name }}
+                                            {% else %}
+                                                HQ
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong class="{% if fund.check_reorder_needed %}text-danger{% else %}text-success{% endif %}">
+                                            ${{ fund.current_balance|floatformat:2 }}
+                                        </strong>
+                                    </td>
+                                    <td>${{ fund.reorder_level|floatformat:2 }}</td>
+                                    <td>
+                                        {% if fund.check_reorder_needed %}
+                                            <span class="badge bg-danger">⚠️ Low Balance</span>
+                                        {% else %}
+                                            <span class="badge bg-success">✓ Healthy</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if fund.last_replenished %}
+                                            {{ fund.last_replenished|date:"M d, Y" }}
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'treasury:edit_fund' fund.fund_id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No treasury funds found. 
+                    <a href="{% url 'treasury:create_fund' %}">Create your first fund</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

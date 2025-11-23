@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Treasury Fund{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Create New Treasury Fund</h2>
+        <a href="{% url 'treasury:manage_funds' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Funds
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-3">Location Details</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Company <span class="text-danger">*</span></label>
+                                <select name="company" class="form-select" required id="companySelect">
+                                    <option value="">Select company...</option>
+                                    {% for company in companies %}
+                                        <option value="{{ company.id }}">{{ company.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Region (Optional)</label>
+                                <select name="region" class="form-select" id="regionSelect">
+                                    <option value="">HQ / No Region</option>
+                                    {% for region in regions %}
+                                        <option value="{{ region.id }}" data-company="{{ region.company_id }}">
+                                            {{ region.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Select region if this is a regional fund</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Branch (Optional)</label>
+                                <select name="branch" class="form-select" id="branchSelect">
+                                    <option value="">No Branch</option>
+                                    {% for branch in branches %}
+                                        <option value="{{ branch.id }}" data-region="{{ branch.region_id }}" data-company="{{ branch.company_id }}">
+                                            {{ branch.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Select branch if this is a branch-level fund</small>
+                            </div>
+                        </div>
+
+                        <h5 class="mb-3 mt-4">Fund Configuration</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Initial Balance</label>
+                                <input type="number" name="current_balance" class="form-control" 
+                                       step="0.01" min="0" value="0.00" required>
+                                <small class="text-muted">Starting balance for this fund</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Reorder Level</label>
+                                <input type="number" name="reorder_level" class="form-control" 
+                                       step="0.01" min="0" value="50000.00" required>
+                                <small class="text-muted">Minimum balance before alert</small>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'treasury:manage_funds' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Fund</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5>Help</h5>
+                    <p><strong>Location Hierarchy:</strong></p>
+                    <ul>
+                        <li><strong>HQ Fund:</strong> Select company only</li>
+                        <li><strong>Regional Fund:</strong> Select company + region</li>
+                        <li><strong>Branch Fund:</strong> Select all three</li>
+                    </ul>
+                    <p><strong>Reorder Level:</strong> System alerts when balance falls below this threshold.</p>
+                    <p><strong>Unique Constraint:</strong> Only one fund per location combination.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter regions and branches based on selected company
+document.getElementById('companySelect').addEventListener('change', function() {
+    const companyId = this.value;
+    const regionSelect = document.getElementById('regionSelect');
+    const branchSelect = document.getElementById('branchSelect');
+    
+    // Filter regions
+    Array.from(regionSelect.options).forEach(option => {
+        if (option.value === '') {
+            option.style.display = '';
+            return;
+        }
+        option.style.display = option.dataset.company === companyId ? '' : 'none';
+    });
+    
+    // Filter branches
+    Array.from(branchSelect.options).forEach(option => {
+        if (option.value === '') {
+            option.style.display = '';
+            return;
+        }
+        option.style.display = option.dataset.company === companyId ? '' : 'none';
+    });
+    
+    // Reset selections
+    regionSelect.value = '';
+    branchSelect.value = '';
+});
+
+// Filter branches based on selected region
+document.getElementById('regionSelect').addEventListener('change', function() {
+    const regionId = this.value;
+    const branchSelect = document.getElementById('branchSelect');
+    
+    Array.from(branchSelect.options).forEach(option => {
+        if (option.value === '') {
+            option.style.display = '';
+            return;
+        }
+        if (!regionId) {
+            option.style.display = option.dataset.company === document.getElementById('companySelect').value ? '' : 'none';
+        } else {
+            option.style.display = option.dataset.region === regionId ? '' : 'none';
+        }
+    });
+    
+    branchSelect.value = '';
+});
+</script>
+{% endblock %}
