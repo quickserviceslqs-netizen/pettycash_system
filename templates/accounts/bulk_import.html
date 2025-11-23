@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const branchId = userBranchFilter.value;
         const deptId = userDeptFilter.value;
         
-        let url = "{% url 'download_template' %}";
+        let url = "{% url 'accounts:download_template' %}";
         const params = [];
         
         // Most specific filter takes precedence
