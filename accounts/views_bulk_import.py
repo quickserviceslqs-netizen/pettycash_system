@@ -141,14 +141,14 @@ def download_template(request):
     writer.writerow([])
     
     # INSTRUCTIONS SECTION
-    writer.writerow(['════════════════════════════════════════════════════════════════'])
+    writer.writerow(['**********************************************************************'])
     writer.writerow(['INSTRUCTIONS - DELETE ALL ROWS BELOW BEFORE UPLOADING'])
-    writer.writerow(['════════════════════════════════════════════════════════════════'])
+    writer.writerow(['**********************************************************************'])
     writer.writerow([])
     writer.writerow(['FIELD REQUIREMENTS:'])
     writer.writerow(['- email: Must be valid and unique (user@company.com)'])
-    writer.writerow(['- first_name: User\'s first name (e.g., Amos)'])
-    writer.writerow(['- last_name: User\'s last name (e.g., Cheloti)'])
+    writer.writerow(["- first_name: User's first name (e.g., Amos)"])
+    writer.writerow(["- last_name: User's last name (e.g., Cheloti)"])
     writer.writerow(['- role: REQUESTER | APPROVER | FINANCE | ADMIN'])
     writer.writerow(['- company_name: Must EXACTLY match existing company (see list below)'])
     writer.writerow(['- region_name: Region name (optional, see list below)'])
@@ -158,8 +158,8 @@ def download_template(request):
     writer.writerow([])
     writer.writerow(['USERNAME FORMAT:'])
     writer.writerow(['- Auto-generated as: FirstInitial.LastName'])
-    writer.writerow(['- Example: Amos Cheloti → A.Cheloti'])
-    writer.writerow(['- Example: Jane Doe → J.Doe'])
+    writer.writerow(['- Example: Amos Cheloti becomes A.Cheloti'])
+    writer.writerow(['- Example: Jane Doe becomes J.Doe'])
     writer.writerow(['- Duplicates get number suffix: A.Cheloti1, A.Cheloti2'])
     writer.writerow([])
     writer.writerow(['PASSWORD:'])
@@ -168,12 +168,12 @@ def download_template(request):
     writer.writerow([])
     
     # AVAILABLE ORGANIZATIONS SECTION
-    writer.writerow(['════════════════════════════════════════════════════════════════'])
+    writer.writerow(['**********************************************************************'])
     if filter_context:
         writer.writerow(['FILTERED ORGANIZATIONS (For selected scope only)'])
     else:
         writer.writerow(['AVAILABLE ORGANIZATIONS (Copy exact names from here)'])
-    writer.writerow(['════════════════════════════════════════════════════════════════'])
+    writer.writerow(['**********************************************************************'])
     writer.writerow([])
     
     if filter_context:
@@ -197,7 +197,7 @@ def download_template(request):
     else:
         all_companies = Company.objects.all().order_by('name')
     for company in all_companies:
-        writer.writerow([f'  → {company.name if hasattr(company, "name") else company}'])
+        writer.writerow([f'  * {company.name if hasattr(company, "name") else company}'])
     if not all_companies:
         writer.writerow(['  (No companies found - create companies first)'])
     writer.writerow([])
@@ -212,7 +212,7 @@ def download_template(request):
         all_regions = Region.objects.all().order_by('name')[:20]
     for region in all_regions:
         company_info = f' ({region.company.name})' if hasattr(region, 'company') and region.company else ''
-        writer.writerow([f'  → {region.name}{company_info}'])
+        writer.writerow([f'  * {region.name}{company_info}'])
     if not all_regions:
         writer.writerow(['  (No regions found)'])
     writer.writerow([])
@@ -225,7 +225,7 @@ def download_template(request):
         all_branches = Branch.objects.all().order_by('name')[:20]
     for branch in all_branches:
         region_info = f' ({branch.region.name}, {branch.region.company.name})' if hasattr(branch, 'region') and branch.region else ''
-        writer.writerow([f'  → {branch.name}{region_info}'])
+        writer.writerow([f'  * {branch.name}{region_info}'])
     if not all_branches:
         writer.writerow(['  (No branches found - create branches first)'])
     writer.writerow([])
@@ -238,25 +238,25 @@ def download_template(request):
         all_departments = Department.objects.all().order_by('name')[:20]
     for dept in all_departments:
         branch_info = f' ({dept.branch.name})' if hasattr(dept, 'branch') and dept.branch else ''
-        writer.writerow([f'  → {dept.name}{branch_info}'])
+        writer.writerow([f'  * {dept.name}{branch_info}'])
     if not all_departments:
         writer.writerow(['  (No departments found - create departments first)'])
     writer.writerow([])
     
     # Available roles
     writer.writerow(['AVAILABLE ROLES (role):'])
-    writer.writerow(['  → REQUESTER (Creates requisitions)'])
-    writer.writerow(['  → APPROVER (Approves requisitions)'])
-    writer.writerow(['  → FINANCE (Finance operations)'])
-    writer.writerow(['  → ADMIN (System administration)'])
+    writer.writerow(['  * REQUESTER (Creates requisitions)'])
+    writer.writerow(['  * APPROVER (Approves requisitions)'])
+    writer.writerow(['  * FINANCE (Finance operations)'])
+    writer.writerow(['  * ADMIN (System administration)'])
     writer.writerow([])
     
     # Available apps
     writer.writerow(['AVAILABLE APPS (assigned_apps):'])
-    writer.writerow(['  → treasury (Treasury Management)'])
-    writer.writerow(['  → workflow (Workflow & Approvals)'])
-    writer.writerow(['  → reports (Reporting & Analytics)'])
-    writer.writerow(['  → settings (System Settings)'])
+    writer.writerow(['  * treasury (Treasury Management)'])
+    writer.writerow(['  * workflow (Workflow & Approvals)'])
+    writer.writerow(['  * reports (Reporting & Analytics)'])
+    writer.writerow(['  * settings (System Settings)'])
     writer.writerow(['  Use comma-separated for multiple: treasury,workflow,reports'])
     
     return response
