@@ -22,7 +22,8 @@ def is_admin_user(user):
 def settings_dashboard(request):
     """Main settings management dashboard"""
     # Log activity
-    log_activity(request.user, 'view', 'Settings Dashboard', description='Viewed settings dashboard')
+    log_activity(request.user, 'view', content_type='Settings Dashboard', 
+                 description='Viewed settings dashboard', request=request)
     
     # Get all settings grouped by category
     categories = SystemSetting.CATEGORY_CHOICES
@@ -91,7 +92,8 @@ def edit_setting(request, setting_id):
                 object_id=setting.key,
                 object_repr=setting.display_name,
                 description=f"Changed '{setting.display_name}' from '{old_value}' to '{new_value}'",
-                changes={'old_value': old_value, 'new_value': new_value}
+                changes={'old_value': old_value, 'new_value': new_value},
+                request=request
             )
             
             if setting.requires_restart:
@@ -110,7 +112,8 @@ def edit_setting(request, setting_id):
                 'System Setting',
                 object_id=setting.key,
                 success=False,
-                error_message=str(e)
+                error_message=str(e),
+                request=request
             )
         
         return redirect('settings-dashboard')
@@ -127,7 +130,8 @@ def edit_setting(request, setting_id):
 def activity_logs(request):
     """View activity logs with filtering"""
     # Log this view
-    log_activity(request.user, 'view', 'Activity Logs', description='Viewed activity logs')
+    log_activity(request.user, 'view', content_type='Activity Logs', 
+                 description='Viewed activity logs', request=request)
     
     # Get filters
     action_filter = request.GET.get('action')
@@ -190,7 +194,8 @@ def system_info(request):
     from django.conf import settings as django_settings
     
     # Log activity
-    log_activity(request.user, 'view', 'System Info', description='Viewed system information')
+    log_activity(request.user, 'view', content_type='System Info', 
+                 description='Viewed system information', request=request)
     
     context = {
         'python_version': sys.version,
@@ -331,13 +336,18 @@ def create_user(request):
                 user.department_id = department_id
                 user.save()
             
-            log_activity(request.user, 'create', object_repr=str(user), description=f'Created user: {user.email}')
+            log_activity(request.user, 'create', content_type='User', object_id=user.id,
+                        object_repr=str(user), description=f'Created user: {user.email}',
+                        changes={'email': user.email, 'role': user.role, 'department': str(user.department) if user.department else None},
+                        request=request)
             messages.success(request, f'User {user.email} created successfully.')
             return redirect('settings_manager:manage_users')
             
         except Exception as e:
             messages.error(request, f'Error creating user: {str(e)}')
-            log_activity(request.user, 'create', description=f'Failed to create user', success=False, error_message=str(e))
+            log_activity(request.user, 'create', content_type='User',
+                        description=f'Failed to create user', success=False, 
+                        error_message=str(e), request=request)
     
     context = {
         'departments': Department.objects.all().select_related('branch'),
@@ -365,13 +375,21 @@ def edit_user(request, user_id):
             
             user_obj.save()
             
-            log_activity(request.user, 'update', object_repr=str(user_obj), description=f'Updated user: {user_obj.email}')
+            old_values = {k: request.POST.get(f'old_{k}', '') for k in ['email', 'first_name', 'last_name', 'role']}
+            new_values = {'email': user_obj.email, 'first_name': user_obj.first_name, 
+                         'last_name': user_obj.last_name, 'role': user_obj.role}
+            
+            log_activity(request.user, 'update', content_type='User', object_id=user_obj.id,
+                        object_repr=str(user_obj), description=f'Updated user: {user_obj.email}',
+                        changes={'before': old_values, 'after': new_values}, request=request)
             messages.success(request, f'User {user_obj.email} updated successfully.')
             return redirect('settings_manager:manage_users')
             
         except Exception as e:
             messages.error(request, f'Error updating user: {str(e)}')
-            log_activity(request.user, 'update', description=f'Failed to update user {user_obj.email}', success=False, error_message=str(e))
+            log_activity(request.user, 'update', content_type='User', object_id=user_obj.id,
+                        description=f'Failed to update user {user_obj.email}', 
+                        success=False, error_message=str(e), request=request)
     
     context = {
         'user_obj': user_obj,
@@ -390,7 +408,9 @@ def toggle_user_status(request, user_id):
     user_obj.save()
     
     status = 'activated' if user_obj.is_active else 'deactivated'
-    log_activity(request.user, 'update', object_repr=str(user_obj), description=f'{status.capitalize()} user: {user_obj.email}')
+    log_activity(request.user, 'update', content_type='User', object_id=user_obj.id,
+                object_repr=str(user_obj), description=f'{status.capitalize()} user: {user_obj.email}',
+                changes={'is_active': user_obj.is_active, 'status': status}, request=request)
     messages.success(request, f'User {user_obj.email} {status} successfully.')
     
     return redirect('settings_manager:manage_users')
@@ -435,13 +455,17 @@ def create_department(request):
                 branch_id=branch_id
             )
             
-            log_activity(request.user, 'create', object_repr=str(department), description=f'Created department: {department.name}')
+            log_activity(request.user, 'create', content_type='Department', object_id=department.id,
+                        object_repr=str(department), description=f'Created department: {department.name}',
+                        changes={'name': department.name, 'branch': str(department.branch)}, request=request)
             messages.success(request, f'Department {department.name} created successfully.')
             return redirect('settings_manager:manage_departments')
             
         except Exception as e:
             messages.error(request, f'Error creating department: {str(e)}')
-            log_activity(request.user, 'create', description=f'Failed to create department', success=False, error_message=str(e))
+            log_activity(request.user, 'create', content_type='Department',
+                        description=f'Failed to create department', 
+                        success=False, error_message=str(e), request=request)
     
     context = {
         'branches': Branch.objects.all().select_related('region'),
@@ -486,5 +510,7 @@ def export_users_csv(request):
             user.date_joined.strftime('%Y-%m-%d'),
         ])
     
-    log_activity(request.user, 'export', description=f'Exported {users.count()} users to CSV')
+    log_activity(request.user, 'export', content_type='User Data',
+                description=f'Exported {users.count()} users to CSV',
+                changes={'count': users.count(), 'format': 'CSV'}, request=request)
     return response

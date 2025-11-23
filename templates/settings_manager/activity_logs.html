@@ -109,24 +109,29 @@
                                             </td>
                                             <td>
                                                 {% if log.content_type %}
-                                                    <small>
-                                                        {{ log.content_type.model|title }}
-                                                        {% if log.object_id %}#{{ log.object_id }}{% endif %}
-                                                    </small>
+                                                    <strong>{{ log.content_type }}</strong>
+                                                    {% if log.object_repr %}
+                                                        <br><small class="text-muted">{{ log.object_repr }}</small>
+                                                    {% endif %}
+                                                    {% if log.object_id %}
+                                                        <br><small class="badge bg-secondary">#{{ log.object_id }}</small>
+                                                    {% endif %}
+                                                {% elif log.description %}
+                                                    <small class="text-muted">{{ log.description|truncatewords:5 }}</small>
                                                 {% else %}
-                                                    <span class="text-muted">N/A</span>
+                                                    <span class="text-muted">-</span>
                                                 {% endif %}
                                             </td>
                                             <td>
                                                 {% if log.changes %}
-                                                    <small class="font-monospace">{{ log.changes|truncatewords:10 }}</small>
-                                                    {% if log.changes|length > 50 %}
-                                                        <button class="btn btn-sm btn-link p-0" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#changesModal{{ log.id }}">
-                                                            View Full
-                                                        </button>
-                                                    {% endif %}
+                                                    <details>
+                                                        <summary class="text-primary" style="cursor: pointer;">
+                                                            <small>View changes</small>
+                                                        </summary>
+                                                        <pre class="mt-2 p-2 bg-light rounded" style="font-size: 0.75rem; max-height: 150px; overflow-y: auto;">{{ log.changes|safe }}</pre>
+                                                    </details>
+                                                {% elif log.description %}
+                                                    <small class="text-muted">{{ log.description }}</small>
                                                 {% else %}
                                                     <span class="text-muted">-</span>
                                                 {% endif %}
