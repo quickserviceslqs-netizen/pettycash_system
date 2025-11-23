@@ -4,6 +4,8 @@ from django.http import HttpResponseForbidden
 from django.contrib import messages
 from django.utils import timezone
 from django.db import transaction
+from django.core.mail import send_mail
+from django.conf import settings
 
 from .models import Requisition, ApprovalTrail
 from treasury.models import Payment
@@ -51,11 +53,11 @@ def transactions_home(request):
     if is_centralized:
         my_requisitions = Requisition.objects.filter(
             requested_by=user
-        ).order_by('-created_at')
+        ).prefetch_related('approvaltrail_set').order_by('-created_at')
     else:
         my_requisitions = Requisition.objects.current_company().filter(
             requested_by=user
-        ).order_by('-created_at')
+        ).prefetch_related('approvaltrail_set').order_by('-created_at')
 
     # Treasury sees reviewed requisitions ready for payment
     if user.role.lower() == 'treasury':
@@ -434,10 +436,40 @@ def revert_fast_track(request, requisition_id):
     
     requisition.save(update_fields=["workflow_sequence", "is_fast_tracked", "next_approver"])
     
+    # Send email notification to requester
+    try:
+        if requisition.requested_by.email:
+            send_mail(
+                subject=f"Requisition {requisition_id} - Fast-Track Reverted",
+                message=f"""
+Dear {requisition.requested_by.get_full_name()},
+
+Your requisition {requisition_id} (Amount: {requisition.amount}) was fast-tracked but has been REVERTED to normal approval flow.
+
+Reverted by: {request.user.get_full_name()}
+Reason: {revert_reason}
+
+Your requisition will now go through all required approvers in the normal approval sequence.
+Next Approver: {requisition.next_approver.get_full_name() if requisition.next_approver else 'Pending assignment'}
+
+You can view the full details and approval trail in your Transactions dashboard.
+
+Best regards,
+Petty Cash System
+                """,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[requisition.requested_by.email],
+                fail_silently=True,
+            )
+    except Exception as e:
+        # Don't fail the revert if email fails
+        pass
+    
     messages.success(
         request, 
         f"Requisition {requisition_id} reverted to normal approval flow. "
-        f"It will now go through all required approvers starting from {requisition.next_approver.get_full_name() if requisition.next_approver else 'first approver'}."
+        f"It will now go through all required approvers starting from {requisition.next_approver.get_full_name() if requisition.next_approver else 'first approver'}. "
+        f"Requester has been notified via email."
     )
     return redirect("transactions-home")
 

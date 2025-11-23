@@ -6,6 +6,33 @@
 {% block content %}
 <h2>Requisition Details</h2>
 
+<!-- Notification: Fast-Track Reverted (for requester) -->
+{% if user.id == requisition.requested_by.id %}
+    {% for trail in approval_trail %}
+        {% if trail.action == 'reverted_to_normal' %}
+            <div style="padding:20px; background:#fff3cd; border-left:5px solid #ffc107; margin-bottom:20px; border-radius:5px;">
+                <h4 style="margin-top:0; color:#856404;">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Fast-Track Approval Reverted
+                </h4>
+                <p style="margin-bottom:10px; color:#856404;">
+                    Your requisition was originally fast-tracked but has been <strong>reverted to normal approval flow</strong> by {{ trail.user.get_full_name|default:trail.user.username }}.
+                </p>
+                <div style="padding:12px; background:#fff; border:1px solid #ffc107; border-radius:3px; margin-top:10px;">
+                    <strong style="color:#856404;">Reason:</strong>
+                    <p style="margin:5px 0 0 0; color:#856404;">{{ trail.comment }}</p>
+                </div>
+                <p style="margin-top:12px; margin-bottom:0; color:#856404;">
+                    <strong>What this means:</strong> Your requisition will now go through all required approvers in the normal approval sequence. 
+                    Current next approver: <strong>{{ requisition.next_approver.get_full_name|default:"Pending assignment" }}</strong>
+                </p>
+                <small style="color:#6c757d; display:block; margin-top:8px;">
+                    <i class="bi bi-clock"></i> Reverted on {{ trail.timestamp|date:"M d, Y - g:i A" }}
+                </small>
+            </div>
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
 <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
     <tr>
         <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Transaction ID</th>
