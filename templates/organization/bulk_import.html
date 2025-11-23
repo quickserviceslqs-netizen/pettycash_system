@@ -68,7 +68,7 @@
                                     <p class="small text-muted">Top-level organization entities. Import these first.</p>
                                     
                                     <div class="d-grid gap-2">
-                                        <a href="{% url 'download_companies_template' %}" class="btn btn-outline-primary">
+                                        <a href="{% url 'organization:download_companies_template' %}" class="btn btn-outline-primary">
                                             <i class="bi bi-download"></i> Download Template
                                         </a>
                                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadCompaniesModal">
@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Regions: Download with company filter
     document.getElementById('downloadRegionsBtn').addEventListener('click', function() {
         const companyId = document.getElementById('regionCompanyFilter').value;
-        let url = "{% url 'download_regions_template' %}";
+        let url = "{% url 'organization:download_regions_template' %}";
         if (companyId) {
             url += '?company=' + companyId;
         }
@@ -394,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('downloadBranchesBtn').addEventListener('click', function() {
         const companyId = branchCompanyFilter.value;
         const regionId = branchRegionFilter.value;
-        let url = "{% url 'download_branches_template' %}";
+        let url = "{% url 'organization:download_branches_template' %}";
         const params = [];
         
         if (regionId) {
