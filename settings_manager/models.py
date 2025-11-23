@@ -18,6 +18,10 @@ class SystemSetting(models.Model):
         ('security', 'Security & Authentication'),
         ('notifications', 'Notifications'),
         ('general', 'General Settings'),
+        ('reporting', 'Reports & Analytics'),
+        ('requisition', 'Requisition Management'),
+        ('treasury', 'Treasury Operations'),
+        ('workflow', 'Workflow Automation'),
     ]
     
     SETTING_TYPE_CHOICES = [
