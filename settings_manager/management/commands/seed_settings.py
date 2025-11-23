@@ -103,6 +103,15 @@ class Command(BaseCommand):
                 'default_value': '500000',
             },
             {
+                'key': 'MAX_PAYMENT_AMOUNT_WITHOUT_CEO',
+                'display_name': 'Max Payment Amount Without CEO',
+                'description': 'Maximum payment amount that can be processed without CEO approval',
+                'category': 'payment',
+                'setting_type': 'integer',
+                'value': '1000000',
+                'default_value': '1000000',
+            },
+            {
                 'key': 'PAYMENT_RECEIPT_REQUIRED',
                 'display_name': 'Payment Receipt Required',
                 'description': 'Require receipt upload before payment execution',
