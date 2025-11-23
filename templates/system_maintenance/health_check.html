@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Health Check - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-heart-pulse"></i> System Health Check</h2>
+            <p class="text-muted mb-0">Monitor system health and identify issues</p>
+        </div>
+        <div>
+            <a href="{% url 'system_maintenance:maintenance_dashboard' %}" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-clipboard-pulse"></i> Run Health Check
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Latest Health Check -->
+    {% if latest_check %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0"><i class="bi bi-activity"></i> Latest Health Check</h5>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <div class="mb-2">
+                        {% if latest_check.overall_status == 'success' %}
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                        {% elif latest_check.overall_status == 'warning' %}
+                            <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 4rem;"></i>
+                        {% elif latest_check.overall_status == 'critical' %}
+                            <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill text-info" style="font-size: 4rem;"></i>
+                        {% endif %}
+                    </div>
+                    <h2 class="mb-0">{{ latest_check.health_score }}%</h2>
+                    <small class="text-muted">Health Score</small>
+                </div>
+                <div class="col-md-10">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted">Critical Issues</small>
+                                        <h4 class="mb-0 {% if latest_check.critical_issues %}text-danger{% endif %}">
+                                            {{ latest_check.critical_issues|length }}
+                                        </h4>
+                                    </div>
+                                    <i class="bi bi-exclamation-octagon text-danger" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted">Warnings</small>
+                                        <h4 class="mb-0 {% if latest_check.warnings %}text-warning{% endif %}">
+                                            {{ latest_check.warnings|length }}
+                                        </h4>
+                                    </div>
+                                    <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted">Disk Usage</small>
+                                        <h4 class="mb-0">{{ latest_check.disk_usage_percent|floatformat:1 }}%</h4>
+                                    </div>
+                                    <i class="bi bi-hdd text-primary" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted">Memory Usage</small>
+                                        <h4 class="mb-0">{{ latest_check.memory_usage_percent|floatformat:1 }}%</h4>
+                                    </div>
+                                    <i class="bi bi-memory text-info" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if latest_check.critical_issues %}
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading"><i class="bi bi-exclamation-octagon"></i> Critical Issues:</h6>
+                        <ul class="mb-0">
+                            {% for issue in latest_check.critical_issues %}
+                                <li>{{ issue }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if latest_check.warnings %}
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Warnings:</h6>
+                        <ul class="mb-0">
+                            {% for warning in latest_check.warnings %}
+                                <li>{{ warning }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            Performed {{ latest_check.performed_at|timesince }} ago by {{ latest_check.performed_by.get_full_name|default:latest_check.performed_by.username }}
+                        </small>
+                        <a href="{% url 'system_maintenance:health_check_detail' latest_check.check_id %}" class="btn btn-sm btn-outline-primary">
+                            View Full Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Health Check History -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Health Check History</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Check ID</th>
+                            <th>Status</th>
+                            <th>Health Score</th>
+                            <th>Critical</th>
+                            <th>Warnings</th>
+                            <th>Performed By</th>
+                            <th>Performed At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for check in health_checks %}
+                        <tr>
+                            <td><code class="small">{{ check.check_id|slice:":12" }}...</code></td>
+                            <td>
+                                {% if check.overall_status == 'success' %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Success
+                                    </span>
+                                {% elif check.overall_status == 'warning' %}
+                                    <span class="badge bg-warning">
+                                        <i class="bi bi-exclamation-triangle"></i> Warning
+                                    </span>
+                                {% elif check.overall_status == 'critical' %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle"></i> Critical
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-info-circle"></i> Info
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar 
+                                        {% if check.health_score >= 90 %}bg-success
+                                        {% elif check.health_score >= 70 %}bg-info
+                                        {% elif check.health_score >= 50 %}bg-warning
+                                        {% else %}bg-danger{% endif %}" 
+                                        style="width: {{ check.health_score }}%">
+                                        {{ check.health_score }}%
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if check.critical_issues %}
+                                    <span class="badge bg-danger">{{ check.critical_issues|length }}</span>
+                                {% else %}
+                                    <span class="text-success">0</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if check.warnings %}
+                                    <span class="badge bg-warning">{{ check.warnings|length }}</span>
+                                {% else %}
+                                    <span class="text-muted">0</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ check.performed_by.get_full_name|default:check.performed_by.username }}</td>
+                            <td>{{ check.performed_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'system_maintenance:health_check_detail' check.check_id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                No health checks performed yet. Run your first check above.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -8,4 +8,5 @@ django-environ
 dj-database-url
 whitenoise
 gunicorn
+psutil
 requests

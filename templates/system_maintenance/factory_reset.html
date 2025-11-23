@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Factory Reset - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1 text-danger"><i class="bi bi-exclamation-octagon"></i> Factory Reset</h2>
+            <p class="text-muted mb-0">Reset system to factory defaults - USE WITH EXTREME CAUTION</p>
+        </div>
+        <a href="{% url 'system_maintenance:maintenance_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Warning Banner -->
+    <div class="alert alert-danger border-danger">
+        <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> DANGER ZONE</h4>
+        <p class="mb-2">
+            <strong>Factory reset will permanently delete data from your system.</strong> 
+            This action cannot be undone without a backup.
+        </p>
+        <hr>
+        <p class="mb-0">
+            <i class="bi bi-shield-check"></i> A backup will be created automatically before reset to allow recovery if needed.
+        </p>
+    </div>
+
+    {% if not pending_reset %}
+    <!-- Reset Configuration -->
+    <div class="card border-danger shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="bi bi-sliders"></i> Configure Factory Reset</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="initiate">
+
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle"></i> Select what to reset. <strong>Unchecked items will be preserved.</strong>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <h6 class="mb-3">Data to Reset:</h6>
+                        
+                        <div class="form-check mb-3 p-3 border rounded">
+                            <input type="checkbox" name="reset_database" class="form-check-input" id="resetDatabase" checked>
+                            <label class="form-check-label" for="resetDatabase">
+                                <strong>Reset Database</strong>
+                                <p class="text-muted small mb-0">Delete all transactions, requisitions, approvals, and related data</p>
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3 p-3 border rounded">
+                            <input type="checkbox" name="reset_media" class="form-check-input" id="resetMedia" checked>
+                            <label class="form-check-label" for="resetMedia">
+                                <strong>Reset Media Files</strong>
+                                <p class="text-muted small mb-0">Delete all uploaded receipts and documents</p>
+                            </label>
+                        </div>
+
+                        <div class="form-check p-3 border rounded">
+                            <input type="checkbox" name="reset_settings" class="form-check-input" id="resetSettings">
+                            <label class="form-check-label" for="resetSettings">
+                                <strong>Reset System Settings</strong>
+                                <p class="text-muted small mb-0">Restore default approval thresholds and configurations</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h6 class="mb-3">Data to Preserve:</h6>
+                        
+                        <div class="form-check mb-3 p-3 border rounded bg-light">
+                            <input type="checkbox" name="keep_users" class="form-check-input" id="keepUsers" checked>
+                            <label class="form-check-label" for="keepUsers">
+                                <strong>Keep User Accounts</strong>
+                                <p class="text-muted small mb-0">Preserve all user accounts and permissions</p>
+                            </label>
+                        </div>
+
+                        <div class="form-check p-3 border rounded bg-light">
+                            <input type="checkbox" name="keep_organizations" class="form-check-input" id="keepOrgs" checked>
+                            <label class="form-check-label" for="keepOrgs">
+                                <strong>Keep Organizations</strong>
+                                <p class="text-muted small mb-0">Preserve companies, departments, cost centers, and positions</p>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <h6 class="alert-heading"><i class="bi bi-shield-fill-check"></i> Automatic Safety Measures:</h6>
+                    <ul class="mb-0">
+                        <li>A full backup will be created automatically before reset</li>
+                        <li>The backup will be protected from automatic deletion</li>
+                        <li>You can restore from this backup at any time</li>
+                        <li>A confirmation code will be required to complete the reset</li>
+                    </ul>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-danger btn-lg">
+                        <i class="bi bi-exclamation-triangle"></i> Proceed to Confirmation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Confirmation Step -->
+    <div class="card border-danger shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="bi bi-key"></i> Confirm Factory Reset</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <h6 class="alert-heading"><i class="bi bi-info-circle-fill"></i> Reset Configuration:</h6>
+                <ul class="mb-0">
+                    {% if reset_database %}<li><strong>Database will be reset</strong> - All transaction data will be deleted</li>{% endif %}
+                    {% if reset_media %}<li><strong>Media files will be reset</strong> - All uploaded files will be deleted</li>{% endif %}
+                    {% if reset_settings %}<li><strong>Settings will be reset</strong> - System will return to default configuration</li>{% endif %}
+                    {% if keep_users %}<li class="text-success"><strong>User accounts will be preserved</strong></li>{% endif %}
+                    {% if keep_organizations %}<li class="text-success"><strong>Organizations will be preserved</strong></li>{% endif %}
+                </ul>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="confirm">
+
+                <div class="mb-4">
+                    <label class="form-label">
+                        <strong>Enter Confirmation Code:</strong>
+                        <code class="ms-2 fs-5 text-danger">{{ confirmation_code }}</code>
+                    </label>
+                    <input type="text" name="confirmation_code" class="form-control form-control-lg text-center" 
+                           placeholder="Enter the code above" required autocomplete="off">
+                    <small class="text-muted">Type the code exactly as shown above to confirm</small>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <button type="button" onclick="window.location.reload()" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="bi bi-trash"></i> Execute Factory Reset
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Reset History -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Reset History</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Reset ID</th>
+                            <th>Initiated At</th>
+                            <th>Initiated By</th>
+                            <th>Status</th>
+                            <th>Recovery Backup</th>
+                            <th>Completed At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reset in reset_history %}
+                        <tr>
+                            <td><code class="small">{{ reset.reset_id|slice:":12" }}...</code></td>
+                            <td>{{ reset.initiated_at|date:"M d, Y H:i" }}</td>
+                            <td>{{ reset.initiated_by.get_full_name|default:reset.initiated_by.username }}</td>
+                            <td>
+                                {% if reset.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif reset.status == 'failed' %}
+                                    <span class="badge bg-danger">Failed</span>
+                                {% elif reset.status == 'in_progress' %}
+                                    <span class="badge bg-warning">In Progress</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ reset.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if reset.pre_reset_backup %}
+                                    <code class="small">{{ reset.pre_reset_backup.backup_id|slice:":8" }}</code>
+                                    <i class="bi bi-shield-check text-success" title="Backup available"></i>
+                                {% else %}
+                                    <span class="text-muted">None</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if reset.completed_at %}
+                                    {{ reset.completed_at|date:"M d, Y H:i" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No factory resets performed yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

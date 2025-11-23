@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}System Maintenance - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-tools"></i> System Maintenance</h2>
+            <p class="text-muted mb-0">Backup, restore, and system health management</p>
+        </div>
+        {% if maintenance_active %}
+        <div class="alert alert-warning mb-0 py-2 px-3">
+            <i class="bi bi-exclamation-triangle-fill"></i> <strong>Maintenance Mode Active</strong>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-database-fill-up text-primary" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h5>Create Backup</h5>
+                    <p class="text-muted small mb-3">Backup your data now</p>
+                    <a href="{% url 'system_maintenance:backup_management' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> New Backup
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-arrow-clockwise text-success" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h5>Restore Point</h5>
+                    <p class="text-muted small mb-3">Create recovery snapshot</p>
+                    <a href="{% url 'system_maintenance:restore_management' %}" class="btn btn-success btn-sm">
+                        <i class="bi bi-bookmark-plus"></i> Manage Restores
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-heart-pulse text-danger" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h5>Health Check</h5>
+                    <p class="text-muted small mb-3">Run system diagnostics</p>
+                    <form method="post" action="{% url 'system_maintenance:health_check' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="bi bi-clipboard-pulse"></i> Run Check
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-gear-fill text-warning" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h5>Maintenance Mode</h5>
+                    <p class="text-muted small mb-3">Control system access</p>
+                    <a href="{% url 'system_maintenance:maintenance_mode' %}" class="btn btn-warning btn-sm">
+                        <i class="bi bi-sliders"></i> Configure
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Health Status -->
+    {% if latest_health_check %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0"><i class="bi bi-activity"></i> System Health Status</h5>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <div class="mb-2">
+                        {% if latest_health_check.overall_status == 'success' %}
+                            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                        {% elif latest_health_check.overall_status == 'warning' %}
+                            <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 3rem;"></i>
+                        {% elif latest_health_check.overall_status == 'critical' %}
+                            <i class="bi bi-x-circle-fill text-danger" style="font-size: 3rem;"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill text-info" style="font-size: 3rem;"></i>
+                        {% endif %}
+                    </div>
+                    <h3 class="mb-0">{{ latest_health_check.health_score }}%</h3>
+                    <small class="text-muted">Health Score</small>
+                </div>
+                <div class="col-md-10">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="border rounded p-2">
+                                <small class="text-muted">Disk Usage</small>
+                                <h6 class="mb-0">{{ latest_health_check.disk_usage_percent|floatformat:1 }}%</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-2">
+                                <small class="text-muted">Memory Usage</small>
+                                <h6 class="mb-0">{{ latest_health_check.memory_usage_percent|floatformat:1 }}%</h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-2">
+                                <small class="text-muted">Critical Issues</small>
+                                <h6 class="mb-0 {% if latest_health_check.critical_issues %}text-danger{% endif %}">
+                                    {{ latest_health_check.critical_issues|length }}
+                                </h6>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border rounded p-2">
+                                <small class="text-muted">Last Backup</small>
+                                <h6 class="mb-0">{{ latest_health_check.backup_age_days|floatformat:0 }} days ago</h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'system_maintenance:health_check_detail' latest_health_check.check_id %}" class="btn btn-sm btn-outline-primary">
+                            View Full Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Backup Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-archive"></i> Recent Backups</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Backup ID</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Size</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for backup in recent_backups %}
+                                <tr>
+                                    <td><code class="small">{{ backup.backup_id|slice:":12" }}...</code></td>
+                                    <td><span class="badge bg-secondary">{{ backup.get_backup_type_display }}</span></td>
+                                    <td>
+                                        {% if backup.status == 'completed' %}
+                                            <span class="badge bg-success">{{ backup.get_status_display }}</span>
+                                        {% elif backup.status == 'failed' %}
+                                            <span class="badge bg-danger">{{ backup.get_status_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">{{ backup.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ backup.get_size_display }}</td>
+                                    <td>{{ backup.created_at|date:"M d, H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">No backups found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="{% url 'system_maintenance:backup_management' %}" class="btn btn-sm btn-outline-primary">
+                        View All Backups
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0">Backup Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Total Backups</small>
+                        <h4 class="mb-0">{{ backup_stats.total_backups }}</h4>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Successful</small>
+                        <h4 class="mb-0 text-success">{{ backup_stats.successful_backups }}</h4>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Failed</small>
+                        <h4 class="mb-0 text-danger">{{ backup_stats.failed_backups }}</h4>
+                    </div>
+                    {% if backup_stats.latest_backup %}
+                    <div>
+                        <small class="text-muted">Latest Backup</small>
+                        <p class="mb-0">{{ backup_stats.latest_backup.created_at|timesince }} ago</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if user.is_superuser %}
+            <div class="card border-0 shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="bi bi-exclamation-octagon"></i> Danger Zone</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-2">Reset system to factory defaults</p>
+                    <a href="{% url 'system_maintenance:factory_reset' %}" class="btn btn-sm btn-outline-danger w-100">
+                        <i class="bi bi-trash"></i> Factory Reset
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'workflow',
     'reports',
     'settings_manager',
+    'system_maintenance',
 ]
 
 # ---------------------------------------------------------------------
@@ -70,6 +71,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'system_maintenance.middleware.MaintenanceModeMiddleware',  # Block access during maintenance
     'pettycash_system.ip_whitelist_middleware.IPWhitelistMiddleware',  # IP whitelist security
     'pettycash_system.device_auth_middleware.DeviceAuthenticationMiddleware',  # Device whitelist enforcement
     'pettycash_system.middleware.CompanyMiddleware',  # Multi-tenancy: Set company context
