@@ -368,12 +368,17 @@ def admin_override_approval(request, requisition_id):
     Phase 4: Admin override to force-approve a requisition in emergency situations.
     
     Requirements:
+    - User must have transactions.change_requisition permission
     - User must be superuser or admin role
     - Justification is REQUIRED
     - Logged with override=True in ApprovalTrail
     - Bypasses normal can_approve() checks
     """
-    # Only superusers or admin role can override
+    # Check Django permission first
+    if not request.user.has_perm('transactions.change_requisition'):
+        return HttpResponseForbidden("You don't have permission to override approvals.")
+    
+    # Additional role check: Only superusers or admin role can override
     if not (request.user.is_superuser or request.user.role.lower() == 'admin'):
         return HttpResponseForbidden("Only administrators can override approvals.")
     
@@ -447,7 +452,20 @@ def confirm_urgency(request, requisition_id):
     
     If confirmed: Apply fast-track logic (skip to final approver if allowed)
     If denied: Follow normal workflow (no fast-track)
+    
+    Requires: transactions.change_requisition permission
     """
+    # Check if user has 'workflow' app assigned (approvers use workflow)
+    user_apps = get_user_apps(request.user)
+    if 'workflow' not in user_apps and 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to confirm urgency.")
+        return redirect('dashboard')
+    
+    # Check if user has permission to change requisitions
+    if not request.user.has_perm('transactions.change_requisition'):
+        messages.error(request, "You don't have permission to confirm urgency.")
+        return redirect('transactions-home')
+    
     # Lock the row for update
     try:
         requisition = Requisition.objects.select_for_update().get(
