@@ -1,5 +1,5 @@
 from django.urls import path
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from transactions.views import (
     transactions_home,
     create_requisition,
@@ -9,46 +9,28 @@ from transactions.views import (
     confirm_urgency,  # Phase 3: Urgency confirmation
     admin_override_approval,  # Phase 4: Admin override
 )
+from accounts.permissions import require_app_access
 
 # ---------------------------------------------------------------------
-# Role-based access decorator
-# ---------------------------------------------------------------------
-def role_required(allowed_roles):
-    """
-    Decorator for views to check if the logged-in user's role
-    is in the allowed_roles list.
-    """
-    def check_role(user):
-        return user.is_authenticated and getattr(user, "role", "").lower() in allowed_roles
-    return user_passes_test(check_role)
-
-# Common roles allowed to access transactions
-TRANSACTION_ROLES = [
-    'admin', 'staff', 'fp&a', 'department_head',
-    'branch_manager', 'regional_manager', 'group_finance_manager',
-    'treasury', 'cfo', 'ceo'
-]
-
-# Wrapper to apply login + role_required (used for approver-only views)
-def protected(view):
-    return login_required(role_required(TRANSACTION_ROLES)(view))
-
-# ---------------------------------------------------------------------
-# URL patterns
+# URL patterns - using app assignment + Django permissions
 # ---------------------------------------------------------------------
 urlpatterns = [
-    path('', protected(transactions_home), name='transactions-home'),
-    # Allow any authenticated user to create a requisition (no role restriction)
+    # Main transactions page - requires transactions app + view permission
+    path('', transactions_home, name='transactions-home'),
+    
+    # Create requisition - requires transactions app + add permission
     path('create/', login_required(create_requisition), name='create-requisition'),
-    path('approve/<str:requisition_id>/', protected(approve_requisition), name='approve-requisition'),
-    path('reject/<str:requisition_id>/', protected(reject_requisition), name='reject-requisition'),
+    
+    # Approve/reject - handled by view permission checks
+    path('approve/<str:requisition_id>/', login_required(approve_requisition), name='approve-requisition'),
+    path('reject/<str:requisition_id>/', login_required(reject_requisition), name='reject-requisition'),
     
     # Phase 3: Urgency confirmation by first approver
-    path('confirm-urgency/<str:requisition_id>/', protected(confirm_urgency), name='confirm-urgency'),
+    path('confirm-urgency/<str:requisition_id>/', login_required(confirm_urgency), name='confirm-urgency'),
     
-    # Phase 4: Admin override (emergency approval)
+    # Phase 4: Admin override (emergency approval) - requires change permission
     path('admin-override/<str:requisition_id>/', login_required(admin_override_approval), name='admin-override'),
 
     # Requisition detail page
-    path('detail/<str:requisition_id>/', protected(requisition_detail), name='requisition-detail'),
+    path('detail/<str:requisition_id>/', login_required(requisition_detail), name='requisition-detail'),
 ]
