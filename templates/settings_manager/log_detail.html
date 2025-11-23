@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Activity Log Detail{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-text"></i> Activity Log Detail</h2>
+        <a href="{% url 'settings_manager:admin_activity_logs' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Logs
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Main Details -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header {% if log.success %}bg-success{% else %}bg-danger{% endif %} text-white">
+                    <h5 class="mb-0">
+                        Log Entry #{{ log.id }}
+                        {% if log.success %}
+                            <span class="badge bg-light text-success float-end">Success</span>
+                        {% else %}
+                            <span class="badge bg-light text-danger float-end">Failed</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Timestamp:</dt>
+                        <dd class="col-sm-9">
+                            <strong>{{ log.timestamp|date:"F d, Y g:i:s A" }}</strong>
+                        </dd>
+
+                        <dt class="col-sm-3">User:</dt>
+                        <dd class="col-sm-9">
+                            {% if log.user %}
+                                {{ log.user.get_full_name }} ({{ log.user.email }})<br>
+                                <span class="badge bg-primary">{{ log.user.role }}</span>
+                            {% else %}
+                                <span class="text-muted">System Action</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-3">Action:</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge bg-dark">{{ log.get_action_display }}</span>
+                        </dd>
+
+                        <dt class="col-sm-3">Content Type:</dt>
+                        <dd class="col-sm-9">
+                            {% if log.content_type %}
+                                <code>{{ log.content_type }}</code>
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-3">Object ID:</dt>
+                        <dd class="col-sm-9">
+                            {% if log.object_id %}
+                                <code>{{ log.object_id }}</code>
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-3">Object:</dt>
+                        <dd class="col-sm-9">
+                            {% if log.object_repr %}
+                                {{ log.object_repr }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+
+                    <hr>
+
+                    <h6>Description:</h6>
+                    <div class="bg-light p-3 rounded">
+                        <p class="mb-0">{{ log.description|default:"No description provided." }}</p>
+                    </div>
+
+                    {% if not log.success and log.error_message %}
+                        <h6 class="mt-3 text-danger">Error Message:</h6>
+                        <div class="bg-danger bg-opacity-10 p-3 rounded border border-danger">
+                            <pre class="mb-0 text-danger">{{ log.error_message }}</pre>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Changes -->
+            {% if log.changes %}
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-code-square"></i> Changes</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-dark text-light p-3 rounded"><code>{{ changes_formatted }}</code></pre>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Metadata Sidebar -->
+        <div class="col-md-4">
+            <!-- Network Info -->
+            <div class="card mb-3 bg-light">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="bi bi-globe"></i> Network Info</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>IP Address:</strong><br>
+                        {% if log.ip_address %}
+                            <code>{{ log.ip_address }}</code>
+                        {% else %}
+                            <span class="text-muted">Not recorded</span>
+                        {% endif %}
+                    </p>
+
+                    <p><strong>Location:</strong><br>
+                        {% if log.location %}
+                            {{ log.location }}
+                        {% else %}
+                            <span class="text-muted">Not available</span>
+                        {% endif %}
+                    </p>
+
+                    <p class="mb-0"><strong>Device:</strong><br>
+                        {% if log.device_name %}
+                            {{ log.device_name }}
+                        {% else %}
+                            <span class="text-muted">Not recorded</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- User Agent -->
+            {% if log.user_agent %}
+            <div class="card mb-3">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="bi bi-browser-chrome"></i> User Agent</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted" style="word-break: break-all;">
+                        {{ log.user_agent }}
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Timeline -->
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6><i class="bi bi-clock"></i> Timeline</h6>
+                    <p class="mb-0">
+                        <strong>{{ log.timestamp|date:"F d, Y" }}</strong><br>
+                        {{ log.timestamp|time:"g:i:s A" }}<br>
+                        <small>({{ log.timestamp|timesince }} ago)</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

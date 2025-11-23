@@ -1,5 +1,6 @@
 from django.urls import path
 from settings_manager import views
+from settings_manager import views_admin
 
 app_name = 'settings_manager'
 
@@ -9,6 +10,12 @@ urlpatterns = [
     path('edit/<int:setting_id>/', views.edit_setting, name='edit_setting'),
     path('activity-logs/', views.activity_logs, name='activity_logs'),
     path('system-info/', views.system_info, name='system_info'),
+    
+    # Activity Log Management (Admin)
+    path('admin/activity-logs/', views_admin.view_activity_logs, name='admin_activity_logs'),
+    path('admin/activity-logs/<int:log_id>/', views_admin.view_log_detail, name='view_log_detail'),
+    path('admin/activity-logs/export/', views_admin.export_logs, name='export_logs'),
+    path('admin/activity-logs/delete-old/', views_admin.delete_old_logs, name='delete_old_logs'),
     
     # Data Operations
     path('data/', views.data_operations_dashboard, name='data_operations'),
