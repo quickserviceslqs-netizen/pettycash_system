@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Workflow Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-0">
+                <i class="bi bi-diagram-3"></i> Workflow Dashboard
+            </h1>
+            <small class="text-muted">Approval thresholds and routing configuration</small>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if user.is_superuser or user.has_perm:'workflow.add_approvalthreshold' %}
+            <a href="/admin/workflow/approvalthreshold/add/" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Threshold
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">Total Thresholds</h6>
+                    <h3 class="mb-0">{{ thresholds|length }}</h3>
+                    <small class="text-muted">{{ active_count }} Active</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">Origin Types</h6>
+                    <h3 class="mb-0">{{ origin_types|length }}</h3>
+                    <small class="text-muted">Branch, HQ, Field</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">Urgent Fast-Track</h6>
+                    <h3 class="mb-0">{{ fasttrack_count }}</h3>
+                    <small class="text-muted">Enabled</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">CFO Required</h6>
+                    <h3 class="mb-0">{{ cfo_count }}</h3>
+                    <small class="text-muted">High-value tiers</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="origin_filter" class="form-label">Origin Type</label>
+                            <select name="origin" id="origin_filter" class="form-select">
+                                <option value="">All Origins</option>
+                                <option value="BRANCH" {% if request.GET.origin == 'BRANCH' %}selected{% endif %}>Branch</option>
+                                <option value="HQ" {% if request.GET.origin == 'HQ' %}selected{% endif %}>HQ</option>
+                                <option value="FIELD" {% if request.GET.origin == 'FIELD' %}selected{% endif %}>Field</option>
+                                <option value="ANY" {% if request.GET.origin == 'ANY' %}selected{% endif %}>Any</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status_filter" class="form-label">Status</label>
+                            <select name="status" id="status_filter" class="form-select">
+                                <option value="">All</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="cfo_filter" class="form-label">CFO Required</label>
+                            <select name="cfo" id="cfo_filter" class="form-select">
+                                <option value="">All</option>
+                                <option value="yes" {% if request.GET.cfo == 'yes' %}selected{% endif %}>Yes</option>
+                                <option value="no" {% if request.GET.cfo == 'no' %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="bi bi-funnel"></i> Filter
+                            </button>
+                            <a href="{% url 'workflow:dashboard' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Thresholds Table -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table"></i> Approval Thresholds
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if thresholds %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tier Name</th>
+                                    <th>Origin</th>
+                                    <th>Amount Range</th>
+                                    <th>Approval Sequence</th>
+                                    <th>Features</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for threshold in thresholds %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ threshold.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ threshold.get_origin_type_display }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">Min:</small> ${{ threshold.min_amount|floatformat:2 }}<br>
+                                        <small class="text-muted">Max:</small> ${{ threshold.max_amount|floatformat:2 }}
+                                    </td>
+                                    <td>
+                                        <ol class="mb-0 ps-3">
+                                            {% for role in threshold.roles_sequence %}
+                                            <li><span class="badge bg-secondary">{{ role }}</span></li>
+                                            {% endfor %}
+                                        </ol>
+                                    </td>
+                                    <td>
+                                        {% if threshold.allow_urgent_fasttrack %}
+                                        <span class="badge bg-warning text-dark" title="Urgent fast-track enabled">
+                                            <i class="bi bi-lightning-fill"></i> Fast-Track
+                                        </span><br>
+                                        {% endif %}
+                                        {% if threshold.requires_cfo %}
+                                        <span class="badge bg-danger" title="CFO approval required">
+                                            <i class="bi bi-shield-fill-check"></i> CFO Required
+                                        </span>
+                                        {% endif %}
+                                        {% if not threshold.allow_urgent_fasttrack and not threshold.requires_cfo %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-dark">{{ threshold.priority }}</span>
+                                    </td>
+                                    <td>
+                                        {% if threshold.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.is_superuser or user.has_perm:'workflow.change_approvalthreshold' %}
+                                        <a href="/admin/workflow/approvalthreshold/{{ threshold.id }}/change/" 
+                                           class="btn btn-sm btn-outline-primary" 
+                                           title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No approval thresholds found. 
+                        {% if user.is_superuser %}
+                        <a href="/admin/workflow/approvalthreshold/add/" class="alert-link">Create one now</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend Section -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-question-circle"></i> How It Works
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Approval Flow:</h6>
+                            <ol>
+                                <li>Requisition amount determines which threshold applies</li>
+                                <li>System routes to approvers based on <strong>roles_sequence</strong></li>
+                                <li>Each approver must approve before routing to next</li>
+                                <li>After final approval, status becomes "reviewed" (ready for payment)</li>
+                            </ol>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Special Features:</h6>
+                            <ul>
+                                <li><strong>Priority:</strong> Lower number = higher priority when ranges overlap</li>
+                                <li><strong>Fast-Track:</strong> Urgent requisitions may skip intermediate approvers</li>
+                                <li><strong>CFO Required:</strong> High-value transactions require CFO approval</li>
+                                <li><strong>Origin Type:</strong> Routes based on where requisition originated (Branch/HQ/Field)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table td {
+    vertical-align: middle;
+}
+.badge {
+    font-size: 0.85em;
+}
+ol, ul {
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}
