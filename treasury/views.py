@@ -16,9 +16,11 @@ from rest_framework import viewsets, serializers, status
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse
 import json
@@ -1023,9 +1025,6 @@ def mpesa_callback(request):
 # HTML Template Views with Permission Checks
 # ============================================================================
 
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.contrib import messages
 from accounts.permissions import require_app_access, get_user_apps
 
 
