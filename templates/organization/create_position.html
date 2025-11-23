@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Position{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-plus-circle"></i> Create New Position</h2>
+        <a href="{% url 'organization:manage_positions' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Positions
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Position Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Job Title <span class="text-danger">*</span></label>
+                            <input type="text" name="title" id="title" class="form-control" 
+                                   placeholder="e.g., Manager, Analyst, Coordinator" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="department" class="form-label">Department <span class="text-danger">*</span></label>
+                            <select name="department" id="department" class="form-select" required>
+                                <option value="">Select department...</option>
+                                {% regroup departments by branch.region as region_list %}
+                                {% for region_group in region_list %}
+                                    <optgroup label="{{ region_group.grouper.name }}">
+                                        {% regroup region_group.list by branch as branch_list %}
+                                        {% for branch_group in branch_list %}
+                                            <optgroup label="&nbsp;&nbsp;{{ branch_group.grouper.name }}">
+                                                {% for dept in branch_group.list %}
+                                                    <option value="{{ dept.id }}">
+                                                        &nbsp;&nbsp;&nbsp;&nbsp;{{ dept.name }}
+                                                    </option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Positions are linked to departments.</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> <strong>Note:</strong> Positions define job titles/roles within departments and can be assigned to users.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'organization:manage_positions' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Create Position
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

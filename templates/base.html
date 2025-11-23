@@ -199,6 +199,14 @@
                                         <i class="bi bi-graph-up"></i> Approval Thresholds
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">Organization Structure</h6></li>
+                                    <li><a class="dropdown-item" href="{% url 'organization:manage_cost_centers' %}">
+                                        <i class="bi bi-diagram-3"></i> Cost Centers
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'organization:manage_positions' %}">
+                                        <i class="bi bi-briefcase"></i> Positions
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
                                     <li><h6 class="dropdown-header">App Management</h6></li>
                                     <li><a class="dropdown-item" href="{% url 'accounts:manage_apps' %}">
                                         <i class="bi bi-grid-3x3-gap"></i> Manage Applications

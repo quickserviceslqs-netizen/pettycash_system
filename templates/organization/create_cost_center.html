@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Cost Center{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-plus-circle"></i> Create New Cost Center</h2>
+        <a href="{% url 'organization:manage_cost_centers' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Cost Centers
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Cost Center Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="name" class="form-control" 
+                                   placeholder="e.g., Operations Budget, IT Projects" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="department" class="form-label">Department <span class="text-danger">*</span></label>
+                            <select name="department" id="department" class="form-select" required>
+                                <option value="">Select department...</option>
+                                {% regroup departments by branch.region as region_list %}
+                                {% for region_group in region_list %}
+                                    <optgroup label="{{ region_group.grouper.name }}">
+                                        {% regroup region_group.list by branch as branch_list %}
+                                        {% for branch_group in branch_list %}
+                                            <optgroup label="&nbsp;&nbsp;{{ branch_group.grouper.name }}">
+                                                {% for dept in branch_group.list %}
+                                                    <option value="{{ dept.id }}">
+                                                        &nbsp;&nbsp;&nbsp;&nbsp;{{ dept.name }}
+                                                    </option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Cost centers belong to a department.</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> <strong>Note:</strong> Cost centers help track budget allocations and expenses within departments.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'organization:manage_cost_centers' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Create Cost Center
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

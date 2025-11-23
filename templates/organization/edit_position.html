@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Position{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pencil"></i> Edit Position: {{ position.title }}</h2>
+        <a href="{% url 'organization:manage_positions' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Positions
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Edit Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Position Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Job Title <span class="text-danger">*</span></label>
+                            <input type="text" name="title" id="title" class="form-control" 
+                                   value="{{ position.title }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="department" class="form-label">Department <span class="text-danger">*</span></label>
+                            <select name="department" id="department" class="form-select" required>
+                                {% regroup departments by branch.region as region_list %}
+                                {% for region_group in region_list %}
+                                    <optgroup label="{{ region_group.grouper.name }}">
+                                        {% regroup region_group.list by branch as branch_list %}
+                                        {% for branch_group in branch_list %}
+                                            <optgroup label="&nbsp;&nbsp;{{ branch_group.grouper.name }}">
+                                                {% for dept in branch_group.list %}
+                                                    <option value="{{ dept.id }}" 
+                                                            {% if dept.id == position.department.id %}selected{% endif %}>
+                                                        &nbsp;&nbsp;&nbsp;&nbsp;{{ dept.name }}
+                                                    </option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'organization:manage_positions' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assigned Users -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Assigned Users ({{ assigned_users.count }})</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if assigned_users %}
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Role</th>
+                                        <th>Department</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in assigned_users %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ user.get_full_name }}</strong><br>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </td>
+                                            <td><span class="badge bg-primary">{{ user.role }}</span></td>
+                                            <td>{{ user.department.name|default:"-" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-people" style="font-size: 2rem; color: #ccc;"></i>
+                            <p class="text-muted mt-2">No users assigned to this position yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Delete Option -->
+            {% if assigned_users.count == 0 %}
+            <div class="card mt-3 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">Danger Zone</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">Delete this position permanently.</p>
+                    <form method="post" action="{% url 'organization:delete_position' position.id %}"
+                          onsubmit="return confirm('Are you sure you want to delete this position? This action cannot be undone.');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Delete Position
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
