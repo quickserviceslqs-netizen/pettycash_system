@@ -23,8 +23,8 @@ python manage.py migrate treasury 0008 --fake 2>/dev/null || true
 # Run all migrations (new ones will apply, existing ones are faked)
 python manage.py migrate --no-input
 
-# Create superuser (one-time, safe to run multiple times)
-python create_superuser.py
+# Note: Create superuser manually via Django Admin or Render shell
+# python manage.py createsuperuser
 
 # Load comprehensive test data with all roles (safe to run multiple times)
 python manage.py load_comprehensive_data
