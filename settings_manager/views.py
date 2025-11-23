@@ -215,17 +215,73 @@ def log_activity(user, action, content_type='', object_id='', object_repr='',
     """
     Helper function to log admin activities.
     Can be called from anywhere in the application.
+    Captures IP address, device name, and user agent.
     """
     ip_address = None
+    device_name = ''
     user_agent = ''
     
     if request:
         # Get IP address
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
-            ip_address = x_forwarded_for.split(',')[0]
+            ip_address = x_forwarded_for.split(',')[0].strip()
         else:
             ip_address = request.META.get('REMOTE_ADDR')
+        
+        # Get device name from hostname (if available in headers)
+        device_name = request.META.get('REMOTE_HOST', '')
+        
+        # If REMOTE_HOST not available, try to get from user agent
+        if not device_name:
+            user_agent_str = request.META.get('HTTP_USER_AGENT', '')
+            # Extract device info from user agent string
+            if user_agent_str:
+                # Try to parse device name from user agent
+                import re
+                # Look for patterns like "Windows NT 10.0", "Macintosh", "Linux", etc.
+                if 'Windows' in user_agent_str:
+                    match = re.search(r'Windows NT ([\d.]+)', user_agent_str)
+                    if match:
+                        version = match.group(1)
+                        version_map = {
+                            '10.0': 'Windows 10/11',
+                            '6.3': 'Windows 8.1',
+                            '6.2': 'Windows 8',
+                            '6.1': 'Windows 7',
+                        }
+                        device_name = version_map.get(version, f'Windows NT {version}')
+                elif 'Macintosh' in user_agent_str or 'Mac OS X' in user_agent_str:
+                    match = re.search(r'Mac OS X ([\d_]+)', user_agent_str)
+                    if match:
+                        device_name = f"macOS {match.group(1).replace('_', '.')}"
+                    else:
+                        device_name = 'macOS'
+                elif 'Linux' in user_agent_str:
+                    if 'Android' in user_agent_str:
+                        match = re.search(r'Android ([\d.]+)', user_agent_str)
+                        if match:
+                            device_name = f"Android {match.group(1)}"
+                        else:
+                            device_name = 'Android'
+                    else:
+                        device_name = 'Linux'
+                elif 'iPhone' in user_agent_str or 'iPad' in user_agent_str:
+                    match = re.search(r'OS ([\d_]+)', user_agent_str)
+                    if match:
+                        device_name = f"iOS {match.group(1).replace('_', '.')}"
+                    else:
+                        device_name = 'iOS'
+                
+                # Also try to get browser info
+                if 'Chrome/' in user_agent_str and 'Edg/' not in user_agent_str:
+                    device_name += ' - Chrome' if device_name else 'Chrome'
+                elif 'Edg/' in user_agent_str or 'Edge/' in user_agent_str:
+                    device_name += ' - Edge' if device_name else 'Edge'
+                elif 'Firefox/' in user_agent_str:
+                    device_name += ' - Firefox' if device_name else 'Firefox'
+                elif 'Safari/' in user_agent_str and 'Chrome' not in user_agent_str:
+                    device_name += ' - Safari' if device_name else 'Safari'
         
         # Get user agent
         user_agent = request.META.get('HTTP_USER_AGENT', '')
@@ -238,7 +294,8 @@ def log_activity(user, action, content_type='', object_id='', object_repr='',
         object_repr=object_repr,
         description=description,
         ip_address=ip_address,
-        user_agent=user_agent[:255] if user_agent else '',
+        device_name=device_name[:255] if device_name else '',
+        user_agent=user_agent[:500] if user_agent else '',
         changes=changes,
         success=success,
         error_message=error_message

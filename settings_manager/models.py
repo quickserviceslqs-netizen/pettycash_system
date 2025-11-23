@@ -195,7 +195,12 @@ class ActivityLog(models.Model):
         help_text="Details about what happened"
     )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(blank=True)
+    device_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Device hostname/name"
+    )
+    user_agent = models.TextField(blank=True, help_text="Browser user agent string")
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     
     # Additional metadata
