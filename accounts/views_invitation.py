@@ -277,6 +277,8 @@ def signup(request, token):
         username = request.POST.get('username')
         password = request.POST.get('password')
         password_confirm = request.POST.get('password_confirm')
+        first_name = request.POST.get('first_name', invitation.first_name)  # Allow user to edit
+        last_name = request.POST.get('last_name', invitation.last_name)  # Allow user to edit
         
         # Validate password
         if password != password_confirm:
@@ -311,8 +313,8 @@ def signup(request, token):
                 username=username,
                 email=invitation.email,
                 password=password,
-                first_name=invitation.first_name,
-                last_name=invitation.last_name,
+                first_name=first_name.strip(),  # Use user-provided or invitation default
+                last_name=last_name.strip(),  # Use user-provided or invitation default
                 role=invitation.role,
                 company=invitation.company,
                 department=invitation.department,
