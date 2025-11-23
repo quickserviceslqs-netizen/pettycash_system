@@ -1,25 +1,28 @@
 from django.urls import path
 from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required, user_passes_test
-
-# ---------------------------------------------------------------------
-# Role-based access decorator
-# ---------------------------------------------------------------------
-def role_required(allowed_roles):
-    """
-    Decorator to restrict access based on user's role.
-    """
-    def check_role(user):
-        return user.is_authenticated and user.role_key in allowed_roles
-    return user_passes_test(check_role)
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+from django.contrib import messages
+from accounts.permissions import get_user_apps
 
 # ---------------------------------------------------------------------
 # Views
 # ---------------------------------------------------------------------
 @login_required
-@role_required(['admin', 'department_head', 'branch_manager', 'regional_manager', 'group_finance_manager'])
 def workflow_home(request):
-    return HttpResponse("Workflow Home")
+    """Workflow home page - requires workflow app access."""
+    # Check if user has 'workflow' app assigned
+    user_apps = get_user_apps(request.user)
+    if 'workflow' not in user_apps:
+        messages.error(request, "You don't have access to Workflow app.")
+        return redirect('dashboard')
+    
+    # Check if user has permission to view workflow
+    if not request.user.has_perm('workflow.view_approvalthreshold'):
+        messages.error(request, "You don't have permission to view workflow.")
+        return redirect('dashboard')
+    
+    return HttpResponse("Workflow Home - Approval Thresholds Management")
 
 # ---------------------------------------------------------------------
 # URL patterns
