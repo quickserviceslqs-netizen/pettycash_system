@@ -8,6 +8,8 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.http import JsonResponse
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from accounts.models import User, App
 from organization.models import Company, Branch, Department
 
@@ -101,6 +103,11 @@ def edit_user_permissions(request, user_id):
         # Update active status
         user_to_edit.is_active = request.POST.get('is_active') == 'on'
         
+        # Update Django permissions
+        permission_ids = request.POST.getlist('permissions')
+        permissions = Permission.objects.filter(id__in=permission_ids)
+        user_to_edit.user_permissions.set(permissions)
+        
         user_to_edit.save()
         
         messages.success(request, f'User {user_to_edit.username} updated successfully!')
@@ -113,6 +120,28 @@ def edit_user_permissions(request, user_id):
     branches = Branch.objects.all().order_by('name')
     departments = Department.objects.all().order_by('name')
     
+    # Get relevant permissions grouped by app/model
+    content_types = ContentType.objects.filter(
+        app_label__in=['transactions', 'workflow', 'treasury', 'reports', 'accounts', 'organization', 'settings_manager']
+    ).order_by('app_label', 'model')
+    
+    permissions_by_app = {}
+    for ct in content_types:
+        app_label = ct.app_label
+        if app_label not in permissions_by_app:
+            permissions_by_app[app_label] = []
+        
+        perms = Permission.objects.filter(content_type=ct).order_by('codename')
+        for perm in perms:
+            permissions_by_app[app_label].append({
+                'id': perm.id,
+                'name': perm.name,
+                'codename': perm.codename,
+                'model': ct.model,
+            })
+    
+    user_permission_ids = list(user_to_edit.user_permissions.values_list('id', flat=True))
+    
     context = {
         'user_to_edit': user_to_edit,
         'all_apps': all_apps,
@@ -121,6 +150,8 @@ def edit_user_permissions(request, user_id):
         'branches': branches,
         'departments': departments,
         'roles': User.ROLE_CHOICES,
+        'permissions_by_app': permissions_by_app,
+        'user_permission_ids': user_permission_ids,
     }
     
     return render(request, 'accounts/edit_user_permissions.html', context)
