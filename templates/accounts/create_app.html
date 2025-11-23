@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Create App{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-plus-circle"></i> Create New Application</h2>
+        <a href="{% url 'accounts:manage_apps' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Apps
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">App Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Internal Name <span class="text-danger">*</span></label>
+                            <select name="name" id="name" class="form-select" required>
+                                <option value="">Select app name...</option>
+                                {% for value, label in app_choices %}
+                                    <option value="{{ value }}">{{ value }} ({{ label }})</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Choose from predefined app names. This cannot be changed later.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="display_name" class="form-label">Display Name <span class="text-danger">*</span></label>
+                            <input type="text" name="display_name" id="display_name" class="form-control" 
+                                   placeholder="e.g., Transactions Module" required>
+                            <small class="text-muted">User-friendly name shown in the interface.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="url" class="form-label">URL Path</label>
+                            <input type="text" name="url" id="url" class="form-control" 
+                                   placeholder="e.g., /transactions/">
+                            <small class="text-muted">Leave blank to auto-generate from internal name.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea name="description" id="description" class="form-control" rows="3" 
+                                      placeholder="Describe what this app does..."></textarea>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="is_active" id="is_active" class="form-check-input" checked>
+                            <label for="is_active" class="form-check-label">Active (available to users)</label>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> <strong>Note:</strong> After creating the app, 
+                            you can assign it to users in the User Management section.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'accounts:manage_apps' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Create App
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-fill display name and URL when internal name is selected
+document.getElementById('name').addEventListener('change', function() {
+    const name = this.value;
+    if (name) {
+        // Auto-fill display name if empty
+        const displayNameField = document.getElementById('display_name');
+        if (!displayNameField.value) {
+            displayNameField.value = name.charAt(0).toUpperCase() + name.slice(1);
+        }
+        
+        // Auto-fill URL if empty
+        const urlField = document.getElementById('url');
+        if (!urlField.value) {
+            urlField.value = '/' + name + '/';
+        }
+    }
+});
+</script>
+{% endblock %}

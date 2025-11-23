@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit App - {{ app.display_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pencil"></i> Edit Application: {{ app.display_name }}</h2>
+        <a href="{% url 'accounts:manage_apps' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Apps
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Edit Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">App Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Internal Name</label>
+                            <input type="text" class="form-control" value="{{ app.name }}" disabled>
+                            <small class="text-muted">Cannot be changed after creation.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="display_name" class="form-label">Display Name <span class="text-danger">*</span></label>
+                            <input type="text" name="display_name" id="display_name" class="form-control" 
+                                   value="{{ app.display_name }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="url" class="form-label">URL Path <span class="text-danger">*</span></label>
+                            <input type="text" name="url" id="url" class="form-control" 
+                                   value="{{ app.url }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea name="description" id="description" class="form-control" rows="3">{{ app.description }}</textarea>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="is_active" id="is_active" class="form-check-input" 
+                                   {% if app.is_active %}checked{% endif %}>
+                            <label for="is_active" class="form-check-label">Active (available to users)</label>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'accounts:manage_apps' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assigned Users -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Assigned Users ({{ assigned_users.count }})</h5>
+                    <a href="{% url 'accounts:app_users' app.id %}" class="btn btn-sm btn-light">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if assigned_users %}
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Role</th>
+                                        <th>Company</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in assigned_users %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ user.get_full_name }}</strong><br>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </td>
+                                            <td><span class="badge bg-primary">{{ user.role }}</span></td>
+                                            <td>{{ user.company.name|default:"-" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-people" style="font-size: 2rem; color: #ccc;"></i>
+                            <p class="text-muted mt-2">No users assigned to this app yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card mt-3 bg-light">
+                <div class="card-body">
+                    <h6>Quick Actions</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'accounts:app_users' app.id %}" class="btn btn-primary">
+                            <i class="bi bi-people"></i> View All Users
+                        </a>
+                        <a href="{% url 'accounts:bulk_assign_apps' %}" class="btn btn-secondary">
+                            <i class="bi bi-layers"></i> Bulk Assign to Users
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

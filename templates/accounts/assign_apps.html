@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Assign Apps - {{ user.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-grid-3x3-gap"></i> Assign Apps to {{ user.get_full_name }}</h2>
+        <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Users
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">User Information</h5>
+                </div>
+                <div class="card-body bg-light">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">Name:</dt>
+                        <dd class="col-sm-9">{{ user.get_full_name }}</dd>
+
+                        <dt class="col-sm-3">Email:</dt>
+                        <dd class="col-sm-9">{{ user.email }}</dd>
+
+                        <dt class="col-sm-3">Role:</dt>
+                        <dd class="col-sm-9"><span class="badge bg-primary">{{ user.get_role_display }}</span></dd>
+
+                        <dt class="col-sm-3">Company:</dt>
+                        <dd class="col-sm-9">{{ user.company.name|default:"-" }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Select Applications</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <p class="text-muted mb-3">
+                            <i class="bi bi-info-circle"></i> Select the applications this user should have access to. 
+                            Permissions within each app are controlled separately.
+                        </p>
+
+                        {% if all_apps %}
+                            <div class="list-group">
+                                {% for app in all_apps %}
+                                    <label class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div class="form-check">
+                                            <input type="checkbox" name="apps" value="{{ app.id }}" 
+                                                   class="form-check-input" id="app_{{ app.id }}"
+                                                   {% if app.id in user_app_ids %}checked{% endif %}>
+                                            <label class="form-check-label" for="app_{{ app.id }}">
+                                                <strong>{{ app.display_name }}</strong>
+                                                <br><small class="text-muted">{{ app.description|truncatewords:15 }}</small>
+                                            </label>
+                                        </div>
+                                        <span class="badge bg-secondary">{{ app.url }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> No active applications available. 
+                                <a href="{% url 'accounts:create_app' %}">Create an app first</a>.
+                            </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Save App Assignments
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -4,6 +4,7 @@ from . import views
 from . import views_invitation
 from . import views_bulk_import
 from . import views_admin
+from . import views_apps
 
 app_name = 'accounts'
 
@@ -94,6 +95,17 @@ urlpatterns = [
     path('groups/create/', views_admin.create_group, name='create_group'),
     path('groups/<int:group_id>/edit/', views_admin.edit_group, name='edit_group'),
     path('groups/<int:group_id>/delete/', views_admin.delete_group, name='delete_group'),
+    
+    # --------------------------
+    # App Management
+    # --------------------------
+    path('apps/', views_apps.manage_apps, name='manage_apps'),
+    path('apps/create/', views_apps.create_app, name='create_app'),
+    path('apps/<int:app_id>/edit/', views_apps.edit_app, name='edit_app'),
+    path('apps/<int:app_id>/toggle/', views_apps.toggle_app_status, name='toggle_app_status'),
+    path('apps/<int:app_id>/users/', views_apps.app_users, name='app_users'),
+    path('users/<int:user_id>/assign-apps/', views_apps.assign_apps_to_user, name='assign_apps_to_user'),
+    path('bulk-assign-apps/', views_apps.bulk_assign_apps, name='bulk_assign_apps'),
     
     # Device blocking and registration
     path('device-blocked/', views_invitation.device_blocked, name='device_blocked'),

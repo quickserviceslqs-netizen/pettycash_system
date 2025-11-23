@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ app.display_name }} - Users{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-people"></i> Users with Access to: {{ app.display_name }}</h2>
+        <div>
+            <a href="{% url 'accounts:bulk_assign_apps' %}" class="btn btn-success">
+                <i class="bi bi-person-plus"></i> Assign to Users
+            </a>
+            <a href="{% url 'accounts:manage_apps' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Apps
+            </a>
+        </div>
+    </div>
+
+    <!-- App Info -->
+    <div class="card mb-4 bg-light">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong>Internal Name:</strong> <code>{{ app.name }}</code>
+                </div>
+                <div class="col-md-3">
+                    <strong>URL:</strong> <code>{{ app.url }}</code>
+                </div>
+                <div class="col-md-3">
+                    <strong>Status:</strong> 
+                    {% if app.is_active %}
+                        <span class="badge bg-success">Active</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <strong>Total Users:</strong> {{ total_users }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="role" class="form-label">Role</label>
+                    <select name="role" id="role" class="form-select">
+                        <option value="">All Roles</option>
+                        <option value="admin" {% if filters.role == 'admin' %}selected{% endif %}>Admin</option>
+                        <option value="treasury" {% if filters.role == 'treasury' %}selected{% endif %}>Treasury</option>
+                        <option value="fp&a" {% if filters.role == 'fp&a' %}selected{% endif %}>FP&A</option>
+                        <option value="cfo" {% if filters.role == 'cfo' %}selected{% endif %}>CFO</option>
+                    </select>
+                </div>
+
+                <div class="col-md-5">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" name="search" id="search" class="form-control" 
+                           placeholder="Search by name or email..." value="{{ filters.search }}">
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <a href="{% url 'accounts:app_users' app.id %}" class="btn btn-secondary w-100">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Users ({{ users.count }})</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Company</th>
+                                <th>Department</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                                <tr>
+                                    <td><strong>{{ user.get_full_name }}</strong></td>
+                                    <td>{{ user.email }}</td>
+                                    <td><span class="badge bg-primary">{{ user.get_role_display }}</span></td>
+                                    <td>{{ user.company.name|default:"-" }}</td>
+                                    <td>{{ user.department.name|default:"-" }}</td>
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'accounts:assign_apps_to_user' user.id %}" 
+                                           class="btn btn-sm btn-info" title="Manage Apps">
+                                            <i class="bi bi-grid-3x3-gap"></i> Apps
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                    <p class="text-muted mt-3">No users have access to this app yet.</p>
+                    <a href="{% url 'accounts:bulk_assign_apps' %}" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Assign Users
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
