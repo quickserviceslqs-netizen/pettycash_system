@@ -89,10 +89,22 @@
                                     <p><strong>CSV Format:</strong> <code>name, code, company_name</code></p>
                                     <p class="small text-muted">Geographic regions within companies. Requires companies to exist first.</p>
                                     
+                                    <!-- Filter for Regions -->
+                                    <div class="mb-3">
+                                        <label for="regionCompanyFilter" class="form-label small">Filter by Company:</label>
+                                        <select id="regionCompanyFilter" class="form-select form-select-sm">
+                                            <option value="">All Companies</option>
+                                            {% for company in companies %}
+                                            <option value="{{ company.id }}">{{ company.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">Download template with only branches for selected company</div>
+                                    </div>
+                                    
                                     <div class="d-grid gap-2">
-                                        <a href="{% url 'download_regions_template' %}" class="btn btn-outline-info">
+                                        <button type="button" id="downloadRegionsBtn" class="btn btn-outline-info">
                                             <i class="bi bi-download"></i> Download Template
-                                        </a>
+                                        </button>
                                         <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#uploadRegionsModal">
                                             <i class="bi bi-upload"></i> Upload CSV
                                         </button>
@@ -111,10 +123,33 @@
                                     <p><strong>CSV Format:</strong> <code>name, code, phone, region_name, company_name</code></p>
                                     <p class="small text-muted">Physical locations within regions. Requires regions to exist first.</p>
                                     
+                                    <!-- Filter for Branches -->
+                                    <div class="mb-3">
+                                        <label for="branchCompanyFilter" class="form-label small">Filter by Company:</label>
+                                        <select id="branchCompanyFilter" class="form-select form-select-sm">
+                                            <option value="">All Companies</option>
+                                            {% for company in companies %}
+                                            <option value="{{ company.id }}">{{ company.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="branchRegionFilter" class="form-label small">Filter by Region:</label>
+                                        <select id="branchRegionFilter" class="form-select form-select-sm">
+                                            <option value="">All Regions</option>
+                                            {% for region in regions %}
+                                            <option value="{{ region.id }}" data-company="{{ region.company.id }}">
+                                                {{ region.name }} ({{ region.company.name }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">e.g., "Nairobi Region" to get only Nairobi branches</div>
+                                    </div>
+                                    
                                     <div class="d-grid gap-2">
-                                        <a href="{% url 'download_branches_template' %}" class="btn btn-outline-warning">
+                                        <button type="button" id="downloadBranchesBtn" class="btn btn-outline-warning">
                                             <i class="bi bi-download"></i> Download Template
-                                        </a>
+                                        </button>
                                         <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#uploadBranchesModal">
                                             <i class="bi bi-upload"></i> Upload CSV
                                         </button>
@@ -133,10 +168,44 @@
                                     <p><strong>CSV Format:</strong> <code>name, branch_name</code></p>
                                     <p class="small text-muted">Functional units within branches. Requires branches to exist first.</p>
                                     
+                                    <!-- Filter for Departments -->
+                                    <div class="mb-3">
+                                        <label for="deptCompanyFilter" class="form-label small">Filter by Company:</label>
+                                        <select id="deptCompanyFilter" class="form-select form-select-sm">
+                                            <option value="">All Companies</option>
+                                            {% for company in companies %}
+                                            <option value="{{ company.id }}">{{ company.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="deptRegionFilter" class="form-label small">Filter by Region:</label>
+                                        <select id="deptRegionFilter" class="form-select form-select-sm">
+                                            <option value="">All Regions</option>
+                                            {% for region in regions %}
+                                            <option value="{{ region.id }}" data-company="{{ region.company.id }}">
+                                                {{ region.name }} ({{ region.company.name }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="deptBranchFilter" class="form-label small">Filter by Branch:</label>
+                                        <select id="deptBranchFilter" class="form-select form-select-sm">
+                                            <option value="">All Branches</option>
+                                            {% for branch in branches %}
+                                            <option value="{{ branch.id }}" data-region="{{ branch.region.id }}" data-company="{{ branch.region.company.id }}">
+                                                {{ branch.name }} ({{ branch.region.name }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">e.g., "Nairobi Branch" to get template for that branch only</div>
+                                    </div>
+                                    
                                     <div class="d-grid gap-2">
-                                        <a href="{% url 'download_departments_template' %}" class="btn btn-outline-success">
+                                        <button type="button" id="downloadDepartmentsBtn" class="btn btn-outline-success">
                                             <i class="bi bi-download"></i> Download Template
-                                        </a>
+                                        </button>
                                         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadDepartmentsModal">
                                             <i class="bi bi-upload"></i> Upload CSV
                                         </button>
@@ -282,4 +351,149 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Regions: Download with company filter
+    document.getElementById('downloadRegionsBtn').addEventListener('click', function() {
+        const companyId = document.getElementById('regionCompanyFilter').value;
+        let url = "{% url 'download_regions_template' %}";
+        if (companyId) {
+            url += '?company=' + companyId;
+        }
+        window.location.href = url;
+    });
+    
+    // Branches: Cascading filters and download
+    const branchCompanyFilter = document.getElementById('branchCompanyFilter');
+    const branchRegionFilter = document.getElementById('branchRegionFilter');
+    
+    branchCompanyFilter.addEventListener('change', function() {
+        const companyId = this.value;
+        const regionOptions = branchRegionFilter.querySelectorAll('option');
+        
+        regionOptions.forEach(option => {
+            if (option.value === '') {
+                option.style.display = 'block';
+                return;
+            }
+            const optionCompanyId = option.getAttribute('data-company');
+            if (!companyId || optionCompanyId === companyId) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        
+        // Reset region selection if it's now hidden
+        if (branchRegionFilter.value && branchRegionFilter.selectedOptions[0].style.display === 'none') {
+            branchRegionFilter.value = '';
+        }
+    });
+    
+    document.getElementById('downloadBranchesBtn').addEventListener('click', function() {
+        const companyId = branchCompanyFilter.value;
+        const regionId = branchRegionFilter.value;
+        let url = "{% url 'download_branches_template' %}";
+        const params = [];
+        
+        if (regionId) {
+            params.push('region=' + regionId);
+        } else if (companyId) {
+            params.push('company=' + companyId);
+        }
+        
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
+        window.location.href = url;
+    });
+    
+    // Departments: Cascading filters (3 levels) and download
+    const deptCompanyFilter = document.getElementById('deptCompanyFilter');
+    const deptRegionFilter = document.getElementById('deptRegionFilter');
+    const deptBranchFilter = document.getElementById('deptBranchFilter');
+    
+    deptCompanyFilter.addEventListener('change', function() {
+        const companyId = this.value;
+        
+        // Filter regions
+        const regionOptions = deptRegionFilter.querySelectorAll('option');
+        regionOptions.forEach(option => {
+            if (option.value === '') {
+                option.style.display = 'block';
+                return;
+            }
+            const optionCompanyId = option.getAttribute('data-company');
+            option.style.display = (!companyId || optionCompanyId === companyId) ? 'block' : 'none';
+        });
+        
+        // Filter branches
+        const branchOptions = deptBranchFilter.querySelectorAll('option');
+        branchOptions.forEach(option => {
+            if (option.value === '') {
+                option.style.display = 'block';
+                return;
+            }
+            const optionCompanyId = option.getAttribute('data-company');
+            option.style.display = (!companyId || optionCompanyId === companyId) ? 'block' : 'none';
+        });
+        
+        // Reset if selections are now hidden
+        if (deptRegionFilter.value && deptRegionFilter.selectedOptions[0].style.display === 'none') {
+            deptRegionFilter.value = '';
+        }
+        if (deptBranchFilter.value && deptBranchFilter.selectedOptions[0].style.display === 'none') {
+            deptBranchFilter.value = '';
+        }
+    });
+    
+    deptRegionFilter.addEventListener('change', function() {
+        const regionId = this.value;
+        const companyId = deptCompanyFilter.value;
+        
+        const branchOptions = deptBranchFilter.querySelectorAll('option');
+        branchOptions.forEach(option => {
+            if (option.value === '') {
+                option.style.display = 'block';
+                return;
+            }
+            const optionRegionId = option.getAttribute('data-region');
+            const optionCompanyId = option.getAttribute('data-company');
+            
+            let show = true;
+            if (regionId && optionRegionId !== regionId) show = false;
+            if (companyId && optionCompanyId !== companyId) show = false;
+            
+            option.style.display = show ? 'block' : 'none';
+        });
+        
+        // Reset branch if it's now hidden
+        if (deptBranchFilter.value && deptBranchFilter.selectedOptions[0].style.display === 'none') {
+            deptBranchFilter.value = '';
+        }
+    });
+    
+    document.getElementById('downloadDepartmentsBtn').addEventListener('click', function() {
+        const companyId = deptCompanyFilter.value;
+        const regionId = deptRegionFilter.value;
+        const branchId = deptBranchFilter.value;
+        let url = "{% url 'download_departments_template' %}";
+        const params = [];
+        
+        if (branchId) {
+            params.push('branch=' + branchId);
+        } else if (regionId) {
+            params.push('region=' + regionId);
+        } else if (companyId) {
+            params.push('company=' + companyId);
+        }
+        
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
+        window.location.href = url;
+    });
+});
+</script>
 {% endblock %}

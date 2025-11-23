@@ -115,18 +115,30 @@ def import_companies(request):
 @permission_required('organization.add_region', raise_exception=True)
 def download_regions_template(request):
     """Download CSV template for bulk region import"""
+    # Get filter parameter
+    company_id = request.GET.get('company')
+    
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="regions_import_template.csv"'
+    
+    # Filter companies if specified
+    if company_id:
+        companies = Company.objects.filter(id=company_id)
+        company_name = companies.first().name if companies.exists() else 'filtered'
+        response['Content-Disposition'] = f'attachment; filename="regions_{company_name.replace(" ", "_")}_template.csv"'
+    else:
+        companies = Company.objects.all()
+        response['Content-Disposition'] = 'attachment; filename="regions_import_template.csv"'
     
     writer = csv.writer(response)
     writer.writerow(['name', 'code', 'company_name'])
     
-    # Get example companies
-    companies = Company.objects.all()[:3]
-    if companies:
-        for company in companies:
-            writer.writerow([f'{company.name} - East Africa', f'{company.code}EA', company.name])
-    else:
+    # Add example rows for filtered or all companies
+    example_regions = ['East Africa', 'West Africa', 'Central Africa']
+    for i, company in enumerate(companies[:3]):
+        region_name = example_regions[i % len(example_regions)]
+        writer.writerow([f'{region_name}', f'{company.code}{region_name[:2].upper()}', company.name])
+    
+    if not companies.exists():
         writer.writerow(['East Africa', 'EA', 'Quick Services LQS'])
         writer.writerow(['West Africa', 'WA', 'Quick Services LQS'])
     
@@ -135,9 +147,11 @@ def download_regions_template(request):
     writer.writerow(['- name: Region name'])
     writer.writerow(['- code: Short code (2-10 characters, must be unique)'])
     writer.writerow(['- company_name: Must exactly match existing company name'])
+    if company_id:
+        writer.writerow([f'- FILTERED: Only showing regions for selected company'])
     writer.writerow([])
     writer.writerow(['AVAILABLE COMPANIES:'])
-    for company in Company.objects.all():
+    for company in companies:
         writer.writerow([f'  → {company.name}'])
     
     return response
@@ -223,26 +237,45 @@ def import_regions(request):
 @permission_required('organization.add_branch', raise_exception=True)
 def download_branches_template(request):
     """Download CSV template for bulk branch import"""
+    # Get filter parameters
+    company_id = request.GET.get('company')
+    region_id = request.GET.get('region')
+    
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="branches_import_template.csv"'
+    
+    # Filter regions based on parameters
+    regions = Region.objects.select_related('company').all()
+    filename_parts = ['branches']
+    
+    if region_id:
+        regions = regions.filter(id=region_id)
+        if regions.exists():
+            filename_parts.append(regions.first().name.replace(' ', '_'))
+    elif company_id:
+        regions = regions.filter(company_id=company_id)
+        company = Company.objects.filter(id=company_id).first()
+        if company:
+            filename_parts.append(company.name.replace(' ', '_'))
+    
+    response['Content-Disposition'] = f'attachment; filename="{"_".join(filename_parts)}_template.csv"'
     
     writer = csv.writer(response)
     writer.writerow(['name', 'code', 'phone', 'region_name', 'company_name'])
     
-    # Get example data
-    regions = Region.objects.select_related('company').all()[:3]
-    if regions:
-        for region in regions:
-            writer.writerow([
-                f'{region.name} Branch',
-                f'{region.code}BR',
-                '+254700000000',
-                region.name,
-                region.company.name
-            ])
-    else:
+    # Add example rows for filtered regions
+    branch_types = ['Head Office', 'Main Branch', 'Regional Office', 'City Branch']
+    for i, region in enumerate(regions[:5]):
+        branch_type = branch_types[i % len(branch_types)]
+        writer.writerow([
+            f'{region.name} {branch_type}',
+            f'{region.code}BR{i+1}',
+            '+254700000000',
+            region.name,
+            region.company.name
+        ])
+    
+    if not regions.exists():
         writer.writerow(['Nairobi Branch', 'NBIBR', '+254700000000', 'East Africa', 'Quick Services LQS'])
-        writer.writerow(['Mombasa Branch', 'MSABR', '+254710000000', 'East Africa', 'Quick Services LQS'])
     
     writer.writerow([])
     writer.writerow(['INSTRUCTIONS:'])
@@ -251,9 +284,13 @@ def download_branches_template(request):
     writer.writerow(['- phone: Contact phone number (optional)'])
     writer.writerow(['- region_name: Must exactly match existing region'])
     writer.writerow(['- company_name: Must exactly match existing company'])
+    if region_id:
+        writer.writerow([f'- FILTERED: Only showing branches for selected region'])
+    elif company_id:
+        writer.writerow([f'- FILTERED: Only showing branches for selected company'])
     writer.writerow([])
-    writer.writerow(['AVAILABLE REGIONS:'])
-    for region in Region.objects.select_related('company').all():
+    writer.writerow(['AVAILABLE REGIONS (for this filter):'])
+    for region in regions:
         writer.writerow([f'  → {region.name} ({region.company.name})'])
     
     return response
@@ -358,32 +395,63 @@ def import_branches(request):
 @permission_required('organization.add_department', raise_exception=True)
 def download_departments_template(request):
     """Download CSV template for bulk department import"""
+    # Get filter parameters
+    company_id = request.GET.get('company')
+    region_id = request.GET.get('region')
+    branch_id = request.GET.get('branch')
+    
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="departments_import_template.csv"'
+    
+    # Filter branches based on parameters
+    branches = Branch.objects.select_related('region__company').all()
+    filename_parts = ['departments']
+    
+    if branch_id:
+        branches = branches.filter(id=branch_id)
+        if branches.exists():
+            filename_parts.append(branches.first().name.replace(' ', '_'))
+    elif region_id:
+        branches = branches.filter(region_id=region_id)
+        region = Region.objects.filter(id=region_id).first()
+        if region:
+            filename_parts.append(region.name.replace(' ', '_'))
+    elif company_id:
+        branches = branches.filter(region__company_id=company_id)
+        company = Company.objects.filter(id=company_id).first()
+        if company:
+            filename_parts.append(company.name.replace(' ', '_'))
+    
+    response['Content-Disposition'] = f'attachment; filename="{"_".join(filename_parts)}_template.csv"'
     
     writer = csv.writer(response)
     writer.writerow(['name', 'branch_name'])
     
-    # Get example branches
-    branches = Branch.objects.all()[:3]
-    dept_names = ['Finance', 'Operations', 'IT', 'Marketing', 'HR']
+    # Add example departments for filtered branches
+    dept_names = ['Finance', 'Operations', 'IT', 'Marketing', 'HR', 'Sales', 'Admin']
     
-    if branches:
-        for i, branch in enumerate(branches):
-            writer.writerow([dept_names[i % len(dept_names)], branch.name])
+    if branches.exists():
+        for branch in branches[:5]:
+            # Add multiple departments per branch
+            for i in range(min(3, len(dept_names))):
+                writer.writerow([dept_names[i], branch.name])
     else:
         writer.writerow(['Finance', 'Nairobi Branch'])
         writer.writerow(['Operations', 'Nairobi Branch'])
-        writer.writerow(['IT', 'Mombasa Branch'])
     
     writer.writerow([])
     writer.writerow(['INSTRUCTIONS:'])
     writer.writerow(['- name: Department name'])
     writer.writerow(['- branch_name: Must exactly match existing branch'])
     writer.writerow(['- Same department name can exist in multiple branches'])
+    if branch_id:
+        writer.writerow([f'- FILTERED: Only showing departments for selected branch'])
+    elif region_id:
+        writer.writerow([f'- FILTERED: Only showing departments for selected region'])
+    elif company_id:
+        writer.writerow([f'- FILTERED: Only showing departments for selected company'])
     writer.writerow([])
-    writer.writerow(['AVAILABLE BRANCHES:'])
-    for branch in Branch.objects.select_related('region__company').all():
+    writer.writerow(['AVAILABLE BRANCHES (for this filter):'])
+    for branch in branches:
         writer.writerow([f'  → {branch.name} ({branch.region.name}, {branch.region.company.name})'])
     
     return response
@@ -472,5 +540,8 @@ def import_organizations(request):
         'regions_count': Region.objects.count(),
         'branches_count': Branch.objects.count(),
         'departments_count': Department.objects.count(),
+        'companies': Company.objects.all().order_by('name'),
+        'regions': Region.objects.select_related('company').all().order_by('company__name', 'name'),
+        'branches': Branch.objects.select_related('region__company').all().order_by('region__company__name', 'region__name', 'name'),
     }
     return render(request, 'organization/bulk_import.html', context)
