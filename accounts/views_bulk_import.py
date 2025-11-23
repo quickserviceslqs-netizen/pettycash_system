@@ -274,7 +274,7 @@ def bulk_import(request):
         # Validate file type
         if not csv_file.name.endswith('.csv'):
             messages.error(request, 'Please upload a CSV file')
-            return redirect('bulk_import')
+            return redirect('accounts:bulk_import')
         
         # Read and decode file
         try:
@@ -472,11 +472,11 @@ Best regards,
                 if len(errors) > 10:
                     messages.info(request, f'... and {len(errors) - 10} more errors')
             
-            return redirect('manage_invitations')
+            return redirect('accounts:manage_invitations')
             
         except Exception as e:
             messages.error(request, f'Error processing CSV file: {str(e)}')
-            return redirect('bulk_import')
+            return redirect('accounts:bulk_import')
     
     # GET request - show upload form
     from organization.models import Region

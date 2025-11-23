@@ -113,7 +113,7 @@ def send_invitation(request):
         # Validate email doesn't already exist
         if User.objects.filter(email=email).exists():
             messages.error(request, f"User with email {email} already exists!")
-            return redirect('invite_user')
+            return redirect('accounts:invite_user')
         
         # Check for pending invitations
         existing_pending = UserInvitation.objects.filter(
@@ -123,7 +123,7 @@ def send_invitation(request):
         
         if existing_pending and existing_pending.is_valid():
             messages.warning(request, f"A pending invitation already exists for {email}")
-            return redirect('invite_user')
+            return redirect('accounts:invite_user')
         
         # Create invitation
         invitation_days = int(get_setting('INVITATION_EXPIRY_DAYS', '7'))
@@ -164,7 +164,7 @@ def send_invitation(request):
         else:
             messages.error(request, "Invitation created but email failed to send. Please try again.")
         
-        return redirect('manage_invitations')
+        return redirect('accounts:manage_invitations')
     
     # GET request - show invitation form
     from organization.models import Company, Department, Branch
@@ -232,7 +232,7 @@ def revoke_invitation(request, invitation_id):
     else:
         messages.error(request, "Can only revoke pending invitations")
     
-    return redirect('manage_invitations')
+    return redirect('accounts:manage_invitations')
 
 
 @require_http_methods(["POST"])
@@ -250,7 +250,7 @@ def resend_invitation(request, invitation_id):
     else:
         messages.error(request, "Can only resend valid pending invitations")
     
-    return redirect('manage_invitations')
+    return redirect('accounts:manage_invitations')
 
 
 def signup(request, token):
@@ -271,7 +271,7 @@ def signup(request, token):
     # Check if invitation already accepted
     if invitation.status == 'accepted':
         messages.info(request, "This invitation has already been used.")
-        return redirect('login')
+        return redirect('accounts:login')
     
     if request.method == 'POST':
         password = request.POST.get('password')
@@ -385,7 +385,7 @@ def signup(request, token):
                 f"✅ Welcome {user.get_display_name()}! Your account has been created and this device has been whitelisted."
             )
             
-            return redirect('dashboard')
+            return redirect('accounts:dashboard')
             
         except Exception as e:
             messages.error(request, f"Error creating account: {str(e)}")
@@ -440,7 +440,7 @@ def deactivate_device(request, device_id):
             request=request
         )
     
-    return redirect('my_devices')
+    return redirect('accounts:my_devices')
 
 
 @require_http_methods(["POST"])
@@ -466,7 +466,7 @@ def set_primary_device(request, device_id):
     else:
         messages.error(request, "Cannot set inactive device as primary")
     
-    return redirect('my_devices')
+    return redirect('accounts:my_devices')
 
 
 @login_required
@@ -515,7 +515,7 @@ def admin_toggle_device(request, device_id):
         request=request
     )
     
-    return redirect('manage_user_devices', user_id=device.user.id)
+    return redirect('accounts:manage_user_devices', user_id=device.user.id)
 
 
 @require_http_methods(["POST"])
@@ -532,12 +532,12 @@ def admin_delete_device(request, device_id):
     device_count = WhitelistedDevice.objects.filter(user=device.user).count()
     if device_count == 1:
         messages.error(request, "Cannot delete the only device. User must have at least one device.")
-        return redirect('manage_user_devices', user_id=user_id)
+        return redirect('accounts:manage_user_devices', user_id=user_id)
     
     # Check if it's primary
     if device.is_primary:
         messages.error(request, "Cannot delete primary device. Set another device as primary first.")
-        return redirect('manage_user_devices', user_id=user_id)
+        return redirect('accounts:manage_user_devices', user_id=user_id)
     
     # Delete device
     device.delete()
@@ -555,7 +555,7 @@ def admin_delete_device(request, device_id):
         request=request
     )
     
-    return redirect('manage_user_devices', user_id=user_id)
+    return redirect('accounts:manage_user_devices', user_id=user_id)
 
 
 @require_http_methods(["POST"])
@@ -567,7 +567,7 @@ def admin_set_primary_device(request, device_id):
     
     if not device.is_active:
         messages.error(request, "Cannot set inactive device as primary. Activate it first.")
-        return redirect('manage_user_devices', user_id=device.user.id)
+        return redirect('accounts:manage_user_devices', user_id=device.user.id)
     
     # Set as primary
     device.set_as_primary()
@@ -586,7 +586,7 @@ def admin_set_primary_device(request, device_id):
         request=request
     )
     
-    return redirect('manage_user_devices', user_id=device.user.id)
+    return redirect('accounts:manage_user_devices', user_id=device.user.id)
 
 
 def device_blocked(request):
@@ -630,7 +630,7 @@ def request_device_registration(request):
         if existing_device:
             if existing_device.is_active:
                 messages.info(request, "This device is already whitelisted. Please try logging in again.")
-                return redirect('login')
+                return redirect('accounts:login')
             else:
                 messages.info(request, "This device is registered but inactive. Please contact your administrator to activate it.")
                 return render(request, 'accounts/request_device.html')
@@ -751,7 +751,7 @@ This is an automated security notification.
                 "✅ Device registration request sent! An administrator will review your request shortly. "
                 "You will be able to login once your device is approved."
             )
-            return redirect('login')
+            return redirect('accounts:login')
             
         except Exception as e:
             messages.error(request, f"Error sending request: {str(e)}")
