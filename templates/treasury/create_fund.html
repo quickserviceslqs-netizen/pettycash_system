@@ -59,6 +59,21 @@
                             </div>
                         </div>
 
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Department (Optional)</label>
+                                <select name="department" class="form-select" id="departmentSelect">
+                                    <option value="">No Department</option>
+                                    {% for dept in departments %}
+                                        <option value="{{ dept.id }}" data-branch="{{ dept.branch_id }}" data-region="{{ dept.branch.region_id }}" data-company="{{ dept.branch.region.company_id }}">
+                                            {{ dept.name }} ({{ dept.branch.name }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Select department for department-level fund</small>
+                            </div>
+                        </div>
+
                         <h5 class="mb-3 mt-4">Fund Configuration</h5>
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -151,5 +166,41 @@ document.getElementById('regionSelect').addEventListener('change', function() {
     
     branchSelect.value = '';
 });
+
+// Filter departments based on selected company/region/branch
+document.getElementById('companySelect').addEventListener('change', filterDepartments);
+document.getElementById('regionSelect').addEventListener('change', filterDepartments);
+document.getElementById('branchSelect').addEventListener('change', filterDepartments);
+
+function filterDepartments() {
+    const companyId = document.getElementById('companySelect').value;
+    const regionId = document.getElementById('regionSelect').value;
+    const branchId = document.getElementById('branchSelect').value;
+    const deptSelect = document.getElementById('departmentSelect');
+
+    Array.from(deptSelect.options).forEach(option => {
+        if (option.value === '') {
+            option.style.display = '';
+            return;
+        }
+
+        const optCompany = option.dataset.company;
+        const optRegion = option.dataset.region;
+        const optBranch = option.dataset.branch;
+
+        // Priority: branch > region > company
+        if (branchId) {
+            option.style.display = (optBranch === branchId) ? '' : 'none';
+        } else if (regionId) {
+            option.style.display = (optRegion === regionId) ? '' : 'none';
+        } else if (companyId) {
+            option.style.display = (optCompany === companyId) ? '' : 'none';
+        } else {
+            option.style.display = '';
+        }
+    });
+
+    deptSelect.value = '';
+}
 </script>
 {% endblock %}

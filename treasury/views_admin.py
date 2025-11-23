@@ -16,7 +16,7 @@ from treasury.models import (
     TreasuryFund, Payment, PaymentExecution, LedgerEntry, 
     VarianceAdjustment
 )
-from organization.models import Company, Region, Branch
+from organization.models import Company, Region, Branch, Department
 from transactions.models import Requisition
 from settings_manager.models import get_setting
 
@@ -75,6 +75,7 @@ def create_fund(request):
             company_id = request.POST.get('company')
             region_id = request.POST.get('region') or None
             branch_id = request.POST.get('branch') or None
+            department_id = request.POST.get('department') or None
             current_balance = request.POST.get('current_balance') or '0.00'
             default_reorder = get_setting('TREASURY_DEFAULT_REORDER_LEVEL', '50000')
             reorder_level = request.POST.get('reorder_level') or default_reorder
@@ -87,7 +88,8 @@ def create_fund(request):
             existing = TreasuryFund.objects.filter(
                 company_id=company_id,
                 region_id=region_id,
-                branch_id=branch_id
+                branch_id=branch_id,
+                department_id=department_id
             ).exists()
             
             if existing:
@@ -98,6 +100,7 @@ def create_fund(request):
                 company_id=company_id,
                 region_id=region_id,
                 branch_id=branch_id,
+                department_id=department_id,
                 current_balance=Decimal(current_balance),
                 reorder_level=Decimal(reorder_level),
             )
@@ -111,6 +114,7 @@ def create_fund(request):
     companies = Company.objects.all()
     regions = Region.objects.all()
     branches = Branch.objects.all()
+    departments = Department.objects.all()
     
     default_reorder_level = get_setting('TREASURY_DEFAULT_REORDER_LEVEL', '50000')
     
@@ -118,6 +122,7 @@ def create_fund(request):
         'companies': companies,
         'regions': regions,
         'branches': branches,
+        'departments': departments,
         'default_reorder_level': default_reorder_level,
     }
     
@@ -136,6 +141,8 @@ def edit_fund(request, fund_id):
             fund.current_balance = Decimal(request.POST.get('current_balance', '0.00'))
             default_reorder = get_setting('TREASURY_DEFAULT_REORDER_LEVEL', '50000')
             fund.reorder_level = Decimal(request.POST.get('reorder_level', default_reorder))
+            department_id = request.POST.get('department') or None
+            fund.department_id = department_id
             fund.save()
             
             messages.success(request, 'Fund updated successfully!')
@@ -144,8 +151,10 @@ def edit_fund(request, fund_id):
         except Exception as e:
             messages.error(request, f'Error updating fund: {str(e)}')
     
+    departments = Department.objects.all()
     context = {
         'fund': fund,
+        'departments': departments,
     }
     
     return render(request, 'treasury/edit_fund.html', context)

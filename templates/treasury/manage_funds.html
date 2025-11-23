@@ -67,6 +67,15 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <label class="form-label">Department</label>
+                    <select name="department" class="form-select">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.name }} ({{ dept.branch.name }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
                     <label class="form-label">Status</label>
                     <div class="form-check mt-2">
                         <input type="checkbox" name="low_balance" class="form-check-input" id="lowBalance"
@@ -106,7 +115,9 @@
                                     <td>
                                         <strong>{{ fund.company.name }}</strong><br>
                                         <small class="text-muted">
-                                            {% if fund.branch %}
+                                            {% if fund.department %}
+                                                {{ fund.department.name }} — {{ fund.department.branch.name }}
+                                            {% elif fund.branch %}
                                                 {{ fund.branch.name }}
                                             {% elif fund.region %}
                                                 {{ fund.region.name }}

@@ -40,6 +40,21 @@
                             </div>
                         </div>
 
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Department (Optional)</label>
+                                <select name="department" class="form-select" id="editDepartmentSelect">
+                                    <option value="">No Department</option>
+                                    {% for dept in departments %}
+                                        <option value="{{ dept.id }}" data-branch="{{ dept.branch_id }}" data-region="{{ dept.branch.region_id }}" {% if fund.department and fund.department.id == dept.id %}selected{% endif %}>
+                                            {{ dept.name }} ({{ dept.branch.name }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Change department for this fund (if applicable)</small>
+                            </div>
+                        </div>
+
                         <h5 class="mb-3 mt-4">Fund Configuration</h5>
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -97,4 +112,25 @@
         </div>
     </div>
 </div>
+<script>
+    (function(){
+        const branchId = "{{ fund.branch.id if fund.branch }}";
+        const regionId = "{{ fund.region.id if fund.region }}";
+        const select = document.getElementById('editDepartmentSelect');
+        if (!select) return;
+
+        Array.from(select.options).forEach(option => {
+            if (!option.value) return;
+            const optBranch = option.dataset.branch;
+            const optRegion = option.dataset.region;
+            if (branchId) {
+                option.style.display = (optBranch === branchId) ? '' : 'none';
+            } else if (regionId) {
+                option.style.display = (optRegion === regionId) ? '' : 'none';
+            } else {
+                option.style.display = '';
+            }
+        });
+    })();
+</script>
 {% endblock %}
