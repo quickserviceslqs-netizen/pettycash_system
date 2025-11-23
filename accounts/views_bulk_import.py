@@ -25,9 +25,48 @@ from settings_manager.views import log_activity
 def download_template(request):
     """
     Download CSV template for bulk user import with organization reference
+    Supports filtering by company, region, branch, or department
     """
+    # Get filter parameters
+    company_id = request.GET.get('company')
+    region_id = request.GET.get('region')
+    branch_id = request.GET.get('branch')
+    department_id = request.GET.get('department')
+    
+    # Build filename based on filters
+    from organization.models import Region
+    filename_parts = ['user_import']
+    filter_context = {}
+    
+    if department_id:
+        dept = Department.objects.filter(id=department_id).select_related('branch__region__company').first()
+        if dept:
+            filename_parts.append(dept.name.replace(' ', '_'))
+            filter_context['department'] = dept
+            filter_context['branch'] = dept.branch
+            filter_context['region'] = dept.branch.region
+            filter_context['company'] = dept.branch.region.company
+    elif branch_id:
+        branch = Branch.objects.filter(id=branch_id).select_related('region__company').first()
+        if branch:
+            filename_parts.append(branch.name.replace(' ', '_'))
+            filter_context['branch'] = branch
+            filter_context['region'] = branch.region
+            filter_context['company'] = branch.region.company
+    elif region_id:
+        region = Region.objects.filter(id=region_id).select_related('company').first()
+        if region:
+            filename_parts.append(region.name.replace(' ', '_'))
+            filter_context['region'] = region
+            filter_context['company'] = region.company
+    elif company_id:
+        company = Company.objects.filter(id=company_id).first()
+        if company:
+            filename_parts.append(company.name.replace(' ', '_'))
+            filter_context['company'] = company
+    
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="user_import_template.csv"'
+    response['Content-Disposition'] = f'attachment; filename="{"_".join(filename_parts)}_template.csv"'
     
     writer = csv.writer(response)
     
@@ -38,15 +77,41 @@ def download_template(request):
         'assigned_apps'
     ])
     
-    # Get actual organizations from database for reference
-    companies = Company.objects.all().values_list('name', flat=True)[:5]
-    departments = Department.objects.all().values_list('name', flat=True)[:5]
-    branches = Branch.objects.all().values_list('name', flat=True)[:5]
+    # Get organizations based on filters
+    if 'department' in filter_context:
+        companies = [filter_context['company']]
+        departments = [filter_context['department']]
+        branches = [filter_context['branch']]
+        regions = [filter_context['region']]
+    elif 'branch' in filter_context:
+        companies = [filter_context['company']]
+        departments = Department.objects.filter(branch=filter_context['branch'])
+        branches = [filter_context['branch']]
+        regions = [filter_context['region']]
+    elif 'region' in filter_context:
+        from organization.models import Region
+        companies = [filter_context['company']]
+        branches = Branch.objects.filter(region=filter_context['region'])
+        departments = Department.objects.filter(branch__region=filter_context['region'])
+        regions = [filter_context['region']]
+    elif 'company' in filter_context:
+        from organization.models import Region
+        companies = [filter_context['company']]
+        regions = Region.objects.filter(company=filter_context['company'])
+        branches = Branch.objects.filter(region__company=filter_context['company'])
+        departments = Department.objects.filter(branch__region__company=filter_context['company'])
+    else:
+        companies = Company.objects.all()[:5]
+        departments = Department.objects.all()[:5]
+        branches = Branch.objects.all()[:5]
+        from organization.models import Region
+        regions = Region.objects.all()[:5]
     
-    # Write example rows with real org data if available
-    company_example = companies[0] if companies else 'Quick Services LQS'
-    dept_example = departments[0] if departments else 'Finance'
-    branch_example = branches[0] if branches else 'Head Office'
+    # Write example rows with filtered org data
+    company_example = companies[0].name if companies else 'Quick Services LQS'
+    dept_example = departments[0].name if departments else 'Finance'
+    branch_example = branches[0].name if branches else 'Head Office'
+    region_example = regions[0].name if regions else 'East Africa'
     
     writer.writerow([
         'amos.cheloti@example.com',
@@ -54,7 +119,7 @@ def download_template(request):
         'Cheloti',
         'REQUESTER',
         company_example,
-        'East Africa',  # region example
+        region_example,
         branch_example,
         dept_example,
         'treasury,workflow'
@@ -65,7 +130,7 @@ def download_template(request):
         'Doe',
         'APPROVER',
         company_example,
-        'East Africa',
+        region_example,
         branch_example,
         dept_example,
         'treasury,workflow,reports'
@@ -104,36 +169,78 @@ def download_template(request):
     
     # AVAILABLE ORGANIZATIONS SECTION
     writer.writerow(['════════════════════════════════════════════════════════════════'])
-    writer.writerow(['AVAILABLE ORGANIZATIONS (Copy exact names from here)'])
+    if filter_context:
+        writer.writerow(['FILTERED ORGANIZATIONS (For selected scope only)'])
+    else:
+        writer.writerow(['AVAILABLE ORGANIZATIONS (Copy exact names from here)'])
     writer.writerow(['════════════════════════════════════════════════════════════════'])
     writer.writerow([])
     
-    # List all companies
+    if filter_context:
+        filter_desc = []
+        if 'department' in filter_context:
+            filter_desc.append(f"Department: {filter_context['department'].name}")
+        if 'branch' in filter_context:
+            filter_desc.append(f"Branch: {filter_context['branch'].name}")
+        if 'region' in filter_context:
+            filter_desc.append(f"Region: {filter_context['region'].name}")
+        if 'company' in filter_context:
+            filter_desc.append(f"Company: {filter_context['company'].name}")
+        writer.writerow(['FILTER APPLIED: ' + ' → '.join(filter_desc)])
+        writer.writerow(['Template shows only entities within this scope'])
+        writer.writerow([])
+    
+    # List companies (filtered or all)
     writer.writerow(['COMPANIES (company_name):'])
-    all_companies = Company.objects.all().order_by('name')
+    if filter_context:
+        all_companies = companies
+    else:
+        all_companies = Company.objects.all().order_by('name')
     for company in all_companies:
-        writer.writerow([f'  → {company.name}'])
-    if not all_companies.exists():
+        writer.writerow([f'  → {company.name if hasattr(company, "name") else company}'])
+    if not all_companies:
         writer.writerow(['  (No companies found - create companies first)'])
     writer.writerow([])
     
-    # List all departments
-    writer.writerow(['DEPARTMENTS (department_name):'])
-    all_departments = Department.objects.all().order_by('name')
-    for dept in all_departments:
-        writer.writerow([f'  → {dept.name}'])
-    if not all_departments.exists():
-        writer.writerow(['  (No departments found - create departments first)'])
+    # List regions (filtered or all)
+    writer.writerow(['REGIONS (region_name):'])
+    if filter_context:
+        from organization.models import Region
+        all_regions = regions if 'region' in filter_context or 'branch' in filter_context or 'department' in filter_context else Region.objects.filter(company__in=companies)
+    else:
+        from organization.models import Region
+        all_regions = Region.objects.all().order_by('name')[:20]
+    for region in all_regions:
+        company_info = f' ({region.company.name})' if hasattr(region, 'company') and region.company else ''
+        writer.writerow([f'  → {region.name}{company_info}'])
+    if not all_regions:
+        writer.writerow(['  (No regions found)'])
     writer.writerow([])
     
-    # List all branches
+    # List branches (filtered or all)
     writer.writerow(['BRANCHES (branch_name):'])
-    all_branches = Branch.objects.all().order_by('name')
+    if filter_context:
+        all_branches = branches
+    else:
+        all_branches = Branch.objects.all().order_by('name')[:20]
     for branch in all_branches:
-        region_info = f' (Region: {branch.region.name})' if hasattr(branch, 'region') and branch.region else ''
+        region_info = f' ({branch.region.name}, {branch.region.company.name})' if hasattr(branch, 'region') and branch.region else ''
         writer.writerow([f'  → {branch.name}{region_info}'])
-    if not all_branches.exists():
+    if not all_branches:
         writer.writerow(['  (No branches found - create branches first)'])
+    writer.writerow([])
+    
+    # List departments (filtered or all)
+    writer.writerow(['DEPARTMENTS (department_name):'])
+    if filter_context:
+        all_departments = departments
+    else:
+        all_departments = Department.objects.all().order_by('name')[:20]
+    for dept in all_departments:
+        branch_info = f' ({dept.branch.name})' if hasattr(dept, 'branch') and dept.branch else ''
+        writer.writerow([f'  → {dept.name}{branch_info}'])
+    if not all_departments:
+        writer.writerow(['  (No departments found - create departments first)'])
     writer.writerow([])
     
     # Available roles
@@ -372,10 +479,12 @@ Best regards,
             return redirect('bulk_import')
     
     # GET request - show upload form
+    from organization.models import Region
     context = {
-        'companies': Company.objects.all(),
-        'departments': Department.objects.all(),
-        'branches': Branch.objects.all(),
+        'companies': Company.objects.all().order_by('name'),
+        'regions': Region.objects.select_related('company').all().order_by('company__name', 'name'),
+        'departments': Department.objects.select_related('branch__region__company').all().order_by('branch__region__company__name', 'name'),
+        'branches': Branch.objects.select_related('region__company').all().order_by('region__company__name', 'region__name', 'name'),
         'roles': User.ROLE_CHOICES,
     }
     return render(request, 'accounts/bulk_import.html', context)

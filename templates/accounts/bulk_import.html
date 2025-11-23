@@ -30,9 +30,56 @@
                                 </div>
                                 <div class="card-body">
                                     <p>Download the CSV template with example data and instructions.</p>
-                                    <a href="{% url 'download_template' %}" class="btn btn-primary">
+                                    <p class="small text-muted">Filter by organization to get targeted user import template</p>
+                                    
+                                    <!-- Filter Options -->
+                                    <div class="mb-3">
+                                        <label for="userCompanyFilter" class="form-label small">Filter by Company:</label>
+                                        <select id="userCompanyFilter" class="form-select form-select-sm">
+                                            <option value="">All Companies</option>
+                                            {% for company in companies %}
+                                            <option value="{{ company.id }}">{{ company.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="userRegionFilter" class="form-label small">Filter by Region:</label>
+                                        <select id="userRegionFilter" class="form-select form-select-sm">
+                                            <option value="">All Regions</option>
+                                            {% for region in regions %}
+                                            <option value="{{ region.id }}" data-company="{{ region.company.id }}">
+                                                {{ region.name }} ({{ region.company.name }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="userBranchFilter" class="form-label small">Filter by Branch:</label>
+                                        <select id="userBranchFilter" class="form-select form-select-sm">
+                                            <option value="">All Branches</option>
+                                            {% for branch in branches %}
+                                            <option value="{{ branch.id }}" data-region="{{ branch.region.id }}" data-company="{{ branch.region.company.id }}">
+                                                {{ branch.name }} ({{ branch.region.name }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="userDeptFilter" class="form-label small">Filter by Department:</label>
+                                        <select id="userDeptFilter" class="form-select form-select-sm">
+                                            <option value="">All Departments</option>
+                                            {% for dept in departments %}
+                                            <option value="{{ dept.id }}" data-branch="{{ dept.branch.id }}" data-region="{{ dept.branch.region.id }}" data-company="{{ dept.branch.region.company.id }}">
+                                                {{ dept.name }} ({{ dept.branch.name }})
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">e.g., "Finance Dept in Nairobi Branch"</div>
+                                    </div>
+                                    
+                                    <button type="button" id="downloadUserTemplateBtn" class="btn btn-primary">
                                         <i class="bi bi-file-earmark-spreadsheet"></i> Download Template
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -202,4 +249,150 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // User Import: 4-level cascading filters
+    const userCompanyFilter = document.getElementById('userCompanyFilter');
+    const userRegionFilter = document.getElementById('userRegionFilter');
+    const userBranchFilter = document.getElementById('userBranchFilter');
+    const userDeptFilter = document.getElementById('userDeptFilter');
+    
+    // Company filter changes
+    userCompanyFilter.addEventListener('change', function() {
+        const companyId = this.value;
+        
+        // Filter regions
+        filterSelectOptions(userRegionFilter, companyId, 'company');
+        
+        // Filter branches
+        filterSelectOptions(userBranchFilter, companyId, 'company');
+        
+        // Filter departments
+        filterSelectOptions(userDeptFilter, companyId, 'company');
+        
+        // Reset cascaded selections if hidden
+        resetIfHidden(userRegionFilter);
+        resetIfHidden(userBranchFilter);
+        resetIfHidden(userDeptFilter);
+    });
+    
+    // Region filter changes
+    userRegionFilter.addEventListener('change', function() {
+        const regionId = this.value;
+        const companyId = userCompanyFilter.value;
+        
+        // Filter branches by region AND company
+        const branchOptions = userBranchFilter.querySelectorAll('option');
+        branchOptions.forEach(option => {
+            if (option.value === '') {
+                option.style.display = 'block';
+                return;
+            }
+            const optionRegionId = option.getAttribute('data-region');
+            const optionCompanyId = option.getAttribute('data-company');
+            
+            let show = true;
+            if (regionId && optionRegionId !== regionId) show = false;
+            if (companyId && optionCompanyId !== companyId) show = false;
+            
+            option.style.display = show ? 'block' : 'none';
+        });
+        
+        // Filter departments by region
+        const deptOptions = userDeptFilter.querySelectorAll('option');
+        deptOptions.forEach(option => {
+            if (option.value === '') {
+                option.style.display = 'block';
+                return;
+            }
+            const optionRegionId = option.getAttribute('data-region');
+            const optionCompanyId = option.getAttribute('data-company');
+            
+            let show = true;
+            if (regionId && optionRegionId !== regionId) show = false;
+            if (companyId && optionCompanyId !== companyId) show = false;
+            
+            option.style.display = show ? 'block' : 'none';
+        });
+        
+        resetIfHidden(userBranchFilter);
+        resetIfHidden(userDeptFilter);
+    });
+    
+    // Branch filter changes
+    userBranchFilter.addEventListener('change', function() {
+        const branchId = this.value;
+        const regionId = userRegionFilter.value;
+        const companyId = userCompanyFilter.value;
+        
+        // Filter departments by branch, region, and company
+        const deptOptions = userDeptFilter.querySelectorAll('option');
+        deptOptions.forEach(option => {
+            if (option.value === '') {
+                option.style.display = 'block';
+                return;
+            }
+            const optionBranchId = option.getAttribute('data-branch');
+            const optionRegionId = option.getAttribute('data-region');
+            const optionCompanyId = option.getAttribute('data-company');
+            
+            let show = true;
+            if (branchId && optionBranchId !== branchId) show = false;
+            if (regionId && optionRegionId !== regionId) show = false;
+            if (companyId && optionCompanyId !== companyId) show = false;
+            
+            option.style.display = show ? 'block' : 'none';
+        });
+        
+        resetIfHidden(userDeptFilter);
+    });
+    
+    // Download template with filters
+    document.getElementById('downloadUserTemplateBtn').addEventListener('click', function() {
+        const companyId = userCompanyFilter.value;
+        const regionId = userRegionFilter.value;
+        const branchId = userBranchFilter.value;
+        const deptId = userDeptFilter.value;
+        
+        let url = "{% url 'download_template' %}";
+        const params = [];
+        
+        // Most specific filter takes precedence
+        if (deptId) {
+            params.push('department=' + deptId);
+        } else if (branchId) {
+            params.push('branch=' + branchId);
+        } else if (regionId) {
+            params.push('region=' + regionId);
+        } else if (companyId) {
+            params.push('company=' + companyId);
+        }
+        
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
+        window.location.href = url;
+    });
+    
+    // Helper functions
+    function filterSelectOptions(selectElement, filterValue, dataAttribute) {
+        const options = selectElement.querySelectorAll('option');
+        options.forEach(option => {
+            if (option.value === '') {
+                option.style.display = 'block';
+                return;
+            }
+            const optionValue = option.getAttribute('data-' + dataAttribute);
+            option.style.display = (!filterValue || optionValue === filterValue) ? 'block' : 'none';
+        });
+    }
+    
+    function resetIfHidden(selectElement) {
+        if (selectElement.value && selectElement.selectedOptions[0].style.display === 'none') {
+            selectElement.value = '';
+        }
+    }
+});
+</script>
 {% endblock %}
