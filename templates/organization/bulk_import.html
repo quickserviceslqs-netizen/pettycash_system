@@ -478,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const companyId = deptCompanyFilter.value;
         const regionId = deptRegionFilter.value;
         const branchId = deptBranchFilter.value;
-        let url = "{% url 'download_departments_template' %}";
+        let url = "{% url 'organization:download_departments_template' %}";
         const params = [];
         
         if (branchId) {
