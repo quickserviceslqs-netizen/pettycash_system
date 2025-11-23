@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk User Import{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Bulk User Import</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-info-circle"></i> How to Use Bulk Import</h5>
+                        <ol class="mb-0">
+                            <li><strong>Download Template:</strong> Click the button below to download the CSV template</li>
+                            <li><strong>Fill Template:</strong> Add user data (email, name, role, org, apps)</li>
+                            <li><strong>Delete Examples:</strong> Remove the example rows from the template</li>
+                            <li><strong>Upload File:</strong> Upload the completed CSV file</li>
+                            <li><strong>Users Receive Email:</strong> Each user gets an invitation to set their password</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <i class="bi bi-download"></i> Step 1: Download Template
+                                </div>
+                                <div class="card-body">
+                                    <p>Download the CSV template with example data and instructions.</p>
+                                    <a href="{% url 'download_template' %}" class="btn btn-primary">
+                                        <i class="bi bi-file-earmark-spreadsheet"></i> Download Template
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white">
+                                    <i class="bi bi-upload"></i> Step 2: Upload Completed File
+                                </div>
+                                <div class="card-body">
+                                    <form method="post" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        <div class="mb-3">
+                                            <label for="csv_file" class="form-label">Select CSV File</label>
+                                            <input type="file" class="form-control" id="csv_file" name="csv_file" 
+                                                   accept=".csv" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="bi bi-cloud-upload"></i> Upload & Process
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h5><i class="bi bi-exclamation-triangle"></i> Important Notes</h5>
+                        <ul class="mb-0">
+                            <li><strong>Usernames:</strong> Auto-generated from first and last name (e.g., JohnDoe, JaneSmith)</li>
+                            <li><strong>Passwords:</strong> Users set their own password via invitation link</li>
+                            <li><strong>Duplicate Check:</strong> System prevents duplicate emails</li>
+                            <li><strong>Organizations:</strong> Company, Department, Branch must already exist in system</li>
+                            <li><strong>Apps:</strong> Use app names: treasury, workflow, reports, settings</li>
+                            <li><strong>Roles:</strong> Must be one of: REQUESTER, APPROVER, FINANCE, ADMIN</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="bi bi-table"></i> CSV Template Format
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>email</th>
+                                            <th>first_name</th>
+                                            <th>last_name</th>
+                                            <th>role</th>
+                                            <th>company_name</th>
+                                            <th>department_name</th>
+                                            <th>branch_name</th>
+                                            <th>assigned_apps</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="table-success">
+                                            <td>john.doe@example.com</td>
+                                            <td>John</td>
+                                            <td>Doe</td>
+                                            <td>REQUESTER</td>
+                                            <td>Quick Services LQS</td>
+                                            <td>Finance</td>
+                                            <td>Head Office</td>
+                                            <td>treasury,workflow</td>
+                                        </tr>
+                                        <tr class="table-success">
+                                            <td>jane.smith@example.com</td>
+                                            <td>Jane</td>
+                                            <td>Smith</td>
+                                            <td>APPROVER</td>
+                                            <td>Quick Services LQS</td>
+                                            <td>Finance</td>
+                                            <td>Head Office</td>
+                                            <td>treasury,workflow,reports</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="text-muted mb-0">
+                                <small>
+                                    <strong>Result:</strong> Username will be <code>JohnDoe</code> and <code>JaneSmith</code>. 
+                                    If duplicates exist, system adds number suffix (e.g., JohnDoe1, JohnDoe2).
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <i class="bi bi-gear"></i> Available Organizations
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6>Companies</h6>
+                                    <ul class="small">
+                                        {% for company in companies %}
+                                        <li><code>{{ company.name }}</code></li>
+                                        {% empty %}
+                                        <li class="text-muted">No companies found</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Departments</h6>
+                                    <ul class="small">
+                                        {% for dept in departments %}
+                                        <li><code>{{ dept.name }}</code></li>
+                                        {% empty %}
+                                        <li class="text-muted">No departments found</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>Branches</h6>
+                                    <ul class="small">
+                                        {% for branch in branches %}
+                                        <li><code>{{ branch.name }}</code></li>
+                                        {% empty %}
+                                        <li class="text-muted">No branches found</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 text-center">
+                        <a href="{% url 'manage_invitations' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Invitations
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

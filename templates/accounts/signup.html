@@ -25,26 +25,13 @@
                             <small class="text-muted">This email was provided in your invitation</small>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="first_name" class="form-label">First Name</label>
-                                <input type="text" class="form-control" id="first_name" name="first_name" 
-                                       value="{{ invitation.first_name }}" maxlength="150">
-                                <small class="text-muted">Edit if needed</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="last_name" class="form-label">Last Name</label>
-                                <input type="text" class="form-control" id="last_name" name="last_name" 
-                                       value="{{ invitation.last_name }}" maxlength="150">
-                                <small class="text-muted">Edit if needed</small>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username *</label>
-                            <input type="text" class="form-control" id="username" name="username" 
-                                   placeholder="Choose a username" required autofocus>
-                            <small class="text-muted">Use letters, numbers, and @/./+/-/_ only</small>
+                        <div class="alert alert-info">
+                            <strong><i class="bi bi-info-circle"></i> Account Details</strong>
+                            <ul class="mb-0 mt-2">
+                                <li><strong>Name:</strong> {{ invitation.first_name }} {{ invitation.last_name }}</li>
+                                <li><strong>Username:</strong> Will be auto-generated as <code>{{ invitation.first_name }}{{ invitation.last_name }}</code></li>
+                                <li><small class="text-muted">To change your name, contact your administrator after signup</small></li>
+                            </ul>
                         </div>
                         
                         <div class="mb-3">
@@ -71,12 +58,13 @@
                                 <li>Your current device will be automatically whitelisted</li>
                                 <li>Device info: <code id="deviceInfo">Detecting...</code></li>
                                 <li>Your IP address and location will be logged for security</li>
+                                <li>Username will be auto-generated from your name</li>
                             </ul>
                         </div>
                         
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-check-circle"></i> Create Account & Whitelist Device
+                                <i class="bi bi-check-circle"></i> Complete Registration
                             </button>
                         </div>
                     </form>

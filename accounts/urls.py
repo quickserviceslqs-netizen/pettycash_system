@@ -2,6 +2,7 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
 from . import views_invitation
+from . import views_bulk_import
 
 urlpatterns = [
     # --------------------------
@@ -59,6 +60,10 @@ urlpatterns = [
     path('invitations/<int:invitation_id>/revoke/', views_invitation.revoke_invitation, name='revoke_invitation'),
     path('invitations/<int:invitation_id>/resend/', views_invitation.resend_invitation, name='resend_invitation'),
     path('signup/<uuid:token>/', views_invitation.signup, name='signup'),
+    
+    # Bulk import
+    path('bulk-import/', views_bulk_import.bulk_import, name='bulk_import'),
+    path('download-template/', views_bulk_import.download_template, name='download_template'),
     
     # --------------------------
     # Device Management

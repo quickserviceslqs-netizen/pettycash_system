@@ -274,11 +274,20 @@ def signup(request, token):
         return redirect('login')
     
     if request.method == 'POST':
-        username = request.POST.get('username')
         password = request.POST.get('password')
         password_confirm = request.POST.get('password_confirm')
-        first_name = request.POST.get('first_name', invitation.first_name)  # Allow user to edit
-        last_name = request.POST.get('last_name', invitation.last_name)  # Allow user to edit
+        
+        # Auto-generate username from initials (FirstLast format)
+        first_name = invitation.first_name.strip()
+        last_name = invitation.last_name.strip()
+        base_username = f"{first_name}{last_name}".replace(' ', '')
+        
+        # Ensure unique username by adding number suffix if needed
+        username = base_username
+        counter = 1
+        while User.objects.filter(username__iexact=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
         
         # Validate password
         if password != password_confirm:
@@ -302,19 +311,14 @@ def signup(request, token):
                 )
                 return render(request, 'accounts/signup.html', {'invitation': invitation})
         
-        # Check username availability
-        if User.objects.filter(username=username).exists():
-            messages.error(request, "Username already taken!")
-            return render(request, 'accounts/signup.html', {'invitation': invitation})
-        
         # Create user account
         try:
             user = User.objects.create_user(
                 username=username,
                 email=invitation.email,
                 password=password,
-                first_name=first_name.strip(),  # Use user-provided or invitation default
-                last_name=last_name.strip(),  # Use user-provided or invitation default
+                first_name=first_name,
+                last_name=last_name,
                 role=invitation.role,
                 company=invitation.company,
                 department=invitation.department,
