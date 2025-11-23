@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views_bulk_import
 
+app_name = 'organization'
+
 urlpatterns = [
     # Main bulk import page
     path('bulk-import/', views_bulk_import.import_organizations, name='import_organizations'),
