@@ -67,7 +67,25 @@
                                 <label class="form-label">Reorder Level</label>
                                 <input type="number" name="reorder_level" class="form-control" 
                                        step="0.01" min="0" value="{{ fund.reorder_level }}" required>
-                                <small class="text-muted">Alert threshold</small>
+                                <small class="text-muted">Alert threshold for this fund. Overrides system default if set.</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Minimum Balance</label>
+                                <input type="number" name="min_balance" class="form-control" 
+                                       step="0.01" min="0" value="{{ fund.min_balance|default:'' }}">
+                                <small class="text-muted">Minimum allowed balance for this fund. Overrides system default if set.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Auto-Replenishment</label>
+                                <select name="auto_replenish" class="form-select">
+                                    <option value="" {% if fund.auto_replenish is None %}selected{% endif %}>System Default</option>
+                                    <option value="true" {% if fund.auto_replenish %}selected{% endif %}>Enabled</option>
+                                    <option value="false" {% if fund.auto_replenish is not None and not fund.auto_replenish %}selected{% endif %}>Disabled</option>
+                                </select>
+                                <small class="text-muted">Override auto-replenishment for this fund.</small>
                             </div>
                         </div>
 

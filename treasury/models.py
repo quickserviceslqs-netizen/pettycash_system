@@ -18,6 +18,7 @@ class TreasuryFund(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='treasury_funds')
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name='treasury_funds')
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name='treasury_funds')
+    department = models.ForeignKey('organization.Department', on_delete=models.SET_NULL, null=True, blank=True, related_name='treasury_funds')
     
     current_balance = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal('0.00'))
     reorder_level = models.DecimalField(
@@ -25,6 +26,18 @@ class TreasuryFund(models.Model):
         decimal_places=2, 
         default=Decimal('50000.00'),
         help_text="Minimum balance threshold. Auto-triggers ReplenishmentRequest when exceeded."
+    )
+    min_balance = models.DecimalField(
+        max_digits=14,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Minimum allowed balance for this fund. Overrides system default if set."
+    )
+    auto_replenish = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text="Override auto-replenishment for this fund. If null, uses system default."
     )
     
     last_replenished = models.DateTimeField(null=True, blank=True)
@@ -35,7 +48,7 @@ class TreasuryFund(models.Model):
     objects = CompanyManager()
     
     class Meta:
-        unique_together = ('company', 'region', 'branch')
+        unique_together = ('company', 'region', 'branch', 'department')
         verbose_name = "Treasury Fund"
         verbose_name_plural = "Treasury Funds"
     
@@ -43,9 +56,27 @@ class TreasuryFund(models.Model):
         loc = f"{self.branch.name}" if self.branch else (f"{self.region.name}" if self.region else "HQ")
         return f"{self.company.name} - {loc}: {self.current_balance}"
     
+    def get_reorder_level(self):
+        """Return fund-specific reorder level, falling back to system default if needed."""
+        return self.reorder_level if self.reorder_level is not None else Decimal('50000.00')
+
+    def get_min_balance(self):
+        """Return fund-specific min balance, falling back to system default if needed."""
+        if self.min_balance is not None:
+            return self.min_balance
+        from settings_manager.models import get_setting
+        return Decimal(get_setting('TREASURY_MINIMUM_FUND_BALANCE', '0'))
+
+    def is_auto_replenish_enabled(self):
+        """Return fund-specific auto-replenish setting, falling back to system default."""
+        if self.auto_replenish is not None:
+            return self.auto_replenish
+        from settings_manager.models import get_setting
+        return get_setting('TREASURY_AUTO_REPLENISHMENT_ENABLED', 'true') == 'true'
+
     def check_reorder_needed(self):
         """Return True if balance is below reorder level."""
-        return self.current_balance < self.reorder_level
+        return self.current_balance < self.get_reorder_level()
 
 
 class Payment(models.Model):
