@@ -33,18 +33,29 @@ def settings_dashboard(request):
         if settings.exists():
             settings_by_category[category_name] = settings
     
-    # Get filter
+    # Get filter and search
     category_filter = request.GET.get('category')
+    search_query = request.GET.get('search', '').strip()
+    
     if category_filter:
         settings = SystemSetting.objects.filter(category=category_filter, is_active=True)
     else:
         settings = SystemSetting.objects.filter(is_active=True)
+    
+    # Apply search filter if provided
+    if search_query:
+        settings = settings.filter(
+            Q(display_name__icontains=search_query) |
+            Q(key__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
     
     context = {
         'settings_by_category': settings_by_category,
         'all_settings': settings,
         'categories': categories,
         'selected_category': category_filter,
+        'search_query': search_query,
         'total_settings': SystemSetting.objects.filter(is_active=True).count(),
     }
     
