@@ -71,6 +71,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'pettycash_system.ip_whitelist_middleware.IPWhitelistMiddleware',  # IP whitelist security
+    'pettycash_system.device_auth_middleware.DeviceAuthenticationMiddleware',  # Device whitelist enforcement
     'pettycash_system.middleware.CompanyMiddleware',  # Multi-tenancy: Set company context
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Device Not Authorized{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-danger">
+                <div class="card-header bg-danger text-white text-center py-4">
+                    <h2><i class="bi bi-shield-x"></i> Device Not Authorized</h2>
+                </div>
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-laptop" style="font-size: 5rem; color: #dc3545;"></i>
+                    </div>
+                    
+                    <h4 class="text-center mb-4">Access Denied</h4>
+                    
+                    <div class="alert alert-danger">
+                        <h5><i class="bi bi-exclamation-triangle"></i> Why am I seeing this?</h5>
+                        <p class="mb-0">
+                            This system only allows access from registered and whitelisted devices for security reasons. 
+                            Your current device is not authorized to access this account.
+                        </p>
+                    </div>
+                    
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6><i class="bi bi-info-circle"></i> What can I do?</h6>
+                            <ol>
+                                <li><strong>Use your registered device:</strong> Login from a device you've previously used</li>
+                                <li><strong>Request device registration:</strong> Request to add this device to your account</li>
+                                <li><strong>Contact your administrator:</strong> Ask them to whitelist your device manually</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'request_device' %}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-send"></i> Request Device Registration
+                        </a>
+                        <a href="{% url 'login' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Login
+                        </a>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <small class="text-muted">
+                            <i class="bi bi-envelope"></i> Need help? Contact: 
+                            <a href="mailto:{{ support_email }}">{{ support_email }}</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Detect and display current device info
+document.addEventListener('DOMContentLoaded', function() {
+    const ua = navigator.userAgent;
+    let device = 'Unknown Device';
+    
+    // Detect OS
+    if (ua.indexOf('Windows NT 10') > -1 || ua.indexOf('Windows NT 11') > -1) {
+        device = 'Windows 10/11';
+    } else if (ua.indexOf('Windows') > -1) {
+        device = 'Windows';
+    } else if (ua.indexOf('Mac') > -1) {
+        device = 'macOS';
+    } else if (ua.indexOf('Linux') > -1) {
+        device = 'Linux';
+    } else if (ua.indexOf('Android') > -1) {
+        device = 'Android';
+    } else if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) {
+        device = 'iOS';
+    }
+    
+    // Detect Browser
+    if (ua.indexOf('Edg') > -1) {
+        device += ' - Edge';
+    } else if (ua.indexOf('Chrome') > -1) {
+        device += ' - Chrome';
+    } else if (ua.indexOf('Firefox') > -1) {
+        device += ' - Firefox';
+    } else if (ua.indexOf('Safari') > -1) {
+        device += ' - Safari';
+    }
+    
+    console.log('Current device:', device);
+});
+</script>
+{% endblock %}

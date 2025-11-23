@@ -72,4 +72,8 @@ urlpatterns = [
     path('admin/devices/<int:device_id>/toggle/', views_invitation.admin_toggle_device, name='admin_toggle_device'),
     path('admin/devices/<int:device_id>/delete/', views_invitation.admin_delete_device, name='admin_delete_device'),
     path('admin/devices/<int:device_id>/set-primary/', views_invitation.admin_set_primary_device, name='admin_set_primary_device'),
+    
+    # Device blocking and registration
+    path('device-blocked/', views_invitation.device_blocked, name='device_blocked'),
+    path('request-device/', views_invitation.request_device_registration, name='request_device'),
 ]

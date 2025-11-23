@@ -339,6 +339,15 @@ class Command(BaseCommand):
                 'default_value': '7',
             },
             {
+                'key': 'ENFORCE_DEVICE_WHITELIST',
+                'display_name': 'Enforce Device Whitelisting',
+                'description': 'Only allow login from whitelisted devices (users must request new devices)',
+                'category': 'security',
+                'setting_type': 'boolean',
+                'value': 'false',
+                'default_value': 'false',
+            },
+            {
                 'key': 'ENABLE_TRANSACTION_SIGNING',
                 'display_name': 'Enable Digital Transaction Signing',
                 'description': 'Require digital signature for high-value transactions',

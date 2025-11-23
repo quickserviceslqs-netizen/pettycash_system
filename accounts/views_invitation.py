@@ -14,6 +14,8 @@ from accounts.models import User
 from accounts.models_device import UserInvitation, WhitelistedDevice, DeviceAccessAttempt
 from settings_manager.models import get_setting
 from settings_manager.views import log_activity
+from django.core.mail import send_mail
+from django.conf import settings
 import hashlib
 
 
@@ -575,3 +577,177 @@ def admin_set_primary_device(request, device_id):
     )
     
     return redirect('manage_user_devices', user_id=device.user.id)
+
+
+def device_blocked(request):
+    """
+    Page shown when user tries to access from non-whitelisted device.
+    Allows them to request device registration.
+    """
+    context = {
+        'support_email': get_setting('SECURITY_ALERT_RECIPIENTS', 'admin@company.com').split(',')[0],
+    }
+    return render(request, 'accounts/device_blocked.html', context)
+
+
+def request_device_registration(request):
+    """
+    User can request their current device to be whitelisted.
+    Sends email to admin with registration link.
+    """
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        reason = request.POST.get('reason', '')
+        
+        # Find user
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            messages.error(request, "No account found with that email address.")
+            return render(request, 'accounts/request_device.html')
+        
+        # Get device info
+        device_info = get_device_info(request)
+        ip_address = get_client_ip(request)
+        location = get_location(ip_address)
+        
+        # Check if device already exists
+        existing_device = WhitelistedDevice.objects.filter(
+            user=user,
+            user_agent=device_info['user_agent']
+        ).first()
+        
+        if existing_device:
+            if existing_device.is_active:
+                messages.info(request, "This device is already whitelisted. Please try logging in again.")
+                return redirect('login')
+            else:
+                messages.info(request, "This device is registered but inactive. Please contact your administrator to activate it.")
+                return render(request, 'accounts/request_device.html')
+        
+        # Create device registration request (inactive by default)
+        device = WhitelistedDevice.objects.create(
+            user=user,
+            device_name=device_info['device_name'],
+            user_agent=device_info['user_agent'],
+            ip_address=ip_address,
+            location=location,
+            is_active=False,  # Requires admin approval
+            is_primary=False,
+            registration_method='self_service',
+            notes=f"Self-service registration request. Reason: {reason}"
+        )
+        
+        # Send email to admins
+        admin_emails = get_setting('SECURITY_ALERT_RECIPIENTS', 'admin@company.com').split(',')
+        admin_emails = [email.strip() for email in admin_emails if email.strip()]
+        
+        approval_url = f"{settings.SITE_URL}/accounts/users/{user.id}/devices/"
+        
+        subject = f"Device Registration Request - {user.get_display_name()}"
+        message = f"""
+A user has requested to register a new device:
+
+User: {user.get_display_name()} ({user.username})
+Email: {user.email}
+Device: {device_info['device_name']}
+IP Address: {ip_address}
+Location: {location or 'Unknown'}
+Reason: {reason or 'Not provided'}
+
+To approve this device, visit:
+{approval_url}
+
+Then activate the device to allow access.
+
+This is an automated security notification.
+"""
+        
+        html_message = f"""
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6;">
+    <h2 style="color: #e74c3c;">🔐 Device Registration Request</h2>
+    
+    <p>A user has requested to register a new device:</p>
+    
+    <table style="border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>User:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{user.get_display_name()} ({user.username})</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Email:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{user.email}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Device:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{device_info['device_name']}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>IP Address:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;"><code>{ip_address}</code></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Location:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{location or 'Unknown'}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Reason:</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{reason or 'Not provided'}</td>
+        </tr>
+    </table>
+    
+    <div style="margin: 30px 0;">
+        <a href="{approval_url}" 
+           style="background-color: #3498db; color: white; padding: 12px 24px; 
+                  text-decoration: none; border-radius: 5px; display: inline-block;">
+            Review Device Request
+        </a>
+    </div>
+    
+    <p><small style="color: #7f8c8d;">To approve, click the link above and activate the device.</small></p>
+    
+    <hr style="border: none; border-top: 1px solid #ecf0f1; margin: 20px 0;">
+    <p style="color: #95a5a6; font-size: 12px;">This is an automated security notification from {settings.SITE_NAME}.</p>
+</body>
+</html>
+"""
+        
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=admin_emails,
+                html_message=html_message,
+                fail_silently=False,
+            )
+            
+            # Log the request
+            log_activity(
+                user=user,
+                action='create',
+                content_type='Device Registration Request',
+                object_id=device.id,
+                object_repr=str(device),
+                description=f"User requested device registration: {device_info['device_name']}",
+                changes={'device': device_info['device_name'], 'ip': ip_address, 'location': location},
+                success=True,
+                request=request
+            )
+            
+            messages.success(
+                request,
+                "✅ Device registration request sent! An administrator will review your request shortly. "
+                "You will be able to login once your device is approved."
+            )
+            return redirect('login')
+            
+        except Exception as e:
+            messages.error(request, f"Error sending request: {str(e)}")
+            device.delete()  # Clean up if email fails
+            return render(request, 'accounts/request_device.html')
+    
+    # GET request
+    return render(request, 'accounts/request_device.html')
+

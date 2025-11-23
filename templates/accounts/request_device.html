@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Request Device Registration{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3><i class="bi bi-laptop"></i> Request Device Registration</h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-center text-muted mb-4">
+                        Submit a request to register this device for your account. An administrator will review and approve your request.
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> Your Current Device</h6>
+                        <p class="mb-0">
+                            <strong>Device:</strong> <code id="deviceInfo">Detecting...</code><br>
+                            <strong>Browser:</strong> <span id="browserInfo">Detecting...</span>
+                        </p>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Your Email Address *</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   placeholder="user@company.com" required autofocus>
+                            <small class="text-muted">The email associated with your account</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Reason for Registration (Optional)</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="3" 
+                                      placeholder="e.g., New work laptop, Working from home, etc."></textarea>
+                            <small class="text-muted">Help admins understand why you need this device</small>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <h6><i class="bi bi-clock-history"></i> What happens next?</h6>
+                            <ol class="mb-0 small">
+                                <li>Your request will be sent to system administrators</li>
+                                <li>Admin will review your device information</li>
+                                <li>If approved, you'll receive an email notification</li>
+                                <li>You can then login from this device</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-send"></i> Submit Registration Request
+                            </button>
+                            <a href="{% url 'login' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6><i class="bi bi-shield-check"></i> Security Notes</h6>
+                            <ul class="small mb-0">
+                                <li>Device registration requires administrator approval</li>
+                                <li>Your device information (OS, browser, IP) will be logged</li>
+                                <li>Only use this feature for legitimate device changes</li>
+                                <li>Fraudulent requests may result in account suspension</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Detect and display current device info
+document.addEventListener('DOMContentLoaded', function() {
+    const ua = navigator.userAgent;
+    let os = 'Unknown OS';
+    let browser = 'Unknown Browser';
+    
+    // Detect OS
+    if (ua.indexOf('Windows NT 10') > -1 || ua.indexOf('Windows NT 11') > -1) {
+        os = 'Windows 10/11';
+    } else if (ua.indexOf('Windows NT 6') > -1) {
+        os = 'Windows 7/8';
+    } else if (ua.indexOf('Windows') > -1) {
+        os = 'Windows';
+    } else if (ua.indexOf('Mac OS X') > -1) {
+        os = 'macOS';
+    } else if (ua.indexOf('Linux') > -1) {
+        os = 'Linux';
+    } else if (ua.indexOf('Android') > -1) {
+        os = 'Android';
+    } else if (ua.indexOf('iPhone') > -1) {
+        os = 'iPhone';
+    } else if (ua.indexOf('iPad') > -1) {
+        os = 'iPad';
+    }
+    
+    // Detect Browser
+    if (ua.indexOf('Edg') > -1) {
+        browser = 'Microsoft Edge';
+    } else if (ua.indexOf('Chrome') > -1) {
+        browser = 'Google Chrome';
+    } else if (ua.indexOf('Firefox') > -1) {
+        browser = 'Mozilla Firefox';
+    } else if (ua.indexOf('Safari') > -1) {
+        browser = 'Safari';
+    } else if (ua.indexOf('Opera') > -1 || ua.indexOf('OPR') > -1) {
+        browser = 'Opera';
+    }
+    
+    document.getElementById('deviceInfo').textContent = os;
+    document.getElementById('browserInfo').textContent = browser;
+});
+</script>
+{% endblock %}
