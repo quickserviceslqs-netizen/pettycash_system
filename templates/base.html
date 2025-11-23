@@ -174,83 +174,99 @@
                                 <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-sliders"></i> Admin
                                 </a>
-                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                                    <li><h6 class="dropdown-header">User Management</h6></li>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown" style="max-height: 80vh; overflow-y: auto;">
+                                    <!-- User & Access Management -->
+                                    <li><h6 class="dropdown-header"><i class="bi bi-people"></i> User & Access</h6></li>
                                     <li><a class="dropdown-item" href="{% url 'accounts:manage_users' %}">
-                                        <i class="bi bi-people"></i> Manage Users & Permissions
+                                        <i class="bi bi-person-gear"></i> Users & Permissions
                                     </a></li>
                                     <li><a class="dropdown-item" href="{% url 'accounts:manage_groups' %}">
-                                        <i class="bi bi-diagram-3"></i> Manage Permission Groups
+                                        <i class="bi bi-diagram-3"></i> Permission Groups
                                     </a></li>
                                     <li><a class="dropdown-item" href="{% url 'accounts:manage_invitations' %}">
-                                        <i class="bi bi-envelope"></i> Manage Invitations
+                                        <i class="bi bi-envelope"></i> User Invitations
                                     </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_apps' %}">
+                                        <i class="bi bi-grid-3x3-gap"></i> Application Access
+                                    </a></li>
+                                    
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header">Bulk Import Tools</h6></li>
+                                    
+                                    <!-- Organization & Structure -->
+                                    <li><h6 class="dropdown-header"><i class="bi bi-building"></i> Organization</h6></li>
+                                    <li><a class="dropdown-item" href="{% url 'organization:manage_cost_centers' %}">
+                                        <i class="bi bi-diagram-3"></i> Cost Centers & Positions
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'settings_manager:manage_departments' %}">
+                                        <i class="bi bi-building"></i> Departments & Regions
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'organization:manage_companies' %}">
+                                        <i class="bi bi-buildings"></i> Companies & Branches
+                                    </a></li>
+                                    
+                                    <li><hr class="dropdown-divider"></li>
+                                    
+                                    <!-- Workflow & Approvals -->
+                                    <li><h6 class="dropdown-header"><i class="bi bi-arrow-repeat"></i> Workflow</h6></li>
+                                    <li><a class="dropdown-item" href="{% url 'workflow:manage_thresholds' %}">
+                                        <i class="bi bi-graph-up"></i> Approval Thresholds
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'transactions:manage_requisitions' %}">
+                                        <i class="bi bi-file-check"></i> Requisitions
+                                    </a></li>
+                                    
+                                    <li><hr class="dropdown-divider"></li>
+                                    
+                                    <!-- Treasury & Payments -->
+                                    <li><h6 class="dropdown-header"><i class="bi bi-wallet2"></i> Treasury</h6></li>
+                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_funds' %}">
+                                        <i class="bi bi-cash-stack"></i> Funds & Balances
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_payments' %}">
+                                        <i class="bi bi-credit-card"></i> Payments
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'treasury:select_payments_for_bulk' %}">
+                                        <i class="bi bi-list-check"></i> Bulk M-Pesa Payments
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'treasury:view_ledger' %}">
+                                        <i class="bi bi-journal-text"></i> Ledger
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_variances' %}">
+                                        <i class="bi bi-exclamation-triangle"></i> Variances
+                                    </a></li>
+                                    
+                                    <li><hr class="dropdown-divider"></li>
+                                    
+                                    <!-- Bulk Import Tools -->
+                                    <li><h6 class="dropdown-header"><i class="bi bi-upload"></i> Bulk Import</h6></li>
                                     <li><a class="dropdown-item" href="{% url 'accounts:bulk_import' %}">
                                         <i class="bi bi-people-fill"></i> Import Users
                                     </a></li>
                                     <li><a class="dropdown-item" href="{% url 'organization:import_organizations' %}">
                                         <i class="bi bi-building"></i> Import Organizations
                                     </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header">Workflow Configuration</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'workflow:manage_thresholds' %}">
-                                        <i class="bi bi-graph-up"></i> Approval Thresholds
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header">Organization Structure</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'organization:manage_cost_centers' %}">
-                                        <i class="bi bi-diagram-3"></i> Cost Centers
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'organization:manage_positions' %}">
-                                        <i class="bi bi-briefcase"></i> Positions
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header">App Management</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_apps' %}">
-                                        <i class="bi bi-grid-3x3-gap"></i> Manage Applications
-                                    </a></li>
                                     <li><a class="dropdown-item" href="{% url 'accounts:bulk_assign_apps' %}">
                                         <i class="bi bi-layers"></i> Bulk Assign Apps
                                     </a></li>
+                                    
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header">Audit & Monitoring</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'settings_manager:admin_activity_logs' %}">
-                                        <i class="bi bi-clock-history"></i> Activity Logs
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header">System Maintenance</h6></li>
+                                    
+                                    <!-- System & Monitoring -->
+                                    <li><h6 class="dropdown-header"><i class="bi bi-gear"></i> System</h6></li>
                                     <li><a class="dropdown-item" href="{% url 'system_maintenance:dashboard' %}">
                                         <i class="bi bi-tools"></i> Backup & Restore
                                     </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header">Requisition Management</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'transactions:manage_requisitions' %}">
-                                        <i class="bi bi-file-check"></i> Manage Requisitions
+                                    <li><a class="dropdown-item" href="{% url 'settings_manager:admin_activity_logs' %}">
+                                        <i class="bi bi-clock-history"></i> Activity Logs
                                     </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header">Treasury Management</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_funds' %}">
-                                        <i class="bi bi-wallet2"></i> Treasury Funds
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_payments' %}">
-                                        <i class="bi bi-credit-card"></i> Payments
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'treasury:view_ledger' %}">
-                                        <i class="bi bi-journal-text"></i> Ledger Entries
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_variances' %}">
-                                        <i class="bi bi-exclamation-triangle"></i> Variance Adjustments
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><h6 class="dropdown-header">Reports & Analytics</h6></li>
                                     <li><a class="dropdown-item" href="{% url 'reports:dashboard' %}">
-                                        <i class="bi bi-graph-up"></i> Reports Dashboard
+                                        <i class="bi bi-graph-up"></i> Reports
                                     </a></li>
+                                    
                                     <li><hr class="dropdown-divider"></li>
+                                    
                                     <li><a class="dropdown-item" href="{% url 'admin:index' %}">
-                                        <i class="bi bi-gear-fill"></i> Django Admin (Advanced)
+                                        <i class="bi bi-gear-fill text-danger"></i> Django Admin (Advanced)
                                     </a></li>
                                 </ul>
                             </li>
