@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load settings_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-paper-plane"></i> {{ title }}</h2>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">
+                        <i class="fas fa-list-ol"></i> Total Payments
+                    </h5>
+                    <h2 class="mb-0">{{ total_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h5 class="card-title text-success">
+                        <i class="fas fa-money-bill-wave"></i> Total Amount
+                    </h5>
+                    <h2 class="mb-0">{% currency_format total_amount %}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Alert -->
+    <div class="alert alert-warning">
+        <strong><i class="fas fa-exclamation-triangle"></i> Review Before Submitting!</strong>
+        <p class="mb-0">These {{ total_count }} payment(s) will be sent to M-Pesa API for batch processing. Please review all details carefully.</p>
+    </div>
+
+    <!-- API Information -->
+    <div class="alert alert-info">
+        <strong><i class="fas fa-info-circle"></i> M-Pesa API Batch Processing:</strong>
+        <ul class="mb-0 mt-2">
+            <li>Payments will be sent to M-Pesa shortcode/till for batch processing</li>
+            <li>Payment records will be created with status "Executing"</li>
+            <li>M-Pesa will process all payments and send callbacks for each transaction</li>
+            <li>Status will be updated automatically based on M-Pesa responses</li>
+        </ul>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-table"></i> Payment Details for API Submission</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Voucher Number</th>
+                            <th>Recipient</th>
+                            <th>Mobile Number</th>
+                            <th>Amount</th>
+                            <th>Purpose</th>
+                            <th>Company/Branch</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requisitions %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <code>PAY{{ req.requisition_id.hex|slice:":12"|upper }}</code>
+                            </td>
+                            <td>
+                                <i class="fas fa-user"></i>
+                                {{ req.requested_by.get_full_name|default:req.requested_by.username }}
+                            </td>
+                            <td>
+                                {% if req.requested_by.phone_number %}
+                                    <i class="fas fa-mobile-alt text-success"></i>
+                                    {{ req.requested_by.phone_number }}
+                                {% else %}
+                                    <span class="badge bg-danger">Missing</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{% currency_format req.amount %}</strong>
+                            </td>
+                            <td>{{ req.purpose|default:req.description|truncatewords:15 }}</td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ req.company.name }}<br>
+                                    {{ req.branch.name }}
+                                </small>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-2x mb-2"></i>
+                                <p>No payments selected</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                            <td colspan="3"><strong>{% currency_format total_amount %}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex gap-2 justify-content-end">
+                    <a href="{% url 'treasury:select_payments_for_bulk' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Selection
+                    </a>
+                    <button type="submit" 
+                            class="btn btn-success btn-lg" 
+                            onclick="return confirm('Are you sure you want to send {{ total_count }} payment(s) to M-Pesa API for processing?\n\nTotal Amount: {% currency_format total_amount %}')">
+                        <i class="fas fa-paper-plane"></i> Send to M-Pesa API
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- API Placeholder Notice -->
+    <div class="alert alert-secondary mt-4">
+        <strong><i class="fas fa-code"></i> Developer Note:</strong>
+        <p class="mb-0">
+            The M-Pesa API integration is currently a placeholder. To enable actual API submission:
+        </p>
+        <ul class="mt-2 mb-0">
+            <li>Configure M-Pesa credentials in settings (MPESA_SHORTCODE, MPESA_INITIATOR_NAME, etc.)</li>
+            <li>Uncomment the API request code in <code>send_to_mpesa_api()</code> view</li>
+            <li>Set up callback URLs for M-Pesa responses</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

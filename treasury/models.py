@@ -68,12 +68,36 @@ class Payment(models.Model):
     ]
     
     payment_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    requisition = models.ForeignKey(Requisition, on_delete=models.CASCADE, related_name='payments')
+    requisition = models.ForeignKey(
+        Requisition, 
+        on_delete=models.CASCADE, 
+        related_name='payments',
+        null=True,
+        blank=True,
+        help_text="Associated requisition (optional for bulk uploads)"
+    )
+    voucher_number = models.CharField(
+        max_length=50, 
+        unique=True, 
+        blank=True, 
+        null=True,
+        help_text="Unique voucher/document number for M-Pesa bulk payments"
+    )
     amount = models.DecimalField(max_digits=14, decimal_places=2)
     method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, default='mpesa')
     destination = models.CharField(max_length=255, help_text="Phone number, account, or recipient name")
+    description = models.TextField(blank=True, null=True, help_text="Purpose of payment")
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Creator (for bulk uploads)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_payments'
+    )
     
     # Executor segregation of duties
     executor = models.ForeignKey(

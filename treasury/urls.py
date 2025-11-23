@@ -14,6 +14,8 @@ from treasury.views_admin import (
     manage_payments, create_payment, execute_payment,
     view_ledger,
     manage_variances, create_variance, approve_variance,
+    select_payments_for_bulk, generate_mpesa_bulk, send_to_mpesa_api,
+    bulk_payment_upload, process_bulk_payments,
 )
 
 app_name = 'treasury'
@@ -50,6 +52,15 @@ html_patterns = [
     path('admin/payments/', manage_payments, name='manage_payments'),
     path('admin/payments/create/<uuid:requisition_id>/', create_payment, name='create_payment'),
     path('admin/payments/<uuid:payment_id>/execute/', execute_payment, name='execute_payment'),
+    
+    # Bulk payment processing (API-based workflow)
+    path('admin/bulk-payment/select/', select_payments_for_bulk, name='select_payments_for_bulk'),
+    path('admin/bulk-payment/generate/', generate_mpesa_bulk, name='generate_mpesa_bulk'),
+    path('admin/bulk-payment/send-api/', send_to_mpesa_api, name='send_to_mpesa_api'),
+    
+    # Alternative: Manual file upload (if needed)
+    path('admin/bulk-payment/upload/', bulk_payment_upload, name='bulk_payment_upload'),
+    path('admin/bulk-payment/process/', process_bulk_payments, name='process_bulk_payments'),
     
     path('admin/ledger/', view_ledger, name='view_ledger'),
     

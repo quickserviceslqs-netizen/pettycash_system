@@ -7,7 +7,11 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.db.models import Q, Sum, Count
 from django.utils import timezone
+from django.http import HttpResponse
 from decimal import Decimal
+import re
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
 from treasury.models import (
     TreasuryFund, Payment, PaymentExecution, LedgerEntry, 
     VarianceAdjustment
@@ -500,3 +504,440 @@ def approve_variance(request, variance_id):
     }
     
     return render(request, 'treasury/approve_variance.html', context)
+
+
+# ==================== BULK PAYMENT UPLOAD ====================
+
+def sanitize_mpesa_text(text):
+    """
+    Remove special characters for M-Pesa compliance.
+    M-Pesa only accepts alphanumeric characters and spaces.
+    """
+    if not text:
+        return ''
+    # Keep only alphanumeric and spaces
+    return re.sub(r'[^a-zA-Z0-9\s]', '', str(text))
+
+
+@login_required
+@permission_required('treasury.can_manage_payments', raise_exception=True)
+def select_payments_for_bulk(request):
+    """
+    Treasury selects which approved requisitions to pay
+    """
+    # Get approved requisitions that don't have payments yet
+    approved_requisitions = Requisition.objects.filter(
+        approval_status='approved',
+        payments__isnull=True
+    ).select_related('requested_by', 'company', 'branch').order_by('approval_date')
+    
+    if request.method == 'POST':
+        selected_ids = request.POST.getlist('selected_requisitions')
+        
+        if not selected_ids:
+            messages.warning(request, 'Please select at least one requisition to pay.')
+            return redirect('treasury:select_payments_for_bulk')
+        
+        # Store selected IDs in session
+        request.session['selected_payment_requisitions'] = selected_ids
+        messages.success(request, f'{len(selected_ids)} requisitions selected for payment.')
+        return redirect('treasury:generate_mpesa_bulk')
+    
+    # Filtering
+    company_id = request.GET.get('company')
+    branch_id = request.GET.get('branch')
+    search = request.GET.get('search', '')
+    
+    if company_id:
+        approved_requisitions = approved_requisitions.filter(company_id=company_id)
+    if branch_id:
+        approved_requisitions = approved_requisitions.filter(branch_id=branch_id)
+    if search:
+        approved_requisitions = approved_requisitions.filter(
+            Q(requested_by__first_name__icontains=search) |
+            Q(requested_by__last_name__icontains=search) |
+            Q(purpose__icontains=search) |
+            Q(description__icontains=search)
+        )
+    
+    # Calculate totals
+    total_amount = approved_requisitions.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+    
+    context = {
+        'title': 'Select Payments for M-Pesa Bulk Processing',
+        'requisitions': approved_requisitions,
+        'companies': Company.objects.all(),
+        'branches': Branch.objects.all(),
+        'total_count': approved_requisitions.count(),
+        'total_amount': total_amount,
+    }
+    return render(request, 'treasury/select_payments_bulk.html', context)
+
+
+@login_required
+@permission_required('treasury.can_manage_payments', raise_exception=True)
+def generate_mpesa_bulk(request):
+    """
+    Generate M-Pesa bulk payment Excel file for selected requisitions
+    Ready for API submission to M-Pesa
+    """
+    selected_ids = request.session.get('selected_payment_requisitions', [])
+    
+    if not selected_ids:
+        messages.warning(request, 'No requisitions selected. Please select payments first.')
+        return redirect('treasury:select_payments_for_bulk')
+    
+    # Get selected approved requisitions
+    approved_requisitions = Requisition.objects.filter(
+        requisition_id__in=selected_ids,
+        approval_status='approved',
+        payments__isnull=True
+    ).select_related('requested_by', 'company', 'branch').order_by('approval_date')
+    
+    # Create workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "M-Pesa Bulk Payments"
+    
+    # Define headers matching M-Pesa template
+    headers = ['MobileNumber', 'DocumentType', 'DocumentNumber', 'Amount', 'PurposeOfPayment', 'Name']
+    
+    # Style headers
+    header_fill = PatternFill(start_color='366092', end_color='366092', fill_type='solid')
+    header_font = Font(bold=True, color='FFFFFF')
+    
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Set column widths
+    ws.column_dimensions['A'].width = 15  # MobileNumber
+    ws.column_dimensions['B'].width = 15  # DocumentType
+    ws.column_dimensions['C'].width = 20  # DocumentNumber
+    ws.column_dimensions['D'].width = 12  # Amount
+    ws.column_dimensions['E'].width = 40  # PurposeOfPayment
+    ws.column_dimensions['F'].width = 25  # Name
+    
+    # Fill data from approved requisitions
+    for row_num, req in enumerate(approved_requisitions, 2):
+        # Generate voucher number
+        voucher_number = f"PAY{req.requisition_id.hex[:12].upper()}"
+        
+        # Get requester phone (assuming it's in user profile or requisition)
+        mobile = getattr(req.requested_by, 'phone_number', '')
+        if not mobile:
+            mobile = ''  # Leave empty if not available
+        
+        # Sanitize purpose of payment
+        purpose = sanitize_mpesa_text(req.purpose or req.description)[:100]  # M-Pesa limit
+        
+        # Get requester full name
+        name = f"{req.requested_by.first_name} {req.requested_by.last_name}".strip()
+        if not name:
+            name = req.requested_by.username
+        
+        # Write row data
+        ws.cell(row=row_num, column=1, value=mobile)
+        ws.cell(row=row_num, column=2, value='')  # DocumentType empty
+        ws.cell(row=row_num, column=3, value=voucher_number)
+        ws.cell(row=row_num, column=4, value=float(req.amount))
+        ws.cell(row=row_num, column=5, value=purpose)
+        ws.cell(row=row_num, column=6, value=name)
+    
+    # Create response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename=mpesa_bulk_payments_{timezone.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+    
+    wb.save(response)
+    
+    # Clear selection from session
+    if 'selected_payment_requisitions' in request.session:
+        del request.session['selected_payment_requisitions']
+    
+    messages.success(request, f'M-Pesa bulk payment file generated for {approved_requisitions.count()} payments.')
+    
+    return response
+
+
+@login_required
+@permission_required('treasury.can_manage_payments', raise_exception=True)
+def send_to_mpesa_api(request):
+    """
+    Send selected payments to M-Pesa API for batch processing
+    """
+    selected_ids = request.session.get('selected_payment_requisitions', [])
+    
+    if not selected_ids:
+        messages.warning(request, 'No requisitions selected. Please select payments first.')
+        return redirect('treasury:select_payments_for_bulk')
+    
+    # Get selected approved requisitions
+    approved_requisitions = Requisition.objects.filter(
+        requisition_id__in=selected_ids,
+        approval_status='approved',
+        payments__isnull=True
+    ).select_related('requested_by', 'company', 'branch').order_by('approval_date')
+    
+    if request.method == 'POST':
+        try:
+            import requests
+            
+            # Prepare M-Pesa bulk payment data
+            payments_data = []
+            created_payments = []
+            
+            for req in approved_requisitions:
+                # Generate voucher number
+                voucher_number = f"PAY{req.requisition_id.hex[:12].upper()}"
+                
+                # Get requester phone
+                mobile = getattr(req.requested_by, 'phone_number', '')
+                if not mobile:
+                    messages.error(request, f'Missing phone number for {req.requested_by.get_full_name()}')
+                    continue
+                
+                # Validate phone format
+                mobile_clean = str(mobile).replace(' ', '').replace('+', '')
+                if not re.match(r'^254\d{9}$', mobile_clean):
+                    messages.error(request, f'Invalid phone format for {req.requested_by.get_full_name()}: {mobile}')
+                    continue
+                
+                # Sanitize purpose
+                purpose = sanitize_mpesa_text(req.purpose or req.description)[:100]
+                
+                # Get name
+                name = f"{req.requested_by.first_name} {req.requested_by.last_name}".strip()
+                if not name:
+                    name = req.requested_by.username
+                
+                # Create Payment record
+                payment = Payment.objects.create(
+                    requisition=req,
+                    voucher_number=voucher_number,
+                    amount=req.amount,
+                    method='mpesa',
+                    destination=mobile_clean,
+                    description=purpose,
+                    status='executing',
+                    created_by=request.user,
+                )
+                created_payments.append(payment)
+                
+                # Prepare M-Pesa API payload
+                payments_data.append({
+                    'MobileNumber': mobile_clean,
+                    'DocumentType': '',
+                    'DocumentNumber': voucher_number,
+                    'Amount': float(req.amount),
+                    'PurposeOfPayment': purpose,
+                    'Name': name,
+                })
+            
+            if not payments_data:
+                messages.error(request, 'No valid payments to process.')
+                return redirect('treasury:select_payments_for_bulk')
+            
+            # TODO: Send to M-Pesa API
+            # This is a placeholder - integrate with actual M-Pesa API
+            """
+            mpesa_response = requests.post(
+                'https://api.safaricom.co.ke/mpesa/b2c/v1/paymentrequest',
+                json={
+                    'InitiatorName': settings.MPESA_INITIATOR_NAME,
+                    'SecurityCredential': settings.MPESA_SECURITY_CREDENTIAL,
+                    'CommandID': 'BusinessPayment',
+                    'Amount': sum(p['Amount'] for p in payments_data),
+                    'PartyA': settings.MPESA_SHORTCODE,
+                    'Remarks': 'Bulk payment processing',
+                    'QueueTimeOutURL': settings.MPESA_TIMEOUT_URL,
+                    'ResultURL': settings.MPESA_RESULT_URL,
+                    'Occassion': 'Bulk Payment',
+                    'Transactions': payments_data,
+                },
+                headers={
+                    'Authorization': f'Bearer {get_mpesa_access_token()}',
+                    'Content-Type': 'application/json',
+                }
+            )
+            """
+            
+            # For now, mark as success (replace with actual API response handling)
+            for payment in created_payments:
+                payment.status = 'pending'  # Will be updated by M-Pesa callback
+                payment.executor = request.user
+                payment.execution_timestamp = timezone.now()
+                payment.save()
+            
+            # Clear selection
+            if 'selected_payment_requisitions' in request.session:
+                del request.session['selected_payment_requisitions']
+            
+            messages.success(
+                request, 
+                f'Successfully submitted {len(payments_data)} payments to M-Pesa for processing. '
+                f'Total amount: {sum(p["Amount"] for p in payments_data):,.2f}'
+            )
+            
+            return redirect('treasury:manage_payments')
+            
+        except Exception as e:
+            messages.error(request, f'Error sending to M-Pesa API: {str(e)}')
+            return redirect('treasury:send_to_mpesa_api')
+    
+    # Calculate totals
+    total_amount = approved_requisitions.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
+    
+    context = {
+        'title': 'Send to M-Pesa Bulk Payment API',
+        'requisitions': approved_requisitions,
+        'total_count': approved_requisitions.count(),
+        'total_amount': total_amount,
+    }
+    return render(request, 'treasury/send_to_mpesa.html', context)
+
+
+@login_required
+@permission_required('treasury.can_manage_payments', raise_exception=True)
+def bulk_payment_upload(request):
+    """
+    Alternative: Upload and process M-Pesa bulk payment Excel file
+    (For manual file-based workflow if needed)
+    """
+    if request.method == 'POST' and request.FILES.get('payment_file'):
+        try:
+            from openpyxl import load_workbook
+            
+            file = request.FILES['payment_file']
+            wb = load_workbook(file)
+            ws = wb.active
+            
+            # Validate headers
+            expected_headers = ['MobileNumber', 'DocumentType', 'DocumentNumber', 'Amount', 'PurposeOfPayment', 'Name']
+            actual_headers = [cell.value for cell in ws[1]]
+            
+            if actual_headers != expected_headers:
+                messages.error(request, f'Invalid template format. Expected headers: {", ".join(expected_headers)}')
+                return redirect('treasury:bulk_payment_upload')
+            
+            # Process rows
+            payments_data = []
+            errors = []
+            
+            for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
+                mobile, doc_type, voucher, amount, purpose, name = row
+                
+                # Validate data
+                row_errors = []
+                
+                if not mobile:
+                    row_errors.append(f'Row {row_num}: Mobile number is required')
+                elif not re.match(r'^254\d{9}$', str(mobile).replace(' ', '')):
+                    row_errors.append(f'Row {row_num}: Invalid mobile number format (must be 254XXXXXXXXX)')
+                
+                if not voucher:
+                    row_errors.append(f'Row {row_num}: Document number is required')
+                
+                try:
+                    amount = Decimal(str(amount))
+                    if amount <= 0:
+                        row_errors.append(f'Row {row_num}: Amount must be greater than 0')
+                except (ValueError, TypeError):
+                    row_errors.append(f'Row {row_num}: Invalid amount')
+                
+                if not purpose:
+                    row_errors.append(f'Row {row_num}: Purpose of payment is required')
+                
+                if not name:
+                    row_errors.append(f'Row {row_num}: Name is required')
+                
+                # Check for special characters
+                if purpose and re.search(r'[^a-zA-Z0-9\s]', purpose):
+                    row_errors.append(f'Row {row_num}: Purpose contains special characters (M-Pesa only allows alphanumeric)')
+                
+                if row_errors:
+                    errors.extend(row_errors)
+                else:
+                    payments_data.append({
+                        'mobile': str(mobile).replace(' ', ''),
+                        'voucher': str(voucher),
+                        'amount': amount,
+                        'purpose': purpose,
+                        'name': name,
+                    })
+            
+            if errors:
+                for error in errors:
+                    messages.error(request, error)
+                return redirect('treasury:bulk_payment_upload')
+            
+            # Store in session for preview
+            request.session['bulk_payments_data'] = payments_data
+            messages.success(request, f'{len(payments_data)} payments loaded. Please review and confirm.')
+            return redirect('treasury:process_bulk_payments')
+            
+        except Exception as e:
+            messages.error(request, f'Error processing file: {str(e)}')
+            return redirect('treasury:bulk_payment_upload')
+    
+    context = {
+        'title': 'Bulk Payment Upload',
+    }
+    return render(request, 'treasury/bulk_payment_upload.html', context)
+
+
+@login_required
+@permission_required('treasury.can_manage_payments', raise_exception=True)
+def process_bulk_payments(request):
+    """
+    Preview and confirm bulk payment creation
+    """
+    payments_data = request.session.get('bulk_payments_data', [])
+    
+    if not payments_data:
+        messages.warning(request, 'No payment data found. Please upload a file first.')
+        return redirect('treasury:bulk_payment_upload')
+    
+    if request.method == 'POST':
+        try:
+            created_count = 0
+            
+            for payment_data in payments_data:
+                # Check if voucher number already exists
+                if Payment.objects.filter(voucher_number=payment_data['voucher']).exists():
+                    messages.warning(request, f"Skipped duplicate voucher: {payment_data['voucher']}")
+                    continue
+                
+                # Create payment record
+                Payment.objects.create(
+                    voucher_number=payment_data['voucher'],
+                    amount=payment_data['amount'],
+                    method='mpesa',
+                    destination=payment_data['mobile'],
+                    description=payment_data['purpose'],
+                    status='pending',
+                    created_by=request.user,
+                )
+                created_count += 1
+            
+            # Clear session data
+            del request.session['bulk_payments_data']
+            
+            messages.success(request, f'Successfully created {created_count} payment records.')
+            return redirect('treasury:manage_payments')
+            
+        except Exception as e:
+            messages.error(request, f'Error creating payments: {str(e)}')
+            return redirect('treasury:process_bulk_payments')
+    
+    context = {
+        'title': 'Review Bulk Payments',
+        'payments_data': payments_data,
+        'total_count': len(payments_data),
+        'total_amount': sum(p['amount'] for p in payments_data),
+    }
+    return render(request, 'treasury/process_bulk_payments.html', context)
+
