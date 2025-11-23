@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Approval Threshold{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Create New Approval Threshold</h2>
+        <a href="{% url 'workflow:manage_thresholds' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Thresholds
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Info -->
+                        <h5 class="mb-3">Basic Information</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Threshold Name <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control" required 
+                                       placeholder="e.g., Tier 1, Small Purchases">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Origin Type <span class="text-danger">*</span></label>
+                                <select name="origin_type" class="form-select" required>
+                                    <option value="">Select...</option>
+                                    {% for value, label in origin_choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Priority</label>
+                                <input type="number" name="priority" class="form-control" value="0" min="0"
+                                       title="Lower number = higher priority">
+                            </div>
+                        </div>
+
+                        <!-- Amount Range -->
+                        <h5 class="mb-3 mt-4">Amount Range</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Minimum Amount</label>
+                                <input type="number" name="min_amount" class="form-control" step="0.01" min="0" value="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Maximum Amount</label>
+                                <input type="number" name="max_amount" class="form-control" step="0.01" min="0" value="999999999">
+                            </div>
+                        </div>
+
+                        <!-- Approval Chain -->
+                        <h5 class="mb-3 mt-4">Approval Chain <span class="text-danger">*</span></h5>
+                        <div id="rolesContainer" class="mb-3">
+                            <div class="role-item mb-2">
+                                <div class="input-group">
+                                    <span class="input-group-text">1st Approver</span>
+                                    <select name="roles" class="form-select" required>
+                                        <option value="">Select role...</option>
+                                        {% for value, label in available_roles %}
+                                            <option value="{{ value }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="button" class="btn btn-outline-danger" onclick="removeRole(this)" disabled>
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRole()">
+                            <i class="fas fa-plus"></i> Add Approval Level
+                        </button>
+
+                        <!-- Options -->
+                        <h5 class="mb-3 mt-4">Options</h5>
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="allow_urgent_fasttrack" class="form-check-input" id="fasttrack">
+                            <label class="form-check-label" for="fasttrack">
+                                Allow Urgent Fast-Track (skip intermediate approvals)
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="requires_cfo" class="form-check-input" id="cfo">
+                            <label class="form-check-label" for="cfo">
+                                Requires CFO Approval
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input type="checkbox" name="requires_ceo" class="form-check-input" id="ceo">
+                            <label class="form-check-label" for="ceo">
+                                Requires CEO Approval
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input type="checkbox" name="is_active" class="form-check-input" id="active" checked>
+                            <label class="form-check-label" for="active">
+                                Active (enable this threshold)
+                            </label>
+                        </div>
+
+                        <!-- Submit -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'workflow:manage_thresholds' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Threshold</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5>Help</h5>
+                    <p><strong>Priority:</strong> Lower number = higher priority when ranges overlap.</p>
+                    <p><strong>Origin Type:</strong> Where the requisition originates (Branch, HQ, Field, or Any).</p>
+                    <p><strong>Approval Chain:</strong> Roles that must approve in sequence from top to bottom.</p>
+                    <p><strong>Fast-Track:</strong> Urgent requests can skip to final approvers.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let roleCounter = 1;
+
+function addRole() {
+    roleCounter++;
+    const container = document.getElementById('rolesContainer');
+    const div = document.createElement('div');
+    div.className = 'role-item mb-2';
+    div.innerHTML = `
+        <div class="input-group">
+            <span class="input-group-text">${getOrdinal(roleCounter)} Approver</span>
+            <select name="roles" class="form-select" required>
+                <option value="">Select role...</option>
+                {% for value, label in available_roles %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="button" class="btn btn-outline-danger" onclick="removeRole(this)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+function removeRole(button) {
+    button.closest('.role-item').remove();
+    roleCounter--;
+    updateRoleLabels();
+}
+
+function updateRoleLabels() {
+    const roleItems = document.querySelectorAll('.role-item');
+    roleItems.forEach((item, index) => {
+        item.querySelector('.input-group-text').textContent = `${getOrdinal(index + 1)} Approver`;
+        const removeBtn = item.querySelector('.btn-outline-danger');
+        removeBtn.disabled = roleItems.length === 1;
+    });
+    roleCounter = roleItems.length;
+}
+
+function getOrdinal(n) {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+</script>
+{% endblock %}

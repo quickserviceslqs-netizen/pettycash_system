@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Approval Thresholds{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Approval Thresholds</h2>
+        <a href="{% url 'workflow:create_threshold' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create New Threshold
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Origin Type</label>
+                    <select name="origin" class="form-select">
+                        <option value="">All Origins</option>
+                        {% for value, label in origin_choices %}
+                            <option value="{{ value }}" {% if origin_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-secondary me-2">Apply Filters</button>
+                    <a href="{% url 'workflow:manage_thresholds' %}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Thresholds Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if thresholds %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Priority</th>
+                                <th>Name</th>
+                                <th>Origin</th>
+                                <th>Amount Range</th>
+                                <th>Approval Chain</th>
+                                <th>Flags</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for threshold in thresholds %}
+                                <tr>
+                                    <td>{{ threshold.priority }}</td>
+                                    <td><strong>{{ threshold.name }}</strong></td>
+                                    <td><span class="badge bg-info">{{ threshold.get_origin_type_display }}</span></td>
+                                    <td>
+                                        ${{ threshold.min_amount|floatformat:2 }} - ${{ threshold.max_amount|floatformat:2 }}
+                                    </td>
+                                    <td>
+                                        <small>
+                                            {% for role in threshold.roles_sequence %}
+                                                <span class="badge bg-secondary me-1">{{ forloop.counter }}. {{ role }}</span>
+                                            {% endfor %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if threshold.allow_urgent_fasttrack %}
+                                            <span class="badge bg-warning text-dark" title="Allows urgent fast-track">⚡ Fast</span>
+                                        {% endif %}
+                                        {% if threshold.requires_cfo %}
+                                            <span class="badge bg-primary" title="Requires CFO approval">CFO</span>
+                                        {% endif %}
+                                        {% if threshold.requires_ceo %}
+                                            <span class="badge bg-danger" title="Requires CEO approval">CEO</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="post" action="{% url 'workflow:toggle_threshold_status' threshold.id %}" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-{{ threshold.is_active|yesno:'success,secondary' }}">
+                                                {{ threshold.is_active|yesno:'Active,Inactive' }}
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'workflow:edit_threshold' threshold.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete({{ threshold.id }}, '{{ threshold.name }}')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No approval thresholds found. 
+                    <a href="{% url 'workflow:create_threshold' %}">Create your first threshold</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the threshold "<strong id="thresholdName"></strong>"?
+                This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(thresholdId, thresholdName) {
+    document.getElementById('thresholdName').textContent = thresholdName;
+    document.getElementById('deleteForm').action = `/workflow/admin/thresholds/${thresholdId}/delete/`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}
