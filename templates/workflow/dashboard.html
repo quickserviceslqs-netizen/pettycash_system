@@ -13,7 +13,7 @@
             <small class="text-muted">Approval thresholds and routing configuration</small>
         </div>
         <div class="col-md-4 text-end">
-            {% if user.is_superuser or user.has_perm:"workflow.add_approvalthreshold" %}
+            {% if user.is_superuser or perms.workflow.add_approvalthreshold %}
             <a href="/admin/workflow/approvalthreshold/add/" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Add Threshold
             </a>
@@ -178,7 +178,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if user.is_superuser or user.has_perm:"workflow.change_approvalthreshold" %}
+                                        {% if user.is_superuser or perms.workflow.change_approvalthreshold %}
                                         <a href="/admin/workflow/approvalthreshold/{{ threshold.id }}/change/" 
                                            class="btn btn-sm btn-outline-primary" 
                                            title="Edit">
