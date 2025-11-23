@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Import Organizations{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-building"></i> Bulk Import Organizations</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-info-circle"></i> Organizational Hierarchy</h5>
+                        <p class="mb-0">
+                            <strong>Company</strong> → <strong>Region</strong> → <strong>Branch</strong> → <strong>Department</strong>
+                        </p>
+                        <small class="text-muted">Import in this order for best results</small>
+                    </div>
+                    
+                    <!-- Current Stats -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">Companies</h6>
+                                    <h2 class="mb-0">{{ companies_count }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">Regions</h6>
+                                    <h2 class="mb-0">{{ regions_count }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">Branches</h6>
+                                    <h2 class="mb-0">{{ branches_count }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <h6 class="text-muted">Departments</h6>
+                                    <h2 class="mb-0">{{ departments_count }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Import Cards -->
+                    <div class="row">
+                        <!-- Companies -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-primary h-100">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">1. Companies</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>CSV Format:</strong> <code>name, code</code></p>
+                                    <p class="small text-muted">Top-level organization entities. Import these first.</p>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'download_companies_template' %}" class="btn btn-outline-primary">
+                                            <i class="bi bi-download"></i> Download Template
+                                        </a>
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadCompaniesModal">
+                                            <i class="bi bi-upload"></i> Upload CSV
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Regions -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-info h-100">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">2. Regions</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>CSV Format:</strong> <code>name, code, company_name</code></p>
+                                    <p class="small text-muted">Geographic regions within companies. Requires companies to exist first.</p>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'download_regions_template' %}" class="btn btn-outline-info">
+                                            <i class="bi bi-download"></i> Download Template
+                                        </a>
+                                        <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#uploadRegionsModal">
+                                            <i class="bi bi-upload"></i> Upload CSV
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Branches -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-warning h-100">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="mb-0">3. Branches</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>CSV Format:</strong> <code>name, code, phone, region_name, company_name</code></p>
+                                    <p class="small text-muted">Physical locations within regions. Requires regions to exist first.</p>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'download_branches_template' %}" class="btn btn-outline-warning">
+                                            <i class="bi bi-download"></i> Download Template
+                                        </a>
+                                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#uploadBranchesModal">
+                                            <i class="bi bi-upload"></i> Upload CSV
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Departments -->
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-success h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0">4. Departments</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>CSV Format:</strong> <code>name, branch_name</code></p>
+                                    <p class="small text-muted">Functional units within branches. Requires branches to exist first.</p>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'download_departments_template' %}" class="btn btn-outline-success">
+                                            <i class="bi bi-download"></i> Download Template
+                                        </a>
+                                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadDepartmentsModal">
+                                            <i class="bi bi-upload"></i> Upload CSV
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3">
+                        <h6><i class="bi bi-exclamation-triangle"></i> Important Notes</h6>
+                        <ul class="mb-0">
+                            <li><strong>Import Order:</strong> Companies → Regions → Branches → Departments</li>
+                            <li><strong>Exact Names:</strong> Parent entity names must match exactly (case-insensitive)</li>
+                            <li><strong>Unique Codes:</strong> Company, Region, and Branch codes must be unique across the entire system</li>
+                            <li><strong>Templates Include:</strong> Instructions and list of available parent entities</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modals -->
+
+<!-- Companies Upload Modal -->
+<div class="modal fade" id="uploadCompaniesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Upload Companies CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'import_companies' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="companies_csv" class="form-label">Select CSV File</label>
+                        <input type="file" class="form-control" id="companies_csv" name="csv_file" accept=".csv" required>
+                    </div>
+                    <div class="alert alert-info small">
+                        <strong>Expected format:</strong> name, code
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Upload & Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Regions Upload Modal -->
+<div class="modal fade" id="uploadRegionsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Upload Regions CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'import_regions' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="regions_csv" class="form-label">Select CSV File</label>
+                        <input type="file" class="form-control" id="regions_csv" name="csv_file" accept=".csv" required>
+                    </div>
+                    <div class="alert alert-info small">
+                        <strong>Expected format:</strong> name, code, company_name
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white">
+                        <i class="bi bi-upload"></i> Upload & Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Branches Upload Modal -->
+<div class="modal fade" id="uploadBranchesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Upload Branches CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'import_branches' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="branches_csv" class="form-label">Select CSV File</label>
+                        <input type="file" class="form-control" id="branches_csv" name="csv_file" accept=".csv" required>
+                    </div>
+                    <div class="alert alert-info small">
+                        <strong>Expected format:</strong> name, code, phone, region_name, company_name
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-upload"></i> Upload & Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Departments Upload Modal -->
+<div class="modal fade" id="uploadDepartmentsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Upload Departments CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'import_departments' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="departments_csv" class="form-label">Select CSV File</label>
+                        <input type="file" class="form-control" id="departments_csv" name="csv_file" accept=".csv" required>
+                    </div>
+                    <div class="alert alert-info small">
+                        <strong>Expected format:</strong> name, branch_name
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-upload"></i> Upload & Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -31,6 +31,7 @@ urlpatterns = [
     path('workflow/', include('workflow.urls')),
     path('reports/', include('reports.urls')),
     path('settings/', include('settings_manager.urls')),
+    path('organization/', include('organization.urls')),
     # API alias for reporting endpoints (keeps legacy JS and templates working)
     path('api/reporting/', include('reports.api_urls')),
 ]
