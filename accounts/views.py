@@ -62,17 +62,19 @@ def dashboard(request):
     is_centralized = getattr(user, "is_centralized_approver", False)
 
     # ----------------------------
-    # Apps navigation - use assigned_apps ONLY (no role fallback)
+    # Apps navigation - use get_user_apps helper (supports superuser bypass)
     # ----------------------------
-    # Get apps assigned to this user
-    assigned_apps = user.assigned_apps.filter(is_active=True).values_list('name', flat=True)
+    from accounts.permissions import get_user_apps
+    
+    # Get apps for this user (superusers get all apps automatically)
+    user_apps = get_user_apps(user)
     
     navigation = [
         {
             "name": app.capitalize() if isinstance(app, str) else app, 
             "url": f"/{app}/"
         } 
-        for app in assigned_apps
+        for app in user_apps
     ]
     show_no_apps_cta = not navigation
 
