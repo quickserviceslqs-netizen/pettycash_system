@@ -89,6 +89,12 @@ urlpatterns = [
     path('users/<int:user_id>/toggle-status/', views_admin.toggle_user_status, name='toggle_user_status'),
     path('bulk-assign-app/', views_admin.bulk_assign_app, name='bulk_assign_app'),
     
+    # Permission Groups Management
+    path('groups/', views_admin.manage_groups, name='manage_groups'),
+    path('groups/create/', views_admin.create_group, name='create_group'),
+    path('groups/<int:group_id>/edit/', views_admin.edit_group, name='edit_group'),
+    path('groups/<int:group_id>/delete/', views_admin.delete_group, name='delete_group'),
+    
     # Device blocking and registration
     path('device-blocked/', views_invitation.device_blocked, name='device_blocked'),
     path('request-device/', views_invitation.request_device_registration, name='request_device'),

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Group: {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2><i class="bi bi-pencil-square"></i> Edit Permission Group</h2>
+            <p class="text-muted">{{ group.name }}</p>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{% url 'accounts:manage_groups' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Groups
+            </a>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-info-circle"></i> Group Details
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Group Name *</label>
+                    <input type="text" class="form-control" id="name" name="name" required
+                           value="{{ group.name }}">
+                </div>
+                <div class="alert alert-info">
+                    <i class="bi bi-people"></i> This group has <strong>{{ group.user_set.count }}</strong> member(s)
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <i class="bi bi-shield-lock"></i> Assign Permissions
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Select permissions that all members of this group will inherit.</p>
+                
+                {% for app_label, perms in permissions_by_app.items %}
+                <div class="mb-4">
+                    <h6 class="text-uppercase text-primary border-bottom pb-2">
+                        <i class="bi bi-app"></i> {{ app_label|title }}
+                    </h6>
+                    <div class="row">
+                        {% for perm in perms %}
+                        <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="perm_{{ perm.id }}" name="permissions" value="{{ perm.id }}"
+                                       {% if perm.id in group_permission_ids %}checked{% endif %}>
+                                <label class="form-check-label" for="perm_{{ perm.id }}">
+                                    <strong>{{ perm.name }}</strong>
+                                    <br><small class="text-muted">{{ perm.model }} - {{ perm.codename }}</small>
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted">No permissions available</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-save"></i> Save Changes
+            </button>
+            <a href="{% url 'accounts:manage_groups' %}" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

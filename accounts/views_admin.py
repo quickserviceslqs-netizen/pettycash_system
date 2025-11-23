@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.http import JsonResponse
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from accounts.models import User, App
 from organization.models import Company, Branch, Department
@@ -108,6 +108,11 @@ def edit_user_permissions(request, user_id):
         permissions = Permission.objects.filter(id__in=permission_ids)
         user_to_edit.user_permissions.set(permissions)
         
+        # Update groups
+        group_ids = request.POST.getlist('groups')
+        groups = Group.objects.filter(id__in=group_ids)
+        user_to_edit.groups.set(groups)
+        
         user_to_edit.save()
         
         messages.success(request, f'User {user_to_edit.username} updated successfully!')
@@ -142,6 +147,10 @@ def edit_user_permissions(request, user_id):
     
     user_permission_ids = list(user_to_edit.user_permissions.values_list('id', flat=True))
     
+    # Get all groups
+    all_groups = Group.objects.all().order_by('name')
+    user_group_ids = list(user_to_edit.groups.values_list('id', flat=True))
+    
     context = {
         'user_to_edit': user_to_edit,
         'all_apps': all_apps,
@@ -152,6 +161,8 @@ def edit_user_permissions(request, user_id):
         'roles': User.ROLE_CHOICES,
         'permissions_by_app': permissions_by_app,
         'user_permission_ids': user_permission_ids,
+        'all_groups': all_groups,
+        'user_group_ids': user_group_ids,
     }
     
     return render(request, 'accounts/edit_user_permissions.html', context)
@@ -197,3 +208,138 @@ def bulk_assign_app(request):
             messages.error(request, 'Please select users and an app.')
     
     return redirect('accounts:manage_users')
+
+
+# ==========================================
+# Permission Groups Management
+# ==========================================
+
+@login_required
+@permission_required('auth.view_group', raise_exception=True)
+def manage_groups(request):
+    """View and manage permission groups"""
+    groups = Group.objects.annotate(
+        num_users=Count('user'),
+        num_permissions=Count('permissions')
+    ).order_by('name')
+    
+    context = {
+        'groups': groups,
+    }
+    
+    return render(request, 'accounts/manage_groups.html', context)
+
+
+@login_required
+@permission_required('auth.add_group', raise_exception=True)
+def create_group(request):
+    """Create a new permission group"""
+    if request.method == 'POST':
+        group_name = request.POST.get('name')
+        permission_ids = request.POST.getlist('permissions')
+        
+        if group_name:
+            group = Group.objects.create(name=group_name)
+            
+            if permission_ids:
+                permissions = Permission.objects.filter(id__in=permission_ids)
+                group.permissions.set(permissions)
+            
+            messages.success(request, f'Group "{group_name}" created successfully!')
+            return redirect('accounts:manage_groups')
+        else:
+            messages.error(request, 'Group name is required.')
+    
+    # GET request - show form
+    content_types = ContentType.objects.filter(
+        app_label__in=['transactions', 'workflow', 'treasury', 'reports', 'accounts', 'organization', 'settings_manager']
+    ).order_by('app_label', 'model')
+    
+    permissions_by_app = {}
+    for ct in content_types:
+        app_label = ct.app_label
+        if app_label not in permissions_by_app:
+            permissions_by_app[app_label] = []
+        
+        perms = Permission.objects.filter(content_type=ct).order_by('codename')
+        for perm in perms:
+            permissions_by_app[app_label].append({
+                'id': perm.id,
+                'name': perm.name,
+                'codename': perm.codename,
+                'model': ct.model,
+            })
+    
+    context = {
+        'permissions_by_app': permissions_by_app,
+    }
+    
+    return render(request, 'accounts/create_group.html', context)
+
+
+@login_required
+@permission_required('auth.change_group', raise_exception=True)
+def edit_group(request, group_id):
+    """Edit an existing permission group"""
+    group = get_object_or_404(Group, id=group_id)
+    
+    if request.method == 'POST':
+        group_name = request.POST.get('name')
+        permission_ids = request.POST.getlist('permissions')
+        
+        if group_name:
+            group.name = group_name
+            group.save()
+            
+            permissions = Permission.objects.filter(id__in=permission_ids)
+            group.permissions.set(permissions)
+            
+            messages.success(request, f'Group "{group_name}" updated successfully!')
+            return redirect('accounts:manage_groups')
+        else:
+            messages.error(request, 'Group name is required.')
+    
+    # GET request - show form
+    content_types = ContentType.objects.filter(
+        app_label__in=['transactions', 'workflow', 'treasury', 'reports', 'accounts', 'organization', 'settings_manager']
+    ).order_by('app_label', 'model')
+    
+    permissions_by_app = {}
+    for ct in content_types:
+        app_label = ct.app_label
+        if app_label not in permissions_by_app:
+            permissions_by_app[app_label] = []
+        
+        perms = Permission.objects.filter(content_type=ct).order_by('codename')
+        for perm in perms:
+            permissions_by_app[app_label].append({
+                'id': perm.id,
+                'name': perm.name,
+                'codename': perm.codename,
+                'model': ct.model,
+            })
+    
+    group_permission_ids = list(group.permissions.values_list('id', flat=True))
+    
+    context = {
+        'group': group,
+        'permissions_by_app': permissions_by_app,
+        'group_permission_ids': group_permission_ids,
+    }
+    
+    return render(request, 'accounts/edit_group.html', context)
+
+
+@login_required
+@permission_required('auth.delete_group', raise_exception=True)
+def delete_group(request, group_id):
+    """Delete a permission group"""
+    group = get_object_or_404(Group, id=group_id)
+    
+    if request.method == 'POST':
+        group_name = group.name
+        group.delete()
+        messages.success(request, f'Group "{group_name}" deleted successfully!')
+    
+    return redirect('accounts:manage_groups')
+
