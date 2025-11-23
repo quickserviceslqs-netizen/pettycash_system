@@ -33,6 +33,79 @@
     {% endfor %}
 {% endif %}
 
+<!-- Notification: Changes Requested (for requester) -->
+{% if user.id == requisition.requested_by.id and requisition.status == 'pending_changes' %}
+    <div style="padding:25px; background:#fff3cd; border-left:5px solid #ff9800; margin-bottom:20px; border-radius:5px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+        <h4 style="margin-top:0; color:#856404;">
+            <i class="bi bi-pencil-square"></i> Changes Requested by Approver
+        </h4>
+        <p style="margin-bottom:10px; color:#856404;">
+            <strong>{{ requisition.change_requested_by.get_full_name|default:requisition.change_requested_by.username }}</strong> has requested changes before approving your requisition.
+        </p>
+        
+        <div style="padding:15px; background:#fff; border:1px solid #ff9800; border-radius:3px; margin:15px 0;">
+            <strong style="color:#856404;">Changes Required:</strong>
+            <p style="margin:10px 0 0 0; color:#212529; white-space:pre-wrap;">{{ requisition.change_request_details }}</p>
+        </div>
+        
+        <div style="padding:12px; background:#dc3545; color:#fff; border-radius:3px; margin:15px 0; font-weight:bold;">
+            <i class="bi bi-clock-fill"></i> DEADLINE: {{ requisition.change_request_deadline|date:"F d, Y - g:i A" }}
+            {% if requisition.change_request_deadline %}
+                <span style="font-size:0.9em; font-weight:normal;">
+                    ({% now "U" as current_time %}
+                    {% if requisition.change_request_deadline|date:"U"|add:"0" > current_time %}
+                        {{ requisition.change_request_deadline|timeuntil }} remaining
+                    {% else %}
+                        EXPIRED
+                    {% endif %})
+                </span>
+            {% endif %}
+        </div>
+        
+        <!-- Change Response Form -->
+        <form method="post" action="{% url 'submit-changes' requisition.transaction_id %}" enctype="multipart/form-data" style="margin-top:20px;">
+            {% csrf_token %}
+            
+            <div style="margin-bottom:15px;">
+                <label style="display:block; margin-bottom:8px; font-weight:bold; color:#495057;">
+                    Explain What You've Changed: <span style="color:#dc3545;">*</span>
+                </label>
+                <textarea 
+                    name="change_response" 
+                    rows="4" 
+                    required
+                    placeholder="Describe the changes you've made in response to the request..."
+                    style="width:100%; padding:10px; border:1px solid #ced4da; border-radius:5px; font-family:inherit; resize:vertical;"
+                ></textarea>
+            </div>
+            
+            <div style="margin-bottom:15px;">
+                <label style="display:block; margin-bottom:8px; font-weight:bold; color:#495057;">
+                    Upload New Receipt (if requested):
+                </label>
+                <input type="file" name="new_receipt" accept=".pdf,.jpg,.jpeg,.png" 
+                       style="padding:8px; border:1px solid #ced4da; border-radius:5px; width:100%;">
+                <small style="color:#6c757d;">Current: {{ requisition.receipt.name|default:"No receipt uploaded" }}</small>
+            </div>
+            
+            <div style="margin-bottom:15px;">
+                <label style="display:block; margin-bottom:8px; font-weight:bold; color:#495057;">
+                    Update Amount (if changed):
+                </label>
+                <input type="number" step="0.01" name="new_amount" value="{{ requisition.amount }}" 
+                       style="width:100%; padding:10px; border:1px solid #ced4da; border-radius:5px;">
+            </div>
+            
+            <div style="text-align:right;">
+                <button type="submit" 
+                        style="padding:12px 25px; background:#28a745; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:1.05em;">
+                    <i class="bi bi-check-circle"></i> Submit Changes
+                </button>
+            </div>
+        </form>
+    </div>
+{% endif %}
+
 <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
     <tr>
         <th style="text-align:left; padding:8px; border-bottom:1px solid #ccc;">Transaction ID</th>
@@ -325,6 +398,11 @@
             </button>
         {% endif %}
     </form>
+    
+    <button type="button" onclick="document.getElementById('requestChangesModal').style.display='block'" 
+            style="padding:10px 15px; background:#ff9800; color:#fff; border:none; border-radius:5px; cursor:pointer; margin-left:10px; font-weight:bold;">
+        📝 Request Changes
+    </button>
 
     <form method="post" action="{% url 'reject-requisition' requisition.transaction_id %}" style="display:inline; margin-left:10px;">
         {% csrf_token %}
@@ -480,6 +558,67 @@
                         onclick="return confirm('Are you sure you want to revert this requisition to normal approval flow? This will restart the approval process.')"
                         style="padding:10px 20px; background:#ffc107; color:#000; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">
                     ⚠️ Revert to Normal Flow
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Request Changes Modal -->
+<div id="requestChangesModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
+    <div style="background-color:#fff; margin:5% auto; padding:30px; border-radius:10px; width:90%; max-width:700px; box-shadow:0 4px 6px rgba(0,0,0,0.3);">
+        <h3 style="margin-top:0; color:#ff9800;">
+            <i class="bi bi-pencil-square"></i> Request Changes from Requester
+        </h3>
+        
+        <div style="padding:15px; background:#fff3cd; border-left:4px solid #ff9800; margin-bottom:20px;">
+            <p style="margin:0; color:#856404;">
+                <strong>Instead of rejecting,</strong> you can request specific changes or clarifications from the requester.
+            </p>
+            <ul style="color:#856404; margin:10px 0 0 0;">
+                <li>Requester will be notified via email</li>
+                <li>Requisition returns to requester for updates</li>
+                <li>After changes are submitted, it comes back to you for review</li>
+                <li>Deadline auto-rejects if no response</li>
+            </ul>
+        </div>
+        
+        <form method="post" action="{% url 'request-changes' requisition.transaction_id %}">
+            {% csrf_token %}
+            <div style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:8px; font-weight:bold; color:#495057;">
+                    What changes do you need? <span style="color:#dc3545;">*</span>
+                </label>
+                <textarea 
+                    name="change_details" 
+                    rows="5" 
+                    required
+                    placeholder="Examples:&#10;- Please upload eTIMS receipt instead of handwritten receipt&#10;- Amount differs from receipt - please justify&#10;- Provide more details on the purpose&#10;- Attach supporting quotation/invoice"
+                    style="width:100%; padding:12px; border:1px solid #ced4da; border-radius:5px; font-family:inherit; resize:vertical;"
+                ></textarea>
+            </div>
+            
+            <div style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:8px; font-weight:bold; color:#495057;">
+                    Response Deadline:
+                </label>
+                <select name="deadline_hours" style="width:100%; padding:10px; border:1px solid #ced4da; border-radius:5px;">
+                    <option value="24">24 hours</option>
+                    <option value="48" selected>48 hours (2 days)</option>
+                    <option value="72">72 hours (3 days)</option>
+                    <option value="168">1 week</option>
+                </select>
+                <small style="color:#6c757d;">If requester doesn't respond by deadline, requisition will be auto-rejected</small>
+            </div>
+            
+            <div style="text-align:right;">
+                <button type="button" onclick="document.getElementById('requestChangesModal').style.display='none'" 
+                        style="padding:10px 20px; background:#6c757d; color:#fff; border:none; border-radius:5px; cursor:pointer; margin-right:10px;">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        style="padding:10px 20px; background:#ff9800; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">
+                    <i class="bi bi-send"></i> Send Change Request
                 </button>
             </div>
         </form>

@@ -20,6 +20,7 @@ class Requisition(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Draft'),
         ('pending', 'Pending'),
+        ('pending_changes', 'Pending Changes from Requester'),
         ('pending_urgency_confirmation', 'Pending Urgency Confirmation'),
         ('pending_dept_approval', 'Pending Department Approval'),
         ('pending_branch_approval', 'Pending Branch Approval'),
@@ -62,6 +63,16 @@ class Requisition(models.Model):
     workflow_sequence = models.JSONField(blank=True, null=True)
     is_fast_tracked = models.BooleanField(default=False, help_text="True if requisition skipped intermediate approvers")
     original_workflow_sequence = models.JSONField(blank=True, null=True, help_text="Original full workflow before fast-tracking")
+    
+    # Change request fields
+    change_requested = models.BooleanField(default=False, help_text="True if approver requested changes")
+    change_request_details = models.TextField(blank=True, null=True, help_text="Specific changes requested by approver")
+    change_requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='change_requests_made'
+    )
+    change_request_deadline = models.DateTimeField(null=True, blank=True, help_text="Deadline for requester to respond")
+    
     next_approver = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, related_name='next_approvals'
@@ -174,7 +185,9 @@ class ApprovalTrail(models.Model):
         ('reviewed', 'Reviewed'),  # Used by FP&A (post-payment review)
         ('rejected', 'Rejected'),  # Can be used by any role
         ('urgency_confirmed', 'Urgency Confirmed'),  # Phase 3: First approver confirms urgency
-        ('reverted_to_normal', 'Reverted to Normal Flow')  # Fast-track reverted to normal approval sequence
+        ('reverted_to_normal', 'Reverted to Normal Flow'),  # Fast-track reverted to normal approval sequence
+        ('changes_requested', 'Changes Requested'),  # Approver requests changes from requester
+        ('changes_submitted', 'Changes Submitted')  # Requester submitted requested changes
     ])
     comment = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)

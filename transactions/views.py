@@ -362,6 +362,233 @@ def reject_requisition(request, requisition_id):
 
 @login_required
 @transaction.atomic
+def request_changes(request, requisition_id):
+    """
+    Approver requests changes from requester instead of rejecting.
+    Sets deadline for response and returns requisition to requester.
+    """
+    from datetime import timedelta
+    
+    # Check if user has workflow app assigned
+    user_apps = get_user_apps(request.user)
+    if 'workflow' not in user_apps and 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to manage requisitions.")
+        return redirect('dashboard')
+    
+    # Check if user has permission to change requisitions
+    if not request.user.has_perm('transactions.change_requisition'):
+        messages.error(request, "You don't have permission to request changes.")
+        return redirect('transactions-home')
+    
+    # Lock the row for update
+    try:
+        requisition = Requisition.objects.select_for_update().get(
+            transaction_id=requisition_id
+        )
+    except Requisition.DoesNotExist:
+        messages.error(request, "Requisition not found.")
+        return redirect("transactions-home")
+    
+    # Validate status - can only request changes on pending requisitions
+    if requisition.status not in ['pending', 'pending_urgency_confirmation']:
+        messages.error(request, "Can only request changes on pending requisitions.")
+        return redirect("transactions-home")
+    
+    # Validate user is the next approver
+    if not requisition.can_approve(request.user):
+        messages.error(request, "You are not authorized to request changes for this requisition.")
+        return redirect("transactions-home")
+    
+    # Get change request details
+    change_details = request.POST.get("change_details", "")
+    if not change_details:
+        messages.error(request, "Please specify what changes are needed.")
+        return redirect("requisition-detail", requisition_id=requisition_id)
+    
+    # Set deadline (48 hours from now by default)
+    deadline_hours = int(request.POST.get("deadline_hours", 48))
+    deadline = timezone.now() + timedelta(hours=deadline_hours)
+    
+    # Create audit trail
+    ApprovalTrail.objects.create(
+        requisition=requisition,
+        user=request.user,
+        role=request.user.role,
+        action="changes_requested",
+        comment=change_details,
+        timestamp=timezone.now(),
+    )
+    
+    # Update requisition
+    requisition.status = "pending_changes"
+    requisition.change_requested = True
+    requisition.change_request_details = change_details
+    requisition.change_requested_by = request.user
+    requisition.change_request_deadline = deadline
+    # Keep next_approver so it can return to same approver after changes
+    requisition.save(update_fields=[
+        "status", "change_requested", "change_request_details", 
+        "change_requested_by", "change_request_deadline"
+    ])
+    
+    # Send email notification to requester
+    try:
+        if requisition.requested_by.email:
+            send_mail(
+                subject=f"Action Required: Changes Requested for Requisition {requisition_id}",
+                message=f"""
+Dear {requisition.requested_by.get_full_name()},
+
+The approver has requested changes to your requisition {requisition_id} (Amount: {requisition.amount}).
+
+Requested by: {request.user.get_full_name()}
+Changes Required:
+{change_details}
+
+DEADLINE: {deadline.strftime('%B %d, %Y at %I:%M %p')}
+
+Please log in to your account and submit the requested changes before the deadline. If no response is received by the deadline, this requisition will be automatically rejected.
+
+View and respond: [Your Transactions Dashboard]
+
+Best regards,
+Petty Cash System
+                """,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[requisition.requested_by.email],
+                fail_silently=True,
+            )
+    except Exception:
+        pass
+    
+    messages.success(
+        request,
+        f"Change request sent to {requisition.requested_by.get_full_name()}. "
+        f"Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p')}"
+    )
+    return redirect("transactions-home")
+
+
+@login_required
+@transaction.atomic
+def submit_changes(request, requisition_id):
+    """
+    Requester submits changes in response to change request.
+    Returns requisition to the approver who requested changes.
+    """
+    # Check if user has transactions app assigned
+    user_apps = get_user_apps(request.user)
+    if 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to Transactions app.")
+        return redirect('dashboard')
+    
+    # Lock the row for update
+    try:
+        requisition = Requisition.objects.select_for_update().get(
+            transaction_id=requisition_id
+        )
+    except Requisition.DoesNotExist:
+        messages.error(request, "Requisition not found.")
+        return redirect("transactions-home")
+    
+    # Validate user is the requester
+    if requisition.requested_by.id != request.user.id:
+        messages.error(request, "You can only submit changes to your own requisitions.")
+        return redirect("transactions-home")
+    
+    # Validate status
+    if requisition.status != 'pending_changes':
+        messages.error(request, "This requisition is not awaiting changes.")
+        return redirect("transactions-home")
+    
+    # Check if deadline passed
+    if requisition.change_request_deadline and timezone.now() > requisition.change_request_deadline:
+        # Auto-reject if deadline passed
+        requisition.status = "rejected"
+        requisition.next_approver = None
+        requisition.workflow_sequence = []
+        requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
+        
+        ApprovalTrail.objects.create(
+            requisition=requisition,
+            user=request.user,
+            role=request.user.role,
+            action="rejected",
+            comment=f"Deadline expired: Changes not submitted by {requisition.change_request_deadline.strftime('%B %d, %Y at %I:%M %p')}",
+            timestamp=timezone.now(),
+        )
+        
+        messages.error(request, f"Deadline has passed. Requisition rejected. Please create a new requisition.")
+        return redirect("transactions-home")
+    
+    # Get response from requester
+    change_response = request.POST.get("change_response", "")
+    if not change_response:
+        messages.error(request, "Please explain what changes you've made.")
+        return redirect("requisition-detail", requisition_id=requisition_id)
+    
+    # Handle file upload (new receipt if requested)
+    if 'new_receipt' in request.FILES:
+        requisition.receipt = request.FILES['new_receipt']
+    
+    # Handle amount update if provided
+    new_amount = request.POST.get("new_amount")
+    if new_amount:
+        try:
+            requisition.amount = float(new_amount)
+        except ValueError:
+            messages.error(request, "Invalid amount provided.")
+            return redirect("requisition-detail", requisition_id=requisition_id)
+    
+    # Create audit trail
+    ApprovalTrail.objects.create(
+        requisition=requisition,
+        user=request.user,
+        role=request.user.role,
+        action="changes_submitted",
+        comment=change_response,
+        timestamp=timezone.now(),
+    )
+    
+    # Return to pending and same approver
+    requisition.status = "pending"
+    requisition.change_requested = False
+    requisition.save(update_fields=["status", "change_requested", "receipt", "amount"])
+    
+    # Notify approver
+    try:
+        if requisition.change_requested_by and requisition.change_requested_by.email:
+            send_mail(
+                subject=f"Changes Submitted: Requisition {requisition_id}",
+                message=f"""
+Dear {requisition.change_requested_by.get_full_name()},
+
+{requisition.requested_by.get_full_name()} has submitted the changes you requested for requisition {requisition_id}.
+
+Requester's Response:
+{change_response}
+
+The requisition is now back in your queue for review. Please log in to approve or request additional changes.
+
+Best regards,
+Petty Cash System
+                """,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[requisition.change_requested_by.email],
+                fail_silently=True,
+            )
+    except Exception:
+        pass
+    
+    messages.success(
+        request,
+        f"Changes submitted successfully! Requisition returned to {requisition.next_approver.get_full_name()} for review."
+    )
+    return redirect("transactions-home")
+
+
+@login_required
+@transaction.atomic
 def revert_fast_track(request, requisition_id):
     """
     Revert a fast-tracked requisition to normal approval flow.
