@@ -1,5 +1,5 @@
 """
-Bulk User Import via CSV Template
+Bulk User Import via Excel Template
 Allows admins to upload multiple user invitations at once
 """
 from django.shortcuts import render, redirect
@@ -13,6 +13,9 @@ from django.conf import settings
 from datetime import timedelta
 import csv
 import io
+import openpyxl
+from openpyxl.styles import Font, PatternFill
+import pandas as pd
 from accounts.models import User
 from accounts.models_device import UserInvitation
 from organization.models import Company, Department, Branch
@@ -24,7 +27,7 @@ from settings_manager.views import log_activity
 @permission_required('accounts.add_userinvitation', raise_exception=True)
 def download_template(request):
     """
-    Download CSV template for bulk user import with organization reference
+    Download Excel template for bulk user import with organization reference
     Supports filtering by company, region, branch, or department
     """
     # Get filter parameters
@@ -65,17 +68,22 @@ def download_template(request):
             filename_parts.append(company.name.replace(' ', '_'))
             filter_context['company'] = company
     
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="{"_".join(filename_parts)}_template.csv"'
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "User Import"
     
-    writer = csv.writer(response)
-    
-    # Write header row
-    writer.writerow([
+    # Headers with styling
+    headers = [
         'email', 'first_name', 'last_name', 'role', 
         'company_name', 'region_name', 'branch_name', 'department_name',
         'assigned_apps'
-    ])
+    ]
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.value = header
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
     
     # Get organizations based on filters
     if 'department' in filter_context:
@@ -89,13 +97,11 @@ def download_template(request):
         branches = [filter_context['branch']]
         regions = [filter_context['region']]
     elif 'region' in filter_context:
-        from organization.models import Region
         companies = [filter_context['company']]
         branches = Branch.objects.filter(region=filter_context['region'])
         departments = Department.objects.filter(branch__region=filter_context['region'])
         regions = [filter_context['region']]
     elif 'company' in filter_context:
-        from organization.models import Region
         companies = [filter_context['company']]
         regions = Region.objects.filter(company=filter_context['company'])
         branches = Branch.objects.filter(region__company=filter_context['company'])
@@ -104,160 +110,135 @@ def download_template(request):
         companies = Company.objects.all()[:5]
         departments = Department.objects.all()[:5]
         branches = Branch.objects.all()[:5]
-        from organization.models import Region
         regions = Region.objects.all()[:5]
     
-    # Write example rows with filtered org data
+    # Add example rows
     company_example = companies[0].name if companies else 'Quick Services LQS'
     dept_example = departments[0].name if departments else 'Finance'
     branch_example = branches[0].name if branches else 'Head Office'
     region_example = regions[0].name if regions else 'East Africa'
     
-    writer.writerow([
-        'amos.cheloti@example.com',
-        'Amos',
-        'Cheloti',
-        'REQUESTER',
-        company_example,
-        region_example,
-        branch_example,
-        dept_example,
-        'treasury,workflow'
+    ws.append([
+        'amos.cheloti@example.com', 'Amos', 'Cheloti', 'REQUESTER',
+        company_example, region_example, branch_example, dept_example, 'treasury,workflow'
     ])
-    writer.writerow([
-        'jane.doe@example.com',
-        'Jane',
-        'Doe',
-        'APPROVER',
-        company_example,
-        region_example,
-        branch_example,
-        dept_example,
-        'treasury,workflow,reports'
+    ws.append([
+        'jane.doe@example.com', 'Jane', 'Doe', 'APPROVER',
+        company_example, region_example, branch_example, dept_example, 'treasury,workflow,reports'
     ])
     
-    # Add blank separator
-    writer.writerow([])
-    writer.writerow([])
+    # Adjust column widths
+    ws.column_dimensions['A'].width = 30  # email
+    ws.column_dimensions['B'].width = 15  # first_name
+    ws.column_dimensions['C'].width = 15  # last_name
+    ws.column_dimensions['D'].width = 12  # role
+    ws.column_dimensions['E'].width = 20  # company
+    ws.column_dimensions['F'].width = 15  # region
+    ws.column_dimensions['G'].width = 20  # branch
+    ws.column_dimensions['H'].width = 20  # department
+    ws.column_dimensions['I'].width = 30  # apps
     
-    # INSTRUCTIONS SECTION
-    writer.writerow(['**********************************************************************'])
-    writer.writerow(['INSTRUCTIONS - DELETE ALL ROWS BELOW BEFORE UPLOADING'])
-    writer.writerow(['**********************************************************************'])
-    writer.writerow([])
-    writer.writerow(['FIELD REQUIREMENTS:'])
-    writer.writerow(['- email: Must be valid and unique (user@company.com)'])
-    writer.writerow(["- first_name: User's first name (e.g., Amos)"])
-    writer.writerow(["- last_name: User's last name (e.g., Cheloti)"])
-    writer.writerow(['- role: REQUESTER | APPROVER | FINANCE | ADMIN'])
-    writer.writerow(['- company_name: Must EXACTLY match existing company (see list below)'])
-    writer.writerow(['- region_name: Region name (optional, see list below)'])
-    writer.writerow(['- branch_name: Must EXACTLY match existing branch (see list below)'])
-    writer.writerow(['- department_name: Must EXACTLY match existing department (see list below)'])
-    writer.writerow(['- assigned_apps: Comma-separated (treasury,workflow,reports,settings)'])
-    writer.writerow([])
-    writer.writerow(['USERNAME FORMAT:'])
-    writer.writerow(['- Auto-generated as: FirstInitial.LastName'])
-    writer.writerow(['- Example: Amos Cheloti becomes A.Cheloti'])
-    writer.writerow(['- Example: Jane Doe becomes J.Doe'])
-    writer.writerow(['- Duplicates get number suffix: A.Cheloti1, A.Cheloti2'])
-    writer.writerow([])
-    writer.writerow(['PASSWORD:'])
-    writer.writerow(['- Users will receive email invitation to set their own password'])
-    writer.writerow([])
-    writer.writerow([])
+    # Create Instructions sheet
+    ws2 = wb.create_sheet("Instructions")
+    ws2['A1'] = "Bulk User Import Instructions"
+    ws2['A1'].font = Font(bold=True, size=14)
     
-    # AVAILABLE ORGANIZATIONS SECTION
-    writer.writerow(['**********************************************************************'])
-    if filter_context:
-        writer.writerow(['FILTERED ORGANIZATIONS (For selected scope only)'])
-    else:
-        writer.writerow(['AVAILABLE ORGANIZATIONS (Copy exact names from here)'])
-    writer.writerow(['**********************************************************************'])
-    writer.writerow([])
+    instructions = [
+        "",
+        "FIELD REQUIREMENTS:",
+        "• email: Must be valid and unique (user@company.com)",
+        "• first_name: User's first name (e.g., Amos)",
+        "• last_name: User's last name (e.g., Cheloti)",
+        "• role: REQUESTER | APPROVER | FINANCE | ADMIN",
+        "• company_name: Must EXACTLY match existing company",
+        "• region_name: Region name (optional)",
+        "• branch_name: Must EXACTLY match existing branch",
+        "• department_name: Must EXACTLY match existing department",
+        "• assigned_apps: Comma-separated (treasury,workflow,reports,settings)",
+        "",
+        "USERNAME FORMAT:",
+        "• Auto-generated as: FirstInitial.LastName",
+        "• Example: Amos Cheloti becomes A.Cheloti",
+        "• Duplicates get number suffix: A.Cheloti1, A.Cheloti2",
+        "",
+        "PASSWORD:",
+        "• Users will receive email invitation to set their own password",
+        "",
+        "AVAILABLE ORGANIZATIONS:",
+        ""
+    ]
     
-    if filter_context:
-        filter_desc = []
-        if 'department' in filter_context:
-            filter_desc.append(f"Department: {filter_context['department'].name}")
-        if 'branch' in filter_context:
-            filter_desc.append(f"Branch: {filter_context['branch'].name}")
-        if 'region' in filter_context:
-            filter_desc.append(f"Region: {filter_context['region'].name}")
-        if 'company' in filter_context:
-            filter_desc.append(f"Company: {filter_context['company'].name}")
-        writer.writerow(['FILTER APPLIED: ' + ' → '.join(filter_desc)])
-        writer.writerow(['Template shows only entities within this scope'])
-        writer.writerow([])
-    
-    # List companies (filtered or all)
-    writer.writerow(['COMPANIES (company_name):'])
-    if filter_context:
-        all_companies = companies
-    else:
-        all_companies = Company.objects.all().order_by('name')
+    # Add companies
+    instructions.append("COMPANIES:")
+    all_companies = companies if filter_context else Company.objects.all().order_by('name')
     for company in all_companies:
-        writer.writerow([f'  * {company.name if hasattr(company, "name") else company}'])
+        instructions.append(f"  • {company.name}")
     if not all_companies:
-        writer.writerow(['  (No companies found - create companies first)'])
-    writer.writerow([])
+        instructions.append("  (No companies found - create companies first)")
+    instructions.append("")
     
-    # List regions (filtered or all)
-    writer.writerow(['REGIONS (region_name):'])
+    # Add regions
+    instructions.append("REGIONS:")
     if filter_context:
-        from organization.models import Region
         all_regions = regions if 'region' in filter_context or 'branch' in filter_context or 'department' in filter_context else Region.objects.filter(company__in=companies)
     else:
-        from organization.models import Region
         all_regions = Region.objects.all().order_by('name')[:20]
     for region in all_regions:
         company_info = f' ({region.company.name})' if hasattr(region, 'company') and region.company else ''
-        writer.writerow([f'  * {region.name}{company_info}'])
+        instructions.append(f"  • {region.name}{company_info}")
     if not all_regions:
-        writer.writerow(['  (No regions found)'])
-    writer.writerow([])
+        instructions.append("  (No regions found)")
+    instructions.append("")
     
-    # List branches (filtered or all)
-    writer.writerow(['BRANCHES (branch_name):'])
-    if filter_context:
-        all_branches = branches
-    else:
-        all_branches = Branch.objects.all().order_by('name')[:20]
+    # Add branches
+    instructions.append("BRANCHES:")
+    all_branches = branches if filter_context else Branch.objects.all().order_by('name')[:20]
     for branch in all_branches:
-        region_info = f' ({branch.region.name}, {branch.region.company.name})' if hasattr(branch, 'region') and branch.region else ''
-        writer.writerow([f'  * {branch.name}{region_info}'])
+        region_info = f' ({branch.region.name})' if hasattr(branch, 'region') and branch.region else ''
+        instructions.append(f"  • {branch.name}{region_info}")
     if not all_branches:
-        writer.writerow(['  (No branches found - create branches first)'])
-    writer.writerow([])
+        instructions.append("  (No branches found)")
+    instructions.append("")
     
-    # List departments (filtered or all)
-    writer.writerow(['DEPARTMENTS (department_name):'])
-    if filter_context:
-        all_departments = departments
-    else:
-        all_departments = Department.objects.all().order_by('name')[:20]
+    # Add departments
+    instructions.append("DEPARTMENTS:")
+    all_departments = departments if filter_context else Department.objects.all().order_by('name')[:20]
     for dept in all_departments:
         branch_info = f' ({dept.branch.name})' if hasattr(dept, 'branch') and dept.branch else ''
-        writer.writerow([f'  * {dept.name}{branch_info}'])
+        instructions.append(f"  • {dept.name}{branch_info}")
     if not all_departments:
-        writer.writerow(['  (No departments found - create departments first)'])
-    writer.writerow([])
+        instructions.append("  (No departments found)")
+    instructions.append("")
     
-    # Available roles
-    writer.writerow(['AVAILABLE ROLES (role):'])
-    writer.writerow(['  * REQUESTER (Creates requisitions)'])
-    writer.writerow(['  * APPROVER (Approves requisitions)'])
-    writer.writerow(['  * FINANCE (Finance operations)'])
-    writer.writerow(['  * ADMIN (System administration)'])
-    writer.writerow([])
+    # Add roles
+    instructions.extend([
+        "AVAILABLE ROLES:",
+        "  • REQUESTER - Can create requests",
+        "  • APPROVER - Can approve requests",
+        "  • FINANCE - Finance team member",
+        "  • ADMIN - System administrator",
+        "",
+        "AVAILABLE APPS:",
+        "  • treasury - Treasury management",
+        "  • workflow - Workflow approval",
+        "  • reports - Reports and analytics",
+        "  • settings - System settings",
+        "  • transactions - Transaction management",
+        "  • organization - Organization management"
+    ])
     
-    # Available apps
-    writer.writerow(['AVAILABLE APPS (assigned_apps):'])
-    writer.writerow(['  * treasury (Treasury Management)'])
-    writer.writerow(['  * workflow (Workflow & Approvals)'])
-    writer.writerow(['  * reports (Reporting & Analytics)'])
-    writer.writerow(['  * settings (System Settings)'])
-    writer.writerow(['  Use comma-separated for multiple: treasury,workflow,reports'])
+    # Write instructions to sheet
+    for row_num, instruction in enumerate(instructions, 2):
+        ws2[f'A{row_num}'] = instruction
+    
+    ws2.column_dimensions['A'].width = 70
+    
+    # Prepare response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{"_".join(filename_parts)}_template.xlsx"'
+    wb.save(response)
     
     return response
 
@@ -266,31 +247,46 @@ def download_template(request):
 @permission_required('accounts.add_userinvitation', raise_exception=True)
 def bulk_import(request):
     """
-    Upload and process CSV file for bulk user invitations
+    Upload and process CSV or Excel file for bulk user invitations
     """
     if request.method == 'POST' and request.FILES.get('csv_file'):
-        csv_file = request.FILES['csv_file']
+        uploaded_file = request.FILES['csv_file']
         
-        # Validate file type
-        if not csv_file.name.endswith('.csv'):
-            messages.error(request, 'Please upload a CSV file')
+        # Validate file type (support both CSV and Excel)
+        is_excel = uploaded_file.name.endswith(('.xlsx', '.xls'))
+        is_csv = uploaded_file.name.endswith('.csv')
+        
+        if not (is_excel or is_csv):
+            messages.error(request, 'Please upload a CSV or Excel file (.csv, .xlsx, .xls)')
             return redirect('accounts:bulk_import')
         
         # Read and decode file
         try:
-            decoded_file = csv_file.read().decode('utf-8')
-            io_string = io.StringIO(decoded_file)
-            reader = csv.DictReader(io_string)
+            if is_excel:
+                # Read Excel file using pandas
+                df = pd.read_excel(uploaded_file)
+                # Convert to list of dicts
+                data_rows = df.to_dict('records')
+            else:
+                # Read CSV file
+                decoded_file = uploaded_file.read().decode('utf-8')
+                io_string = io.StringIO(decoded_file)
+                reader = csv.DictReader(io_string)
+                data_rows = list(reader)
             
             success_count = 0
             error_count = 0
             errors = []
             
             with transaction.atomic():
-                for row_num, row in enumerate(reader, start=2):  # Start at 2 (after header)
+                for row_num, row in enumerate(data_rows, start=2):  # Start at 2 (after header)
                     try:
+                        # Convert pandas values to strings and handle NaN
+                        if is_excel:
+                            row = {k: (str(v) if pd.notna(v) else '') for k, v in row.items()}
+                        
                         # Skip empty rows or instruction rows
-                        if not row.get('email') or row['email'].startswith('INSTRUCTIONS'):
+                        if not row.get('email') or str(row.get('email', '')).startswith('INSTRUCTIONS'):
                             continue
                         
                         # Validate required fields

@@ -14,10 +14,10 @@
                     <div class="alert alert-info">
                         <h5><i class="bi bi-info-circle"></i> How to Use Bulk Import</h5>
                         <ol class="mb-0">
-                            <li><strong>Download Template:</strong> Click the button below to download the CSV template</li>
+                            <li><strong>Download Template:</strong> Click the button below to download the Excel template</li>
                             <li><strong>Fill Template:</strong> Add user data (email, name, role, org, apps)</li>
                             <li><strong>Delete Examples:</strong> Remove the example rows from the template</li>
-                            <li><strong>Upload File:</strong> Upload the completed CSV file</li>
+                            <li><strong>Upload File:</strong> Upload the completed Excel or CSV file</li>
                             <li><strong>Users Receive Email:</strong> Each user gets an invitation to set their password</li>
                         </ol>
                     </div>
@@ -29,7 +29,7 @@
                                     <i class="bi bi-download"></i> Step 1: Download Template
                                 </div>
                                 <div class="card-body">
-                                    <p>Download the CSV template with example data and instructions.</p>
+                                    <p>Download the Excel template with example data and instructions.</p>
                                     <p class="small text-muted">Filter by organization to get targeted user import template</p>
                                     
                                     <!-- Filter Options -->
@@ -78,7 +78,7 @@
                                     </div>
                                     
                                     <button type="button" id="downloadUserTemplateBtn" class="btn btn-primary">
-                                        <i class="bi bi-file-earmark-spreadsheet"></i> Download Template
+                                        <i class="bi bi-file-earmark-spreadsheet"></i> Download Excel Template
                                     </button>
                                 </div>
                             </div>
@@ -93,9 +93,10 @@
                                     <form method="post" enctype="multipart/form-data">
                                         {% csrf_token %}
                                         <div class="mb-3">
-                                            <label for="csv_file" class="form-label">Select CSV File</label>
+                                            <label for="csv_file" class="form-label">Select Excel or CSV File</label>
                                             <input type="file" class="form-control" id="csv_file" name="csv_file" 
-                                                   accept=".csv" required>
+                                                   accept=".xlsx,.xls,.csv" required>
+                                            <div class="form-text">Supported formats: .xlsx, .xls, .csv</div>
                                         </div>
                                         <button type="submit" class="btn btn-success">
                                             <i class="bi bi-cloud-upload"></i> Upload & Process

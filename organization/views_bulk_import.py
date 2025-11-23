@@ -1,6 +1,6 @@
 """
 Bulk Import for Organization Entities
-Handles CSV uploads for Companies, Regions, Branches, Departments, Cost Centers, Positions
+Handles Excel uploads for Companies, Regions, Branches, Departments, Cost Centers, Positions
 """
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, permission_required
@@ -9,6 +9,9 @@ from django.http import HttpResponse
 from django.db import transaction
 import csv
 import io
+import openpyxl
+from openpyxl.styles import Font, PatternFill
+import pandas as pd
 from organization.models import Company, Region, Branch, Department, CostCenter, Position
 from settings_manager.views import log_activity
 
