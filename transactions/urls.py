@@ -11,6 +11,8 @@ from transactions.views import (
     revert_fast_track,  # Revert fast-tracked requisition to normal flow
     request_changes,  # Approver requests changes from requester
     submit_changes,  # Requester submits requested changes
+    my_requisitions,  # Separate view for user's own requisitions
+    pending_approvals,  # Separate view for requisitions awaiting approval
 )
 from transactions.views_admin import (
     manage_requisitions,
@@ -36,6 +38,10 @@ urlpatterns = [
     
     # Main transactions page - requires transactions app + view permission
     path('', transactions_home, name='transactions-home'),
+    
+    # Separate views for approvers (avoid confusion between own vs. approval queue)
+    path('my-requisitions/', login_required(my_requisitions), name='my-requisitions'),
+    path('pending-approvals/', login_required(pending_approvals), name='pending-approvals'),
     
     # Create requisition - requires transactions app + add permission
     path('create/', login_required(create_requisition), name='create-requisition'),

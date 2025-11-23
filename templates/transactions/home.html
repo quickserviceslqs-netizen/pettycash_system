@@ -4,161 +4,152 @@
 {% block title %}Transactions - Petty Cash System{% endblock %}
 
 {% block content %}
-<div style="max-width:1200px; margin:0 auto;">
-
+<div class="container-fluid mt-4">
     <!-- Page Header -->
-    <section style="margin-bottom:30px; text-align:center;">
-        <h2 style="font-size:1.8rem; margin-bottom:5px;">Transactions</h2>
-        <p style="font-size:1rem; color:#555;">
-            Welcome, {{ user.get_display_name }}
-            {% if is_centralized %}
-                <span style="display:inline-block; margin-left:10px; padding:4px 12px; background:#17a2b8; color:#fff; border-radius:12px; font-size:0.85rem; font-weight:bold;">
-                    🌐 {{ scope_label }}
-                </span>
-            {% endif %}
-        </p>
-    </section>
-
-    <!-- Button to Create New Requisition -->
-    <div style="margin-bottom:30px; text-align:center;">
-        <a href="{% url 'create-requisition' %}" 
-           style="padding:10px 15px; background:#28a745; color:#fff; border-radius:5px; text-decoration:none;">
-            + Create New Requisition
-        </a>
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="bi bi-receipt"></i> Transactions Dashboard</h2>
+            <p class="text-muted">
+                Welcome, {{ user.get_full_name|default:user.username }}
+                {% if is_centralized %}
+                    <span class="badge bg-info ms-2">
+                        <i class="bi bi-globe"></i> {{ scope_label }}
+                    </span>
+                {% endif %}
+            </p>
+        </div>
     </div>
 
-    <!-- Section: My Requisitions -->
-    <section style="margin-bottom:40px;">
-        <h3>My Requisitions</h3>
-        {% if requisitions %}
-            <table style="width:100%; border-collapse:collapse;">
-                <thead>
-                    <tr style="background:#f2f2f2;">
-                        <th style="padding:10px; border:1px solid #ddd;">ID</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Amount</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Status</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Next Approver</th>
-                        <th style="padding:10px; border:1px solid #ddd;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for req in requisitions %}
-                    <tr>
-                        <td style="padding:10px; border:1px solid #ddd;">{{ req.transaction_id }}</td>
-                        <td style="padding:10px; border:1px solid #ddd;">{{ req.amount }}</td>
-                        <td style="padding:10px; border:1px solid #ddd;">
-                            <span style="padding:2px 6px; border-radius:3px; background:
-                                {% if req.status == 'pending' %}#ffc107
-                                {% elif req.status == 'pending_changes' %}#ff9800
-                                {% elif req.status == 'reviewed' %}#17a2b8
-                                {% elif req.status == 'rejected' %}#dc3545
-                                {% elif req.status == 'paid' %}#28a745
-                                {% else %}#6c757d{% endif %};
-                                color:#fff;">
-                                {{ req.status|title }}
-                            </span>
-                            <!-- Show notification badge if reverted from fast-track -->
-                            {% if req.approval_trail_set.all %}
-                                {% for trail in req.approval_trail_set.all %}
-                                    {% if trail.action == 'reverted_to_normal' %}
-                                        <span style="display:inline-block; margin-left:8px; padding:3px 8px; background:#ffc107; color:#000; border-radius:12px; font-size:0.75rem; font-weight:bold;" title="Fast-track reverted - click View for details">
-                                            <i class="bi bi-exclamation-circle"></i> Reverted
-                                        </span>
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                            <!-- Show changes requested badge -->
-                            {% if req.status == 'pending_changes' %}
-                                <span style="display:inline-block; margin-left:8px; padding:3px 8px; background:#dc3545; color:#fff; border-radius:12px; font-size:0.75rem; font-weight:bold;" title="Approver requested changes - deadline: {{ req.change_request_deadline|date:'M d, g:i A' }}">
-                                    <i class="bi bi-clock-fill"></i> Action Required
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td style="padding:10px; border:1px solid #ddd;">
-                            {% if req.next_approver %}
-                                {{ req.next_approver.get_display_name }}
-                            {% else %}
-                                N/A
-                            {% endif %}
-                        </td>
-                        <td style="padding:10px; border:1px solid #ddd;">
-                            <a href="{% url 'requisition-detail' req.transaction_id %}" 
-                               style="padding:5px 10px; background:#007bff; color:#fff; border-radius:3px; text-decoration:none;">
-                               View
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>No requisitions created yet.</p>
-        {% endif %}
-    </section>
+    <!-- Quick Action -->
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <a href="{% url 'transactions:create-requisition' %}" class="btn btn-success btn-lg">
+                <i class="bi bi-plus-circle"></i> Create New Requisition
+            </a>
+        </div>
+    </div>
 
-    <!-- Section: Ready for Payment (Treasury Only) -->
-    {% if show_payment_section %}
-    <section style="padding:20px; border:1px solid #0d6efd; border-radius:8px; background:#e7f1ff;">
-        <h3 style="color:#0d6efd;">Ready for Payment Execution</h3>
-        <p style="color:#084298;">Requisitions that have been fully approved and are ready for payment.</p>
-
-        <table style="width:100%; border-collapse:collapse; background:#fff; margin-top:15px;">
-            <thead>
-                <tr style="background:#0d6efd; color:#fff;">
-                    <th style="padding:10px; border:1px solid #ddd;">Transaction ID</th>
-                    <th style="padding:10px; border:1px solid #ddd;">Requested By</th>
-                    {% if is_centralized %}
-                    <th style="padding:10px; border:1px solid #ddd;">Company</th>
-                    {% endif %}
-                    <th style="padding:10px; border:1px solid #ddd;">Amount (KES)</th>
-                    <th style="padding:10px; border:1px solid #ddd;">Receipt</th>
-                    <th style="padding:10px; border:1px solid #ddd;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for req in ready_for_payment %}
-                <tr>
-                    <td style="padding:10px; border:1px solid #ddd;">
-                        <a href="{% url 'requisition-detail' req.transaction_id %}" style="color:#0d6efd; text-decoration:none;">
-                            {{ req.transaction_id }}
+    <!-- Dashboard Cards -->
+    <div class="row g-4">
+        <!-- My Requisitions Card -->
+        <div class="col-md-6">
+            <div class="card h-100 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-circle"></i> My Requisitions
+                    </h5>
+                    <small>Requisitions I created</small>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-3">
+                            <h3 class="mb-0">{{ my_metrics.total }}</h3>
+                            <small class="text-muted">Total</small>
+                        </div>
+                        <div class="col-3">
+                            <h3 class="mb-0 text-warning">{{ my_metrics.pending }}</h3>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                        <div class="col-3">
+                            <h3 class="mb-0 text-success">{{ my_metrics.approved }}</h3>
+                            <small class="text-muted">Approved</small>
+                        </div>
+                        <div class="col-3">
+                            <h3 class="mb-0 text-danger">{{ my_metrics.rejected }}</h3>
+                            <small class="text-muted">Rejected</small>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <a href="{% url 'transactions:my-requisitions' %}" class="btn btn-primary">
+                            <i class="bi bi-list-ul"></i> View All My Requisitions
                         </a>
-                    </td>
-                    <td style="padding:10px; border:1px solid #ddd;">{{ req.requested_by.get_display_name }}</td>
-                    {% if is_centralized %}
-                    <td style="padding:10px; border:1px solid #ddd;">
-                        <span style="padding:2px 8px; background:#6c757d; color:#fff; border-radius:3px; font-size:0.85rem;">
-                            {{ req.requested_by.company.name }}
-                        </span>
-                    </td>
-                    {% endif %}
-                    <td style="padding:10px; border:1px solid #ddd;">{{ req.amount|floatformat:2 }}</td>
-                    <td style="padding:10px; border:1px solid #ddd;">
-                        {% if req.receipt %}
-                            <a href="{{ req.receipt.url }}" target="_blank" style="color:#0d6efd; text-decoration:none;">📎 View</a>
-                        {% else %}
-                            <span style="color:#dc3545;">⚠️ None</span>
-                        {% endif %}
-                    </td>
-                    <td style="padding:10px; border:1px solid #ddd;">
-                        <a href="{% url 'requisition-detail' req.transaction_id %}" style="padding:5px 10px; background:#0d6efd; color:#fff; text-decoration:none; border-radius:3px; font-weight:bold;">Execute Payment</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Approvals Card (if user is approver) -->
+        {% if is_approver %}
+        <div class="col-md-6">
+            <div class="card h-100 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard-check"></i> Pending Approvals
+                    </h5>
+                    <small>Requisitions awaiting my approval</small>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <h3 class="mb-0 text-warning">{{ approval_metrics.pending_count }}</h3>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="mb-0 text-danger">{{ approval_metrics.urgent_count }}</h3>
+                            <small class="text-muted">Urgent</small>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="mb-0 text-success">{{ approval_metrics.approved_today }}</h3>
+                            <small class="text-muted">Approved Today</small>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <a href="{% url 'transactions:pending-approvals' %}" class="btn btn-warning">
+                            <i class="bi bi-list-check"></i> View Pending Approvals
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Treasury Card (if user is treasury) -->
+        {% if user.role == 'treasury' %}
+        <div class="col-md-6">
+            <div class="card h-100 border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cash-stack"></i> Treasury Operations
+                    </h5>
+                    <small>Ready for payment disbursement</small>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <h3 class="mb-0 text-info">{{ treasury_metrics.ready_for_payment }}</h3>
+                            <small class="text-muted">Ready for Payment</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="mb-0 text-success">{{ treasury_metrics.paid_today }}</h3>
+                            <small class="text-muted">Paid Today</small>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <a href="{% url 'treasury:dashboard' %}" class="btn btn-info">
+                            <i class="bi bi-wallet2"></i> Go to Treasury Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Info Alert for Approvers -->
+    {% if is_approver %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> <strong>Note for Approvers:</strong> 
+                Your requisitions and approval queue are now separated for clarity. 
+                Use <strong>"My Requisitions"</strong> to track requisitions you created, 
+                and <strong>"Pending Approvals"</strong> to review requisitions submitted by others.
+            </div>
+        </div>
+    </div>
     {% endif %}
-
-    <!-- Section: Pending Approvals for Non-Treasury Approvers -->
-    {% if show_pending_section %}
-    <section>
-        <h3>Requisitions Pending My Approval</h3>
-
-        <table style="width:100%; border-collapse:collapse;">
-            <thead>
-                <tr style="background:#f2f2f2;">
-                    <th style="padding:10px; border:1px solid #ddd;">ID</th>
-                    <th style="padding:10px; border:1px solid #ddd;">Requested By</th>
+</div>
+{% endblock %}
                     {% if is_centralized %}
                     <th style="padding:10px; border:1px solid #ddd;">Company</th>
                     {% endif %}

@@ -35,74 +35,86 @@ def transactions_home(request):
     is_centralized = getattr(user, "is_centralized_approver", False)
 
     # Define approver roles (case-insensitive)
-    # Note: application role 'staff' is NOT an approver by design.
-    # Note: 'superuser' excluded - they use Django Admin only, not business workflows
     APPROVER_ROLES = [
-        "branch_manager",
-        "regional_manager",
-        "department_head",
-        "group_finance_manager",
-        "treasury",
-        "cfo",
-        "admin",
-        "ceo",
+        "branch_manager", "regional_manager", "department_head",
+        "group_finance_manager", "treasury", "cfo", "admin", "ceo",
     ]
     is_approver = user.role.lower() in APPROVER_ROLES
 
-    # Multi-Tenancy: Filter requisitions by user's company (unless centralized)
+    # Calculate metrics for user's own requisitions
     if is_centralized:
-        my_requisitions = Requisition.objects.filter(
-            requested_by=user
-        ).prefetch_related('approvaltrail_set').order_by('-created_at')
+        my_reqs_all = Requisition.objects.filter(requested_by=user)
     else:
-        my_requisitions = Requisition.objects.current_company().filter(
-            requested_by=user
-        ).prefetch_related('approvaltrail_set').order_by('-created_at')
-
-    # Treasury sees reviewed requisitions ready for payment
+        my_reqs_all = Requisition.objects.current_company().filter(requested_by=user)
+    
+    my_metrics = {
+        'total': my_reqs_all.count(),
+        'pending': my_reqs_all.filter(status__in=['pending', 'pending_urgency_confirmation', 'change_requested']).count(),
+        'approved': my_reqs_all.filter(status='approved').count(),
+        'rejected': my_reqs_all.filter(status='rejected').count(),
+    }
+    
+    # Calculate metrics for pending approvals (if user is approver)
+    approval_metrics = {
+        'pending_count': 0,
+        'urgent_count': 0,
+        'approved_today': 0,
+    }
+    
+    if is_approver:
+        if is_centralized:
+            pending_approval_reqs = Requisition.objects.filter(
+                status__in=["pending", "pending_urgency_confirmation"],
+                next_approver=user
+            ).exclude(requested_by=user)
+        else:
+            pending_approval_reqs = Requisition.objects.current_company().filter(
+                status__in=["pending", "pending_urgency_confirmation"],
+                next_approver=user
+            ).exclude(requested_by=user)
+        
+        approval_metrics['pending_count'] = pending_approval_reqs.count()
+        approval_metrics['urgent_count'] = pending_approval_reqs.filter(is_urgent=True).count()
+        
+        # Today's approvals
+        today = timezone.now().date()
+        approval_metrics['approved_today'] = ApprovalTrail.objects.filter(
+            user=user,
+            action='approved',
+            timestamp__date=today
+        ).count()
+    
+    # Treasury metrics
+    treasury_metrics = {
+        'ready_for_payment': 0,
+        'paid_today': 0,
+    }
+    
     if user.role.lower() == 'treasury':
         if is_centralized:
-            ready_for_payment = Requisition.objects.filter(
-                status="reviewed"
-            ).select_related('requested_by', 'requested_by__company').order_by('-created_at')
+            ready_reqs = Requisition.objects.filter(status="reviewed")
         else:
-            ready_for_payment = Requisition.objects.current_company().filter(
-                status="reviewed"
-            ).select_related('requested_by').order_by('-created_at')
-        show_payment_section = ready_for_payment.exists()
-        pending_for_me = Requisition.objects.none()
-        show_pending_section = False
-    elif is_approver:
-        # Other approvers see pending approvals (within their company or all if centralized)
-        if is_centralized:
-            pending_for_me = Requisition.objects.filter(
-                status__in=["pending", "pending_urgency_confirmation"],
-                next_approver=user
-            ).exclude(requested_by=user).select_related('requested_by', 'requested_by__company').order_by('-created_at')
-        else:
-            pending_for_me = Requisition.objects.current_company().filter(
-                status__in=["pending", "pending_urgency_confirmation"],
-                next_approver=user
-            ).exclude(requested_by=user).order_by('-created_at')
-        show_pending_section = pending_for_me.exists()
-        ready_for_payment = Requisition.objects.none()
-        show_payment_section = False
-    else:
-        pending_for_me = Requisition.objects.none()
-        show_pending_section = False
-        ready_for_payment = Requisition.objects.none()
-        show_payment_section = False
+            ready_reqs = Requisition.objects.current_company().filter(status="reviewed")
+        
+        treasury_metrics['ready_for_payment'] = ready_reqs.count()
+        
+        # Paid today
+        today = timezone.now().date()
+        from treasury.models import Payment
+        treasury_metrics['paid_today'] = Payment.objects.filter(
+            disbursed_by=user,
+            disbursed_at__date=today,
+            status='disbursed'
+        ).count()
 
     context = {
         "user": user,
         "is_approver": is_approver,
         "is_centralized": is_centralized,
         "scope_label": "Company-Wide" if is_centralized else (user.company.name if user.company else "Personal"),
-        "requisitions": my_requisitions,
-        "pending_for_me": pending_for_me,
-        "show_pending_section": show_pending_section,
-        "ready_for_payment": ready_for_payment,
-        "show_payment_section": show_payment_section,
+        "my_metrics": my_metrics,
+        "approval_metrics": approval_metrics,
+        "treasury_metrics": treasury_metrics,
     }
     return render(request, "transactions/home.html", context)
 
@@ -893,3 +905,190 @@ def confirm_urgency(request, requisition_id):
         messages.error(request, "Invalid action. Please confirm or deny urgency.")
     
     return redirect("transactions-home")
+
+
+# -----------------------------
+# My Requisitions (Separate View for Approvers)
+# -----------------------------
+@login_required
+def my_requisitions(request):
+    """
+    Dedicated view for user's own requisitions (separate from approval queue).
+    Shows requisitions created by the logged-in user with their own metrics.
+    """
+    # Check if user has 'transactions' app assigned
+    user_apps = get_user_apps(request.user)
+    if 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to Transactions app.")
+        return redirect('dashboard')
+    
+    # Check if user has permission to view requisitions
+    if not request.user.has_perm('transactions.view_requisition'):
+        messages.error(request, "You don't have permission to view requisitions.")
+        return redirect('dashboard')
+    
+    user = request.user
+    is_centralized = getattr(user, "is_centralized_approver", False)
+    
+    # Get user's own requisitions
+    if is_centralized:
+        requisitions = Requisition.objects.filter(
+            requested_by=user
+        ).select_related('next_approver', 'requested_by__company').prefetch_related('approvaltrail_set').order_by('-created_at')
+    else:
+        requisitions = Requisition.objects.current_company().filter(
+            requested_by=user
+        ).select_related('next_approver').prefetch_related('approvaltrail_set').order_by('-created_at')
+    
+    # Apply filters
+    status_filter = request.GET.get('status', '')
+    search_query = request.GET.get('search', '')
+    
+    if status_filter:
+        requisitions = requisitions.filter(status=status_filter)
+    
+    if search_query:
+        requisitions = requisitions.filter(
+            transaction_id__icontains=search_query
+        ) | requisitions.filter(
+            description__icontains=search_query
+        )
+    
+    # Calculate metrics for user's own requisitions
+    all_my_reqs = Requisition.objects.filter(requested_by=user) if is_centralized else Requisition.objects.current_company().filter(requested_by=user)
+    
+    metrics = {
+        'total': all_my_reqs.count(),
+        'pending': all_my_reqs.filter(status__in=['pending', 'pending_urgency_confirmation', 'change_requested']).count(),
+        'approved': all_my_reqs.filter(status='approved').count(),
+        'reviewed': all_my_reqs.filter(status='reviewed').count(),
+        'paid': all_my_reqs.filter(status='paid').count(),
+        'rejected': all_my_reqs.filter(status='rejected').count(),
+        'total_amount': sum(r.amount for r in all_my_reqs),
+        'pending_amount': sum(r.amount for r in all_my_reqs.filter(status__in=['pending', 'pending_urgency_confirmation'])),
+    }
+    
+    context = {
+        'requisitions': requisitions,
+        'metrics': metrics,
+        'status_filter': status_filter,
+        'search_query': search_query,
+        'is_centralized': is_centralized,
+        'scope_label': "Company-Wide" if is_centralized else (user.company.name if user.company else "Personal"),
+    }
+    return render(request, 'transactions/my_requisitions.html', context)
+
+
+# -----------------------------
+# Pending Approvals (Separate View for Approvers)
+# -----------------------------
+@login_required
+def pending_approvals(request):
+    """
+    Dedicated view for requisitions awaiting approval by the logged-in user.
+    Shows only requisitions submitted by OTHERS that require user's approval.
+    """
+    # Check if user has 'transactions' app assigned
+    user_apps = get_user_apps(request.user)
+    if 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to Transactions app.")
+        return redirect('dashboard')
+    
+    # Check if user has permission to approve requisitions
+    if not request.user.has_perm('transactions.change_requisition'):
+        messages.error(request, "You don't have permission to approve requisitions.")
+        return redirect('dashboard')
+    
+    user = request.user
+    is_centralized = getattr(user, "is_centralized_approver", False)
+    
+    # Define approver roles
+    APPROVER_ROLES = [
+        "branch_manager", "regional_manager", "department_head",
+        "group_finance_manager", "treasury", "cfo", "admin", "ceo",
+    ]
+    
+    if user.role.lower() not in APPROVER_ROLES:
+        messages.error(request, "You don't have an approver role.")
+        return redirect('transactions-home')
+    
+    # Get requisitions awaiting THIS user's approval (exclude own requisitions)
+    if is_centralized:
+        requisitions = Requisition.objects.filter(
+            status__in=["pending", "pending_urgency_confirmation"],
+            next_approver=user
+        ).exclude(requested_by=user).select_related('requested_by', 'requested_by__company', 'next_approver').prefetch_related('approvaltrail_set').order_by('-created_at')
+    else:
+        requisitions = Requisition.objects.current_company().filter(
+            status__in=["pending", "pending_urgency_confirmation"],
+            next_approver=user
+        ).exclude(requested_by=user).select_related('requested_by', 'next_approver').prefetch_related('approvaltrail_set').order_by('-created_at')
+    
+    # Apply filters
+    urgency_filter = request.GET.get('urgency', '')
+    amount_filter = request.GET.get('amount', '')
+    search_query = request.GET.get('search', '')
+    
+    if urgency_filter == 'urgent':
+        requisitions = requisitions.filter(is_urgent=True)
+    elif urgency_filter == 'normal':
+        requisitions = requisitions.filter(is_urgent=False)
+    
+    if amount_filter == 'high':
+        requisitions = requisitions.filter(amount__gte=100000)
+    elif amount_filter == 'medium':
+        requisitions = requisitions.filter(amount__gte=10000, amount__lt=100000)
+    elif amount_filter == 'low':
+        requisitions = requisitions.filter(amount__lt=10000)
+    
+    if search_query:
+        requisitions = requisitions.filter(
+            transaction_id__icontains=search_query
+        ) | requisitions.filter(
+            description__icontains=search_query
+        ) | requisitions.filter(
+            requested_by__username__icontains=search_query
+        )
+    
+    # Calculate metrics for approval queue
+    all_pending = Requisition.objects.filter(
+        next_approver=user,
+        status__in=["pending", "pending_urgency_confirmation"]
+    ).exclude(requested_by=user)
+    
+    if not is_centralized:
+        all_pending = all_pending.filter(requested_by__company=user.company)
+    
+    # Today's approvals by this user
+    today = timezone.now().date()
+    approved_today = ApprovalTrail.objects.filter(
+        user=user,
+        action='approved',
+        timestamp__date=today
+    ).count()
+    
+    rejected_today = ApprovalTrail.objects.filter(
+        user=user,
+        action='rejected',
+        timestamp__date=today
+    ).count()
+    
+    metrics = {
+        'pending_count': all_pending.count(),
+        'urgent_count': all_pending.filter(is_urgent=True).count(),
+        'total_pending_amount': sum(r.amount for r in all_pending),
+        'approved_today': approved_today,
+        'rejected_today': rejected_today,
+        'pending_urgency_confirmation': all_pending.filter(status='pending_urgency_confirmation').count(),
+    }
+    
+    context = {
+        'requisitions': requisitions,
+        'metrics': metrics,
+        'urgency_filter': urgency_filter,
+        'amount_filter': amount_filter,
+        'search_query': search_query,
+        'is_centralized': is_centralized,
+        'scope_label': "Company-Wide" if is_centralized else (user.company.name if user.company else "Personal"),
+    }
+    return render(request, 'transactions/pending_approvals.html', context)

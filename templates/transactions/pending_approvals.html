@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% load static %}
+{% load settings_tags %}
+
+{% block title %}Pending Approvals - Petty Cash System{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-clipboard-check"></i> Pending Approvals</h2>
+                    <p class="text-muted">Requisitions awaiting my approval
+                        {% if is_centralized %}
+                            <span class="badge bg-info ms-2">
+                                <i class="bi bi-globe"></i> {{ scope_label }}
+                            </span>
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'transactions:transactions-home' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h4 class="mb-0 text-warning">{{ metrics.pending_count }}</h4>
+                    <small class="text-muted">Pending Approvals</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h4 class="mb-0 text-danger">{{ metrics.urgent_count }}</h4>
+                    <small class="text-muted">Urgent Requests</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h4 class="mb-0 text-success">{{ metrics.approved_today }}</h4>
+                    <small class="text-muted">Approved Today</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h4 class="mb-0 text-danger">{{ metrics.rejected_today }}</h4>
+                    <small class="text-muted">Rejected Today</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Amount Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Pending Amount</h6>
+                    <h4 class="text-warning">{{ metrics.total_pending_amount|currency }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Pending Urgency Confirmations</h6>
+                    <h4 class="text-danger">{{ metrics.pending_urgency_confirmation }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Important Notice -->
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> <strong>Approver Queue:</strong> 
+        This shows requisitions submitted by <strong>other users</strong> that require your approval. 
+        Your own requisitions are tracked separately in "My Requisitions".
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Urgency</label>
+                    <select name="urgency" class="form-select">
+                        <option value="">All</option>
+                        <option value="urgent" {% if urgency_filter == 'urgent' %}selected{% endif %}>Urgent Only</option>
+                        <option value="normal" {% if urgency_filter == 'normal' %}selected{% endif %}>Normal Only</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Amount</label>
+                    <select name="amount" class="form-select">
+                        <option value="">All</option>
+                        <option value="high" {% if amount_filter == 'high' %}selected{% endif %}>≥ 100K</option>
+                        <option value="medium" {% if amount_filter == 'medium' %}selected{% endif %}>10K - 100K</option>
+                        <option value="low" {% if amount_filter == 'low' %}selected{% endif %}>< 10K</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Search by transaction ID, description, or requester..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Requisitions Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Requested By</th>
+                            {% if is_centralized %}
+                            <th>Company</th>
+                            {% endif %}
+                            <th>Amount</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requisitions %}
+                        <tr {% if req.is_urgent %}class="table-danger"{% endif %}>
+                            <td><strong>{{ req.transaction_id }}</strong></td>
+                            <td>{{ req.requested_by.get_full_name|default:req.requested_by.username }}</td>
+                            {% if is_centralized %}
+                            <td>
+                                <span class="badge bg-secondary">{{ req.requested_by.company.name }}</span>
+                            </td>
+                            {% endif %}
+                            <td>
+                                <strong>{{ req.amount|currency }}</strong>
+                                {% if req.amount >= 100000 %}
+                                    <span class="badge bg-warning text-dark ms-1">HIGH</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ req.description|truncatewords:5 }}</td>
+                            <td>
+                                {% if req.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif req.status == 'pending_urgency_confirmation' %}
+                                    <span class="badge bg-danger">Urgency Confirmation</span>
+                                {% endif %}
+                                {% if req.is_urgent %}
+                                    <span class="badge bg-danger ms-1">
+                                        <i class="bi bi-exclamation-triangle"></i> URGENT
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ req.created_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'transactions:requisition-detail' req.transaction_id %}" 
+                                   class="btn btn-sm btn-success">
+                                    <i class="bi bi-check-circle"></i> Review
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{% if is_centralized %}8{% else %}7{% endif %}" class="text-center text-muted">
+                                <i class="bi bi-check-circle"></i> No pending approvals. Great job!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

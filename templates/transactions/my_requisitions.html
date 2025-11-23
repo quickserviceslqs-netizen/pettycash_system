@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load static %}
+{% load settings_tags %}
+
+{% block title %}My Requisitions - Petty Cash System{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-person-circle"></i> My Requisitions</h2>
+                    <p class="text-muted">Requisitions I created
+                        {% if is_centralized %}
+                            <span class="badge bg-info ms-2">
+                                <i class="bi bi-globe"></i> {{ scope_label }}
+                            </span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'transactions:transactions-home' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <a href="{% url 'transactions:create-requisition' %}" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Create New
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="mb-0">{{ metrics.total }}</h4>
+                    <small class="text-muted">Total</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h4 class="mb-0 text-warning">{{ metrics.pending }}</h4>
+                    <small class="text-muted">Pending</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h4 class="mb-0 text-success">{{ metrics.approved }}</h4>
+                    <small class="text-muted">Approved</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <h4 class="mb-0 text-info">{{ metrics.reviewed }}</h4>
+                    <small class="text-muted">Reviewed</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h4 class="mb-0 text-primary">{{ metrics.paid }}</h4>
+                    <small class="text-muted">Paid</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-danger">
+                <div class="card-body">
+                    <h4 class="mb-0 text-danger">{{ metrics.rejected }}</h4>
+                    <small class="text-muted">Rejected</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Amount Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Amount Requested</h6>
+                    <h4>{{ metrics.total_amount|currency }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted">Pending Amount</h6>
+                    <h4 class="text-warning">{{ metrics.pending_amount|currency }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="pending_urgency_confirmation" {% if status_filter == 'pending_urgency_confirmation' %}selected{% endif %}>Pending Urgency</option>
+                        <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="reviewed" {% if status_filter == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+                        <option value="change_requested" {% if status_filter == 'change_requested' %}selected{% endif %}>Change Requested</option>
+                    </select>
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="Search by transaction ID or description..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Requisitions Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Next Approver</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requisitions %}
+                        <tr>
+                            <td><strong>{{ req.transaction_id }}</strong></td>
+                            <td>{{ req.amount|currency }}</td>
+                            <td>{{ req.description|truncatewords:5 }}</td>
+                            <td>
+                                {% if req.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif req.status == 'pending_urgency_confirmation' %}
+                                    <span class="badge bg-warning">Pending Urgency</span>
+                                {% elif req.status == 'approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif req.status == 'reviewed' %}
+                                    <span class="badge bg-info">Reviewed</span>
+                                {% elif req.status == 'paid' %}
+                                    <span class="badge bg-primary">Paid</span>
+                                {% elif req.status == 'rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% elif req.status == 'change_requested' %}
+                                    <span class="badge bg-danger">Changes Requested</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ req.status }}</span>
+                                {% endif %}
+                                {% if req.is_urgent %}
+                                    <span class="badge bg-danger ms-1">URGENT</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.next_approver %}
+                                    {{ req.next_approver.get_full_name|default:req.next_approver.username }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ req.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <a href="{% url 'transactions:requisition-detail' req.transaction_id %}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                <i class="bi bi-info-circle"></i> No requisitions found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
