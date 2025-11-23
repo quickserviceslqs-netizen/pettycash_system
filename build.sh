@@ -23,6 +23,9 @@ python manage.py migrate treasury 0008 --fake 2>/dev/null || true
 # Run all migrations (new ones will apply, existing ones are faked)
 python manage.py migrate --no-input
 
+# Create default approval thresholds (workflow app)
+python create_approval_thresholds.py
+
 # Note: Create superuser manually via Django Admin or Render shell
 # python manage.py createsuperuser
 
