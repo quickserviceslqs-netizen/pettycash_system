@@ -10,6 +10,8 @@ from treasury.views import (
     funds_view, alerts_view, variances_view
 )
 
+app_name = 'treasury'
+
 # Setup DRF router for API endpoints
 router = DefaultRouter()
 router.register(r'funds', TreasuryFundViewSet, basename='fund')
