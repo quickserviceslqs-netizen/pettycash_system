@@ -234,8 +234,15 @@ class PaymentViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def send_otp(self, request, payment_id=None):
-        """Send OTP to payment executor."""
+        """Send OTP to payment executor. Requires treasury.change_payment permission."""
         payment = self.get_object()
+        
+        # Explicit permission check for this sensitive operation
+        if not request.user.has_perm('treasury.change_payment'):
+            return Response(
+                {'error': 'You do not have permission to send OTP for payments'},
+                status=status.HTTP_403_FORBIDDEN
+            )
         
         # Check if OTP already sent and valid
         if payment.otp_sent_timestamp and not OTPService.is_otp_expired(payment):
@@ -253,7 +260,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def verify_otp(self, request, payment_id=None):
         """
-        Verify OTP for 2FA.
+        Verify OTP for 2FA. Requires treasury.change_payment permission.
         
         Request body:
         {
@@ -261,6 +268,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
         }
         """
         payment = self.get_object()
+        
+        # Explicit permission check for this sensitive operation
+        if not request.user.has_perm('treasury.change_payment'):
+            return Response(
+                {'error': 'You do not have permission to verify OTP for payments'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         otp = request.data.get('otp', '').strip()
         
         if not otp or len(otp) != 6:
@@ -279,6 +294,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
     def execute(self, request, payment_id=None):
         """
         Execute payment with atomic transaction.
+        Requires treasury.change_payment permission.
         
         Requires:
         - OTP verification (if otp_required=True)
@@ -292,6 +308,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
         }
         """
         payment = self.get_object()
+        
+        # Explicit permission check for this critical financial operation
+        if not request.user.has_perm('treasury.change_payment'):
+            return Response(
+                {'error': 'You do not have permission to execute payments'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         executor = request.user
         
         # Get optional gateway info
@@ -704,16 +728,32 @@ class AlertsViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def acknowledge(self, request, alert_id=None):
-        """Acknowledge an alert (mark as seen)."""
+        """Acknowledge an alert (mark as seen). Requires treasury.change_alert permission."""
         alert = self.get_object()
+        
+        # Explicit permission check
+        if not request.user.has_perm('treasury.change_alert'):
+            return Response(
+                {'error': 'You do not have permission to acknowledge alerts'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         AlertService.acknowledge_alert(alert, request.user)
         serializer = self.get_serializer(alert)
         return Response(serializer.data)
     
     @action(detail=True, methods=['post'])
     def resolve(self, request, alert_id=None):
-        """Resolve an alert with optional notes."""
+        """Resolve an alert with optional notes. Requires treasury.change_alert permission."""
         alert = self.get_object()
+        
+        # Explicit permission check
+        if not request.user.has_perm('treasury.change_alert'):
+            return Response(
+                {'error': 'You do not have permission to resolve alerts'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         notes = request.data.get('notes')
         AlertService.resolve_alert(alert, request.user, notes)
         serializer = self.get_serializer(alert)
