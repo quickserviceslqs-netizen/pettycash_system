@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'treasury',
     'workflow',
     'reports',
+    'settings_manager',
 ]
 
 # ---------------------------------------------------------------------
