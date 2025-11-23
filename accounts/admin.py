@@ -275,6 +275,7 @@ class WhitelistedDeviceAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'user__email', 'device_name', 'ip_address', 'location')
     readonly_fields = ('registered_at', 'last_used_at')
     ordering = ('-registered_at',)
+    actions = ['activate_devices', 'deactivate_devices', 'delete_non_primary_devices']
     
     fieldsets = (
         ('Device Information', {
@@ -291,6 +292,33 @@ class WhitelistedDeviceAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def activate_devices(self, request, queryset):
+        """Bulk activate selected devices"""
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f'{updated} device(s) activated successfully.')
+    activate_devices.short_description = "✓ Activate selected devices"
+    
+    def deactivate_devices(self, request, queryset):
+        """Bulk deactivate selected non-primary devices"""
+        # Don't deactivate primary devices
+        non_primary = queryset.filter(is_primary=False)
+        updated = non_primary.update(is_active=False)
+        self.message_user(request, f'{updated} device(s) deactivated successfully.')
+        if queryset.filter(is_primary=True).exists():
+            self.message_user(request, 'Primary devices were skipped (cannot deactivate).', level='warning')
+    deactivate_devices.short_description = "⏸ Deactivate selected devices (skip primary)"
+    
+    def delete_non_primary_devices(self, request, queryset):
+        """Bulk delete selected non-primary devices"""
+        primary_count = queryset.filter(is_primary=True).count()
+        non_primary = queryset.filter(is_primary=False)
+        count = non_primary.count()
+        non_primary.delete()
+        self.message_user(request, f'{count} non-primary device(s) deleted successfully.')
+        if primary_count > 0:
+            self.message_user(request, f'{primary_count} primary device(s) were skipped (cannot delete).', level='warning')
+    delete_non_primary_devices.short_description = "🗑 Delete selected devices (skip primary)"
 
 
 @admin.register(DeviceAccessAttempt)

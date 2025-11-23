@@ -475,3 +475,103 @@ def manage_user_devices(request, user_id):
     }
     
     return render(request, 'accounts/manage_user_devices.html', context)
+
+
+@require_http_methods(["POST"])
+@login_required
+@permission_required('accounts.change_user', raise_exception=True)
+def admin_toggle_device(request, device_id):
+    """Admin can activate/deactivate any user's device"""
+    device = get_object_or_404(WhitelistedDevice, id=device_id)
+    
+    # Toggle active status
+    device.is_active = not device.is_active
+    device.save()
+    
+    action = "activated" if device.is_active else "deactivated"
+    messages.success(request, f"Device '{device.device_name}' has been {action}")
+    
+    log_activity(
+        user=request.user,
+        action='update',
+        content_type='Whitelisted Device',
+        object_id=device.id,
+        object_repr=str(device),
+        description=f"Admin {action} device for {device.user.username}: {device.device_name}",
+        changes={'is_active': device.is_active},
+        success=True,
+        request=request
+    )
+    
+    return redirect('manage_user_devices', user_id=device.user.id)
+
+
+@require_http_methods(["POST"])
+@login_required
+@permission_required('accounts.delete_user', raise_exception=True)
+def admin_delete_device(request, device_id):
+    """Admin can delete any user's device"""
+    device = get_object_or_404(WhitelistedDevice, id=device_id)
+    user_id = device.user.id
+    device_name = device.device_name
+    username = device.user.username
+    
+    # Check if it's the only device
+    device_count = WhitelistedDevice.objects.filter(user=device.user).count()
+    if device_count == 1:
+        messages.error(request, "Cannot delete the only device. User must have at least one device.")
+        return redirect('manage_user_devices', user_id=user_id)
+    
+    # Check if it's primary
+    if device.is_primary:
+        messages.error(request, "Cannot delete primary device. Set another device as primary first.")
+        return redirect('manage_user_devices', user_id=user_id)
+    
+    # Delete device
+    device.delete()
+    
+    messages.success(request, f"Device '{device_name}' has been permanently deleted")
+    
+    log_activity(
+        user=request.user,
+        action='delete',
+        content_type='Whitelisted Device',
+        object_id=device_id,
+        object_repr=f"{username} - {device_name}",
+        description=f"Admin deleted device for {username}: {device_name}",
+        success=True,
+        request=request
+    )
+    
+    return redirect('manage_user_devices', user_id=user_id)
+
+
+@require_http_methods(["POST"])
+@login_required
+@permission_required('accounts.change_user', raise_exception=True)
+def admin_set_primary_device(request, device_id):
+    """Admin can set any device as primary for a user"""
+    device = get_object_or_404(WhitelistedDevice, id=device_id)
+    
+    if not device.is_active:
+        messages.error(request, "Cannot set inactive device as primary. Activate it first.")
+        return redirect('manage_user_devices', user_id=device.user.id)
+    
+    # Set as primary
+    device.set_as_primary()
+    
+    messages.success(request, f"'{device.device_name}' is now the primary device")
+    
+    log_activity(
+        user=request.user,
+        action='update',
+        content_type='Whitelisted Device',
+        object_id=device.id,
+        object_repr=str(device),
+        description=f"Admin set primary device for {device.user.username}: {device.device_name}",
+        changes={'is_primary': True},
+        success=True,
+        request=request
+    )
+    
+    return redirect('manage_user_devices', user_id=device.user.id)

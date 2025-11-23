@@ -67,4 +67,9 @@ urlpatterns = [
     path('devices/<int:device_id>/deactivate/', views_invitation.deactivate_device, name='deactivate_device'),
     path('devices/<int:device_id>/set-primary/', views_invitation.set_primary_device, name='set_primary_device'),
     path('users/<int:user_id>/devices/', views_invitation.manage_user_devices, name='manage_user_devices'),
+    
+    # Admin device management actions
+    path('admin/devices/<int:device_id>/toggle/', views_invitation.admin_toggle_device, name='admin_toggle_device'),
+    path('admin/devices/<int:device_id>/delete/', views_invitation.admin_delete_device, name='admin_delete_device'),
+    path('admin/devices/<int:device_id>/set-primary/', views_invitation.admin_set_primary_device, name='admin_set_primary_device'),
 ]
