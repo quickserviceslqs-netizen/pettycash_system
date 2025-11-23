@@ -18,6 +18,7 @@ from treasury.models import (
 )
 from organization.models import Company, Region, Branch
 from transactions.models import Requisition
+from settings_manager.models import get_setting
 
 
 # ==================== TREASURY FUNDS ====================
@@ -75,7 +76,8 @@ def create_fund(request):
             region_id = request.POST.get('region') or None
             branch_id = request.POST.get('branch') or None
             current_balance = request.POST.get('current_balance') or '0.00'
-            reorder_level = request.POST.get('reorder_level') or '50000.00'
+            default_reorder = get_setting('TREASURY_DEFAULT_REORDER_LEVEL', '50000')
+            reorder_level = request.POST.get('reorder_level') or default_reorder
             
             if not company_id:
                 messages.error(request, 'Company is required.')
@@ -110,10 +112,13 @@ def create_fund(request):
     regions = Region.objects.all()
     branches = Branch.objects.all()
     
+    default_reorder_level = get_setting('TREASURY_DEFAULT_REORDER_LEVEL', '50000')
+    
     context = {
         'companies': companies,
         'regions': regions,
         'branches': branches,
+        'default_reorder_level': default_reorder_level,
     }
     
     return render(request, 'treasury/create_fund.html', context)
@@ -129,7 +134,8 @@ def edit_fund(request, fund_id):
     if request.method == 'POST':
         try:
             fund.current_balance = Decimal(request.POST.get('current_balance', '0.00'))
-            fund.reorder_level = Decimal(request.POST.get('reorder_level', '50000.00'))
+            default_reorder = get_setting('TREASURY_DEFAULT_REORDER_LEVEL', '50000')
+            fund.reorder_level = Decimal(request.POST.get('reorder_level', default_reorder))
             fund.save()
             
             messages.success(request, 'Fund updated successfully!')

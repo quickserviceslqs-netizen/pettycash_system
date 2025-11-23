@@ -104,7 +104,7 @@ def import_companies(request):
                 for row_num, row in enumerate(data_rows, start=2):
                     try:
                         if is_excel:
-                            row = {k: (str(v) if pd.notna(v) else \'\') for k, v in row.items()}
+                            row = {k: (str(v) if pd.notna(v) else '') for k, v in row.items()}
                         
                         if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
@@ -226,7 +226,7 @@ def import_regions(request):
                 for row_num, row in enumerate(data_rows, start=2):
                     try:
                         if is_excel:
-                            row = {k: (str(v) if pd.notna(v) else \'\') for k, v in row.items()}
+                            row = {k: (str(v) if pd.notna(v) else '') for k, v in row.items()}
                         
                         if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
@@ -368,7 +368,7 @@ def import_branches(request):
                 for row_num, row in enumerate(data_rows, start=2):
                     try:
                         if is_excel:
-                            row = {k: (str(v) if pd.notna(v) else \'\') for k, v in row.items()}
+                            row = {k: (str(v) if pd.notna(v) else '') for k, v in row.items()}
                         
                         if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
@@ -532,7 +532,7 @@ def import_departments(request):
                 for row_num, row in enumerate(data_rows, start=2):
                     try:
                         if is_excel:
-                            row = {k: (str(v) if pd.notna(v) else \'\') for k, v in row.items()}
+                            row = {k: (str(v) if pd.notna(v) else '') for k, v in row.items()}
                         
                         if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
@@ -599,3 +599,4 @@ def import_organizations(request):
         'branches': Branch.objects.select_related('region__company').all().order_by('region__company__name', 'region__name', 'name'),
     }
     return render(request, 'organization/bulk_import.html', context)
+

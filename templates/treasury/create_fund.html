@@ -70,8 +70,8 @@
                             <div class="col-md-6">
                                 <label class="form-label">Reorder Level</label>
                                 <input type="number" name="reorder_level" class="form-control" 
-                                       step="0.01" min="0" value="50000.00" required>
-                                <small class="text-muted">Minimum balance before alert</small>
+                                       step="0.01" min="0" value="{{ default_reorder_level|default:'50000' }}" required>
+                                <small class="text-muted">Minimum balance before alert (Default: {{ default_reorder_level|default:'50000' }})</small>
                             </div>
                         </div>
 
