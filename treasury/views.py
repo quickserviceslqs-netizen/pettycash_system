@@ -1,6 +1,10 @@
 """
 Treasury payment execution views and API endpoints (Phase 5).
 
+All views include proper permission checks:
+- App assignment check via @require_app_access decorator
+- Django permission check via has_perm()
+
 Endpoints:
 - POST /payments/{payment_id}/execute/ - Execute payment
 - POST /payments/{payment_id}/verify-otp/ - Verify OTP
