@@ -215,10 +215,11 @@ def log_activity(user, action, content_type='', object_id='', object_repr='',
     """
     Helper function to log admin activities.
     Can be called from anywhere in the application.
-    Captures IP address, device name, and user agent.
+    Captures IP address, device name, location, and user agent.
     """
     ip_address = None
     device_name = ''
+    location = ''
     user_agent = ''
     
     if request:
@@ -228,6 +229,43 @@ def log_activity(user, action, content_type='', object_id='', object_repr='',
             ip_address = x_forwarded_for.split(',')[0].strip()
         else:
             ip_address = request.META.get('REMOTE_ADDR')
+        
+        # Get location from IP address
+        if ip_address and ip_address not in ['127.0.0.1', 'localhost', '::1']:
+            # Check if geolocation is enabled in settings
+            from settings_manager.models import get_setting
+            if get_setting('ENABLE_ACTIVITY_GEOLOCATION', 'true') == 'true':
+                try:
+                    import requests
+                    # Use a free IP geolocation API
+                    response = requests.get(
+                        f'http://ip-api.com/json/{ip_address}',
+                        timeout=2  # 2 second timeout
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get('status') == 'success':
+                            city = data.get('city', '')
+                            region = data.get('regionName', '')
+                            country = data.get('country', '')
+                            
+                            # Build location string
+                            location_parts = []
+                            if city:
+                                location_parts.append(city)
+                            if region and region != city:
+                                location_parts.append(region)
+                            if country:
+                                location_parts.append(country)
+                            
+                            location = ', '.join(location_parts)
+                except Exception:
+                    # If geolocation fails, continue without location
+                    pass
+        
+        # For local development
+        if not location and ip_address in ['127.0.0.1', 'localhost', '::1']:
+            location = 'Local Development'
         
         # Get device name from hostname (if available in headers)
         device_name = request.META.get('REMOTE_HOST', '')
@@ -295,6 +333,7 @@ def log_activity(user, action, content_type='', object_id='', object_repr='',
         description=description,
         ip_address=ip_address,
         device_name=device_name[:255] if device_name else '',
+        location=location[:255] if location else '',
         user_agent=user_agent[:500] if user_agent else '',
         changes=changes,
         success=success,

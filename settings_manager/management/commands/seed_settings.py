@@ -167,6 +167,15 @@ class Command(BaseCommand):
                 'value': '5',
                 'default_value': '5',
             },
+            {
+                'key': 'ENABLE_ACTIVITY_GEOLOCATION',
+                'display_name': 'Enable Activity Location Tracking',
+                'description': 'Track geographic location of user activities using IP geolocation',
+                'category': 'security',
+                'setting_type': 'boolean',
+                'value': 'true',
+                'default_value': 'true',
+            },
             
             # NOTIFICATION SETTINGS
             {

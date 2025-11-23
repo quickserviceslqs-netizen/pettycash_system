@@ -76,12 +76,13 @@
                                 <thead>
                                     <tr>
                                         <th style="width: 12%;">Timestamp</th>
-                                        <th style="width: 15%;">User</th>
-                                        <th style="width: 10%;">Action</th>
-                                        <th style="width: 15%;">Target</th>
-                                        <th style="width: 25%;">Changes</th>
-                                        <th style="width: 12%;">Device/IP</th>
-                                        <th style="width: 8%;">Status</th>
+                                        <th style="width: 14%;">User</th>
+                                        <th style="width: 8%;">Action</th>
+                                        <th style="width: 13%;">Target</th>
+                                        <th style="width: 22%;">Changes</th>
+                                        <th style="width: 15%;">Device/Location</th>
+                                        <th style="width: 10%;">IP Address</th>
+                                        <th style="width: 6%;">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -141,8 +142,15 @@
                                                     <small><i class="bi bi-laptop"></i> {{ log.device_name }}</small>
                                                     <br>
                                                 {% endif %}
+                                                {% if log.location %}
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-geo-alt-fill"></i> {{ log.location }}
+                                                    </small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
                                                 <small class="font-monospace text-muted">
-                                                    <i class="bi bi-globe"></i> {{ log.ip_address|default:"-" }}
+                                                    {{ log.ip_address|default:"-" }}
                                                 </small>
                                             </td>
                                             <td>

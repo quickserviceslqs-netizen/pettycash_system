@@ -200,6 +200,11 @@ class ActivityLog(models.Model):
         blank=True,
         help_text="Device hostname/name"
     )
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Geographic location (City, Country)"
+    )
     user_agent = models.TextField(blank=True, help_text="Browser user agent string")
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     
