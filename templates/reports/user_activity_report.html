@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}User Activity Report - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">User Activity Report</h2>
+            <p class="text-muted mb-0">User performance and activity metrics</p>
+        </div>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Requisition Activity -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">User Requisition Activity (Last {{ days }} Days)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>User</th>
+                            <th class="text-center">Total Requests</th>
+                            <th class="text-end">Total Amount</th>
+                            <th class="text-center">Pending</th>
+                            <th class="text-center">Paid</th>
+                            <th class="text-center">Rejected</th>
+                            <th class="text-end">Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in user_requisition_stats %}
+                        <tr>
+                            <td class="fw-semibold">{{ user.username }}</td>
+                            <td class="text-center">{{ user.total_requisitions }}</td>
+                            <td class="text-end">${{ user.total_amount_requested|floatformat:2 }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-warning">{{ user.pending_count }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success">{{ user.paid_count }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-danger">{{ user.rejected_count }}</span>
+                            </td>
+                            <td class="text-end">
+                                {% if user.total_requisitions > 0 %}
+                                    {% widthratio user.paid_count user.total_requisitions 100 %}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No requisition activity found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Activity -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">User Approval Activity (Last {{ days }} Days)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>User</th>
+                            <th class="text-center">Approvals</th>
+                            <th class="text-center">Rejections</th>
+                            <th class="text-center">Change Requests</th>
+                            <th class="text-end">Total Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in user_approval_stats %}
+                        <tr>
+                            <td class="fw-semibold">{{ user.username }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-success">{{ user.total_approvals }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-danger">{{ user.total_rejections }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-warning">{{ user.total_change_requests }}</span>
+                            </td>
+                            <td class="text-end">
+                                {{ user.total_approvals|add:user.total_rejections|add:user.total_change_requests }}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No approval activity found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Execution Activity -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">User Payment Execution Activity (Last {{ days }} Days)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>User</th>
+                            <th class="text-center">Total Payments</th>
+                            <th class="text-center">Successful</th>
+                            <th class="text-center">Failed</th>
+                            <th class="text-end">Total Amount Paid</th>
+                            <th class="text-end">Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in user_payment_stats %}
+                        <tr>
+                            <td class="fw-semibold">{{ user.username }}</td>
+                            <td class="text-center">{{ user.total_payments }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-success">{{ user.successful_payments }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-danger">{{ user.failed_payments }}</span>
+                            </td>
+                            <td class="text-end">${{ user.total_amount_paid|floatformat:2|default:"0.00" }}</td>
+                            <td class="text-end">
+                                {% if user.total_payments > 0 %}
+                                    {% widthratio user.successful_payments user.total_payments 100 %}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No payment execution activity found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

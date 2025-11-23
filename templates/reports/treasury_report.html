@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Treasury Report - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Treasury Report</h2>
+            <p class="text-muted mb-0">Fund balances and payment activity</p>
+        </div>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Overall Summary -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted mb-1 small">Total Balance</p>
+                    <h3 class="mb-0 text-success">${{ total_balance|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted mb-1 small">Funds Needing Replenishment</p>
+                    <h3 class="mb-0 {% if funds_needing_replenishment > 0 %}text-danger{% else %}text-success{% endif %}">
+                        {{ funds_needing_replenishment }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted mb-1 small">Total Funds</p>
+                    <h3 class="mb-0">{{ funds.count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fund Balances -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">Treasury Fund Balances</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Company</th>
+                            <th>Region</th>
+                            <th>Branch</th>
+                            <th>Current Balance</th>
+                            <th>Reorder Level</th>
+                            <th>Status</th>
+                            <th>Last Replenished</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fund in funds %}
+                        <tr>
+                            <td>{{ fund.company.name }}</td>
+                            <td>{{ fund.region.name|default:"-" }}</td>
+                            <td>{{ fund.branch.name|default:"HQ" }}</td>
+                            <td class="fw-semibold">${{ fund.current_balance|floatformat:2 }}</td>
+                            <td>${{ fund.reorder_level|floatformat:2 }}</td>
+                            <td>
+                                {% if fund.needs_replenishment %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-exclamation-triangle"></i> Below Reorder Level
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Healthy
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if fund.last_replenished %}
+                                    {{ fund.last_replenished|date:"M d, Y" }}
+                                {% else %}
+                                    <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No treasury funds found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Statistics -->
+    <div class="row g-3">
+        <!-- Payment by Method -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">Payment by Method (Last {{ days }} Days)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Method</th>
+                                    <th class="text-end">Count</th>
+                                    <th class="text-end">Total Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in payment_stats %}
+                                <tr>
+                                    <td>
+                                        {% if stat.method == 'mpesa' %}
+                                            <i class="bi bi-phone text-success"></i> MPESA
+                                        {% elif stat.method == 'bank' %}
+                                            <i class="bi bi-bank text-primary"></i> Bank Transfer
+                                        {% elif stat.method == 'cash' %}
+                                            <i class="bi bi-cash text-warning"></i> Cash
+                                        {% else %}
+                                            {{ stat.method|title }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">{{ stat.count }}</td>
+                                    <td class="text-end fw-semibold">${{ stat.total_amount|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No payment data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment by Status -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">Payment by Status (Last {{ days }} Days)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th class="text-end">Count</th>
+                                    <th class="text-end">Total Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in status_stats %}
+                                <tr>
+                                    <td>
+                                        {% if stat.status == 'success' %}
+                                            <span class="badge bg-success">Success</span>
+                                        {% elif stat.status == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% elif stat.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ stat.status|title }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">{{ stat.count }}</td>
+                                    <td class="text-end fw-semibold">${{ stat.total_amount|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No payment data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

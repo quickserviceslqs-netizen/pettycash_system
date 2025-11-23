@@ -1,53 +1,332 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static %}
 
-{% block title %}Treasury Reports{% endblock %}
+{% block title %}Reports Dashboard - {{ block.super }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-0">
-                <i class="bi bi-graph-up"></i> Treasury Reports
-            </h1>
-            <small class="text-muted">Analytics and reporting</small>
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Reports Dashboard</h2>
+            <p class="text-muted mb-0">Comprehensive analytics and insights</p>
         </div>
-        <div class="col-md-4 text-end">
-            <button class="btn btn-primary" onclick="exportReport()">
-                <i class="bi bi-download"></i> Export
-            </button>
+        <div>
+            <!-- Date Range Filter -->
+            <form method="get" class="d-inline-flex align-items-center gap-2">
+                <label for="days" class="mb-0 text-muted">Time Period:</label>
+                <select name="days" id="days" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 Days</option>
+                    <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 Days</option>
+                    <option value="60" {% if days == 60 %}selected{% endif %}>Last 60 Days</option>
+                    <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 Days</option>
+                    <option value="180" {% if days == 180 %}selected{% endif %}>Last 6 Months</option>
+                    <option value="365" {% if days == 365 %}selected{% endif %}>Last Year</option>
+                </select>
+            </form>
         </div>
     </div>
 
-    <!-- Date Range Selector -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="row align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label">Start Date</label>
-                    <input type="date" class="form-control" id="startDate" 
-                           value="" onchange="loadReports()">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">End Date</label>
-                    <input type="date" class="form-control" id="endDate" 
-                           value="" onchange="loadReports()">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Report Type</label>
-                    <select class="form-select" id="reportType" onchange="loadReports()">
-                        <option value="payment_summary">Payment Summary</option>
-                        <option value="fund_health">Fund Health</option>
-                        <option value="variance_analysis">Variance Analysis</option>
-                        <option value="forecast">30-Day Forecast</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <button class="btn btn-outline-secondary w-100" onclick="loadReports()">
-                        <i class="bi bi-arrow-clockwise"></i> Refresh
-                    </button>
+    <!-- Quick Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Requisitions</p>
+                            <h3 class="mb-0">{{ total_requisitions }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 rounded p-2">
+                            <i class="bi bi-file-earmark-text text-primary fs-4"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0 mt-2 small">Amount: ${{ total_amount|floatformat:2 }}</p>
                 </div>
             </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Pending Requests</p>
+                            <h3 class="mb-0">{{ pending_count }}</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 rounded p-2">
+                            <i class="bi bi-hourglass-split text-warning fs-4"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0 mt-2 small">
+                        Paid: {{ paid_count }} | Rejected: {{ rejected_count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Treasury Balance</p>
+                            <h3 class="mb-0">${{ total_treasury_balance|floatformat:2 }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 rounded p-2">
+                            <i class="bi bi-bank text-success fs-4"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0 mt-2 small">
+                        {% if funds_below_reorder > 0 %}
+                            <span class="text-danger">{{ funds_below_reorder }} fund(s) below reorder level</span>
+                        {% else %}
+                            All funds above reorder level
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Active Users</p>
+                            <h3 class="mb-0">{{ active_users }}</h3>
+                        </div>
+                        <div class="bg-info bg-opacity-10 rounded p-2">
+                            <i class="bi bi-people text-info fs-4"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0 mt-2 small">Users with activity in period</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Reports Links -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:transaction-report' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary bg-opacity-10 rounded p-3 me-3">
+                                <i class="bi bi-receipt text-primary fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Transaction Report</h5>
+                                <small class="text-muted">Requisition details & analysis</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-primary fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:treasury-report' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-success bg-opacity-10 rounded p-3 me-3">
+                                <i class="bi bi-cash-stack text-success fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Treasury Report</h5>
+                                <small class="text-muted">Fund balances & payments</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-success fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:approval-report' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-warning bg-opacity-10 rounded p-3 me-3">
+                                <i class="bi bi-check2-circle text-warning fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Approval Report</h5>
+                                <small class="text-muted">Workflow analytics</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-warning fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:user-activity-report' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-info bg-opacity-10 rounded p-3 me-3">
+                                <i class="bi bi-activity text-info fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">User Activity</h5>
+                                <small class="text-muted">User performance metrics</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-info fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Charts and Tables Row -->
+    <div class="row g-3">
+        <!-- Status Breakdown -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">Requisition Status Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th class="text-end">Count</th>
+                                    <th class="text-end">Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in status_breakdown %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ item.status|title }}</span>
+                                    </td>
+                                    <td class="text-end">{{ item.count }}</td>
+                                    <td class="text-end">
+                                        {% widthratio item.count total_requisitions 100 %}%
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Requesters -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">Top Requesters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th class="text-end">Requests</th>
+                                    <th class="text-end">Total Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for requester in top_requesters %}
+                                <tr>
+                                    <td>{{ requester.requested_by__username }}</td>
+                                    <td class="text-end">{{ requester.total }}</td>
+                                    <td class="text-end">${{ requester.amount|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Stats -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">Payment Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="border rounded p-3">
+                                <p class="text-muted mb-1 small">Successful Payments</p>
+                                <h4 class="mb-0 text-success">{{ successful_payments }}</h4>
+                                <small class="text-muted">${{ total_paid_amount|floatformat:2 }}</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3">
+                                <p class="text-muted mb-1 small">Failed Payments</p>
+                                <h4 class="mb-0 text-danger">{{ failed_payments }}</h4>
+                                <small class="text-muted">Requires attention</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approval Metrics -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">Approval Metrics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="border rounded p-3">
+                                <p class="text-muted mb-1 small">Total Approvals</p>
+                                <h4 class="mb-0 text-success">{{ total_approvals }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-3">
+                                <p class="text-muted mb-1 small">Total Rejections</p>
+                                <h4 class="mb-0 text-danger">{{ total_rejections }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-lift {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}
         </div>
     </div>
 
