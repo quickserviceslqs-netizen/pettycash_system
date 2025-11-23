@@ -358,6 +358,90 @@ def reject_requisition(request, requisition_id):
     return redirect("transactions-home")
 
 
+@login_required
+@transaction.atomic
+def revert_fast_track(request, requisition_id):
+    """
+    Revert a fast-tracked requisition to normal approval flow.
+    Only available to the final approver when reviewing a fast-tracked requisition.
+    """
+    # Check if user has workflow app assigned
+    user_apps = get_user_apps(request.user)
+    if 'workflow' not in user_apps and 'transactions' not in user_apps:
+        messages.error(request, "You don't have access to manage requisitions.")
+        return redirect('dashboard')
+    
+    # Check if user has permission to change requisitions
+    if not request.user.has_perm('transactions.change_requisition'):
+        messages.error(request, "You don't have permission to revert fast-tracked requisitions.")
+        return redirect('transactions-home')
+    
+    # Lock the row for update
+    try:
+        requisition = Requisition.objects.select_for_update().get(
+            transaction_id=requisition_id
+        )
+    except Requisition.DoesNotExist:
+        messages.error(request, "Requisition not found.")
+        return redirect("transactions-home")
+    
+    # Validate requisition is fast-tracked
+    if not requisition.is_fast_tracked:
+        messages.error(request, "This requisition was not fast-tracked.")
+        return redirect("transactions-home")
+    
+    # Validate status - can only revert pending requisitions
+    if requisition.status != 'pending':
+        messages.error(request, "Can only revert pending fast-tracked requisitions.")
+        return redirect("transactions-home")
+    
+    # Validate user is the next approver (final approver in fast-track)
+    if not requisition.can_approve(request.user):
+        messages.error(request, "You are not authorized to revert this requisition.")
+        return redirect("transactions-home")
+    
+    # Restore original workflow sequence
+    if not requisition.original_workflow_sequence:
+        messages.error(request, "Original workflow sequence not found.")
+        return redirect("transactions-home")
+    
+    # Create audit trail for reversion
+    revert_reason = request.POST.get("revert_reason", "Urgency not validated - reverting to normal approval flow")
+    ApprovalTrail.objects.create(
+        requisition=requisition,
+        user=request.user,
+        role=request.user.role,
+        action="reverted_to_normal",
+        comment=revert_reason,
+        timestamp=timezone.now(),
+        auto_escalated=False,
+    )
+    
+    # Restore original workflow and reset to first approver
+    requisition.workflow_sequence = requisition.original_workflow_sequence.copy()
+    requisition.is_fast_tracked = False
+    
+    # Find the first approver in the original sequence
+    if requisition.workflow_sequence:
+        first_approver_role = requisition.workflow_sequence[0]
+        # Find user with this role (simplified - in production, use proper role-to-user resolver)
+        first_approver = User.objects.filter(role=first_approver_role).first()
+        if first_approver:
+            requisition.next_approver = first_approver
+        else:
+            messages.warning(request, f"Could not find user with role '{first_approver_role}'. Please assign manually.")
+            requisition.next_approver = None
+    
+    requisition.save(update_fields=["workflow_sequence", "is_fast_tracked", "next_approver"])
+    
+    messages.success(
+        request, 
+        f"Requisition {requisition_id} reverted to normal approval flow. "
+        f"It will now go through all required approvers starting from {requisition.next_approver.get_full_name() if requisition.next_approver else 'first approver'}."
+    )
+    return redirect("transactions-home")
+
+
 # -----------------------------
 # Phase 4: Admin Override (Emergency Approval)
 # -----------------------------

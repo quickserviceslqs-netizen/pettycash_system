@@ -60,6 +60,8 @@ class Requisition(models.Model):
     tier = models.CharField(max_length=64, blank=True, null=True)
 
     workflow_sequence = models.JSONField(blank=True, null=True)
+    is_fast_tracked = models.BooleanField(default=False, help_text="True if requisition skipped intermediate approvers")
+    original_workflow_sequence = models.JSONField(blank=True, null=True, help_text="Original full workflow before fast-tracking")
     next_approver = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, related_name='next_approvals'
@@ -165,13 +167,14 @@ class ApprovalTrail(models.Model):
     requisition = models.ForeignKey('Requisition', on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     role = models.CharField(max_length=30)
-    action = models.CharField(max_length=20, choices=[
+    action = models.CharField(max_length=30, choices=[
         ('approved', 'Approved'),  # Used by approvers (BM, DH, RM, GFM, CFO)
         ('validated', 'Validated'),  # Used by Treasury (validates payment details)
         ('paid', 'Paid'),  # Used by Treasury (payment executed)
         ('reviewed', 'Reviewed'),  # Used by FP&A (post-payment review)
         ('rejected', 'Rejected'),  # Can be used by any role
-        ('urgency_confirmed', 'Urgency Confirmed')  # Phase 3: First approver confirms urgency
+        ('urgency_confirmed', 'Urgency Confirmed'),  # Phase 3: First approver confirms urgency
+        ('reverted_to_normal', 'Reverted to Normal Flow')  # Fast-track reverted to normal approval sequence
     ])
     comment = models.TextField(blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
