@@ -129,10 +129,11 @@ class TreasuryFundViewSet(viewsets.ReadOnlyModelViewSet):
             'needs_replenishment': fund.check_reorder_needed(),
         })
     
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'])
     def replenish(self, request, fund_id=None):
         """
         Manually replenish fund (treasury staff only).
+        Requires: treasury.change_treasuryfund permission
         
         Request body:
         {
@@ -141,9 +142,16 @@ class TreasuryFundViewSet(viewsets.ReadOnlyModelViewSet):
         """
         fund = self.get_object()
         
-        # Check permission: treasury staff or admin
+        # Check Django permission first
+        if not request.user.has_perm('treasury.change_treasuryfund'):
+            return Response(
+                {'error': 'You do not have permission to replenish funds'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Additional role check: treasury staff or admin
         user_role = request.user.role.lower() if request.user.role else ''
-        if user_role not in ['treasury', 'admin']:
+        if user_role not in ['treasury', 'admin'] and not request.user.is_superuser:
             return Response(
                 {'error': 'Only treasury staff can replenish funds'},
                 status=status.HTTP_403_FORBIDDEN
@@ -314,15 +322,24 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'])
     def reconcile(self, request, payment_id=None):
         """
         Reconcile payment after gateway confirmation (finance staff only).
+        Requires: treasury.change_payment permission
         """
         payment = self.get_object()
         
+        # Check Django permission first
+        if not request.user.has_perm('treasury.change_payment'):
+            return Response(
+                {'error': 'You do not have permission to reconcile payments'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Additional role check
         user_role = request.user.role.lower() if request.user.role else ''
-        if user_role not in ['treasury', 'admin']:
+        if user_role not in ['treasury', 'admin'] and not request.user.is_superuser:
             return Response(
                 {'error': 'Only finance staff can reconcile payments'},
                 status=status.HTTP_403_FORBIDDEN
@@ -338,6 +355,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
     def record_variance(self, request, payment_id=None):
         """
         Record payment amount variance for CFO review.
+        Requires: treasury.add_varianceadjustment permission
         
         Request body:
         {
@@ -348,8 +366,16 @@ class PaymentViewSet(viewsets.ModelViewSet):
         """
         payment = self.get_object()
         
+        # Check Django permission first
+        if not request.user.has_perm('treasury.add_varianceadjustment'):
+            return Response(
+                {'error': 'You do not have permission to record variances'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Additional role check
         user_role = request.user.role.lower() if request.user.role else ''
-        if user_role not in ['treasury', 'admin']:
+        if user_role not in ['treasury', 'admin'] and not request.user.is_superuser:
             return Response(
                 {'error': 'Only staff can record variance'},
                 status=status.HTTP_403_FORBIDDEN
@@ -403,11 +429,19 @@ class VarianceAdjustmentViewSet(viewsets.ReadOnlyModelViewSet):
     def approve(self, request, variance_id=None):
         """
         Approve variance adjustment (CFO only).
+        Requires: treasury.change_varianceadjustment permission
         """
         variance = self.get_object()
         
-        # Check CFO role
-        if not request.user.groups.filter(name__icontains='cfo').exists():
+        # Check Django permission first
+        if not request.user.has_perm('treasury.change_varianceadjustment'):
+            return Response(
+                {'error': 'You do not have permission to approve variances'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Additional check: CFO group membership (unless superuser)
+        if not request.user.is_superuser and not request.user.groups.filter(name__icontains='cfo').exists():
             return Response(
                 {'error': 'Only CFO can approve variances'},
                 status=status.HTTP_403_FORBIDDEN
