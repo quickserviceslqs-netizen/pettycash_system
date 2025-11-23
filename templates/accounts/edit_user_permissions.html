@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User: {{ user_to_edit.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2><i class="bi bi-pencil-square"></i> Edit User Permissions</h2>
+            <p class="text-muted">{{ user_to_edit.get_display_name }} ({{ user_to_edit.username }})</p>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Users
+            </a>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- User Info Card -->
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-person-badge"></i> User Information
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Username:</strong> {{ user_to_edit.username }}</p>
+                        <p><strong>Email:</strong> {{ user_to_edit.email }}</p>
+                        <p><strong>Joined:</strong> {{ user_to_edit.date_joined|date:"M d, Y" }}</p>
+                        <p><strong>Last Login:</strong> 
+                            {% if user_to_edit.last_login %}
+                                {{ user_to_edit.last_login|date:"M d, Y H:i" }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </p>
+                        
+                        <hr>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                   {% if user_to_edit.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">
+                                <strong>Active User</strong>
+                            </label>
+                            <div class="form-text">Inactive users cannot login</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permissions Card -->
+            <div class="col-md-8">
+                <!-- Role -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <i class="bi bi-diagram-3"></i> Role & Organization
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="role" class="form-label">Role *</label>
+                                <select class="form-select" id="role" name="role" required>
+                                    {% for role_value, role_label in roles %}
+                                    <option value="{{ role_value }}" 
+                                            {% if user_to_edit.role == role_value %}selected{% endif %}>
+                                        {{ role_label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="company" class="form-label">Company</label>
+                                <select class="form-select" id="company" name="company">
+                                    <option value="">No Company</option>
+                                    {% for company in companies %}
+                                    <option value="{{ company.id }}" 
+                                            {% if user_to_edit.company.id == company.id %}selected{% endif %}>
+                                        {{ company.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="branch" class="form-label">Branch</label>
+                                <select class="form-select" id="branch" name="branch">
+                                    <option value="">No Branch</option>
+                                    {% for branch in branches %}
+                                    <option value="{{ branch.id }}" 
+                                            {% if user_to_edit.branch.id == branch.id %}selected{% endif %}>
+                                        {{ branch.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="department" class="form-label">Department</label>
+                                <select class="form-select" id="department" name="department">
+                                    <option value="">No Department</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}" 
+                                            {% if user_to_edit.department.id == dept.id %}selected{% endif %}>
+                                        {{ dept.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="is_centralized_approver" 
+                                   name="is_centralized_approver" 
+                                   {% if user_to_edit.is_centralized_approver %}checked{% endif %}>
+                            <label class="form-check-label" for="is_centralized_approver">
+                                <strong>Centralized Approver</strong>
+                            </label>
+                            <div class="form-text">Can approve requisitions company-wide</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- App Access -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <i class="bi bi-grid-3x3-gap"></i> App Access
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Select which applications this user can access</p>
+                        
+                        <div class="row">
+                            {% for app in all_apps %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-{% if app in user_apps %}success{% else %}secondary{% endif %}">
+                                    <div class="card-body">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   id="app_{{ app.id }}" name="apps" value="{{ app.id }}"
+                                                   {% if app in user_apps %}checked{% endif %}>
+                                            <label class="form-check-label" for="app_{{ app.id }}">
+                                                <strong>{{ app.display_name }}</strong>
+                                            </label>
+                                        </div>
+                                        <small class="text-muted">{{ app.description }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="col-12">
+                                <p class="text-muted">No apps available</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-save"></i> Save Changes
+                    </button>
+                    <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

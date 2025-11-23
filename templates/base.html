@@ -175,8 +175,11 @@
                                     <i class="bi bi-sliders"></i> Admin
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                                    <li><a class="dropdown-item" href="{% url 'admin:index' %}">
-                                        <i class="bi bi-speedometer2"></i> Admin Panel
+                                    <li><a class="dropdown-item" href="{% url 'accounts:admin_dashboard' %}">
+                                        <i class="bi bi-speedometer2"></i> Admin Dashboard
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_users' %}">
+                                        <i class="bi bi-people"></i> Manage Users
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><h6 class="dropdown-header">Bulk Import Tools</h6></li>
@@ -185,6 +188,10 @@
                                     </a></li>
                                     <li><a class="dropdown-item" href="{% url 'organization:import_organizations' %}">
                                         <i class="bi bi-building"></i> Import Organizations
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'admin:index' %}">
+                                        <i class="bi bi-gear-fill"></i> Django Admin
                                     </a></li>
                                 </ul>
                             </li>

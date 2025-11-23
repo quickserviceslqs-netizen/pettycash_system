@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="bi bi-speedometer2"></i> Admin Dashboard</h2>
+            <p class="text-muted">Manage users, permissions, and app access</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <i class="bi bi-people-fill text-primary" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ total_users }}</h3>
+                    <p class="text-muted mb-0">Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ active_users }}</h3>
+                    <p class="text-muted mb-0">Active Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="bi bi-shield-fill-check text-warning" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ staff_users }}</h3>
+                    <p class="text-muted mb-0">Staff Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="bi bi-grid-3x3-gap-fill text-info" style="font-size: 2rem;"></i>
+                    <h3 class="mt-2">{{ app_stats|length }}</h3>
+                    <p class="text-muted mb-0">Active Apps</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-lightning-fill"></i> Quick Actions
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2 d-md-flex">
+                        <a href="{% url 'accounts:manage_users' %}" class="btn btn-primary">
+                            <i class="bi bi-people"></i> Manage Users
+                        </a>
+                        <a href="{% url 'bulk_import' %}" class="btn btn-success">
+                            <i class="bi bi-file-earmark-arrow-up"></i> Bulk Import Users
+                        </a>
+                        <a href="{% url 'organization:import_organizations' %}" class="btn btn-info">
+                            <i class="bi bi-building"></i> Import Organizations
+                        </a>
+                        <a href="{% url 'manage_invitations' %}" class="btn btn-warning">
+                            <i class="bi bi-envelope-fill"></i> Manage Invitations
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Users by Role -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart-fill"></i> Users by Role
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th class="text-end">Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for role_stat in users_by_role %}
+                            <tr>
+                                <td>{{ role_stat.role|title }}</td>
+                                <td class="text-end">
+                                    <span class="badge bg-primary">{{ role_stat.count }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="2" class="text-muted text-center">No users found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- App Usage -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <i class="bi bi-app-indicator"></i> App Usage
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>App</th>
+                                <th class="text-end">Users</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for app in app_stats %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-circle-fill text-success" style="font-size: 0.5rem;"></i>
+                                    {{ app.name }}
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge bg-info">{{ app.user_count }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="2" class="text-muted text-center">No apps found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users by Company -->
+    {% if users_by_company %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-building"></i> Top Companies by User Count
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th class="text-end">Users</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for company in users_by_company %}
+                            <tr>
+                                <td>{{ company.company__name }}</td>
+                                <td class="text-end">
+                                    <span class="badge bg-primary">{{ company.count }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Users -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-clock-history"></i> Recently Added Users
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Company</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in recent_users %}
+                                <tr>
+                                    <td><strong>{{ user.username }}</strong></td>
+                                    <td>{{ user.get_display_name }}</td>
+                                    <td><span class="badge bg-secondary">{{ user.get_role_display }}</span></td>
+                                    <td>{{ user.company|default:"—" }}</td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'accounts:edit_user_permissions' user.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-muted text-center">No users found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

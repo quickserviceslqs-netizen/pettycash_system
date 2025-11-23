@@ -3,6 +3,9 @@ from django.contrib.auth import views as auth_views
 from . import views
 from . import views_invitation
 from . import views_bulk_import
+from . import views_admin
+
+app_name = 'accounts'
 
 urlpatterns = [
     # --------------------------
@@ -77,6 +80,15 @@ urlpatterns = [
     path('admin/devices/<int:device_id>/toggle/', views_invitation.admin_toggle_device, name='admin_toggle_device'),
     path('admin/devices/<int:device_id>/delete/', views_invitation.admin_delete_device, name='admin_delete_device'),
     path('admin/devices/<int:device_id>/set-primary/', views_invitation.admin_set_primary_device, name='admin_set_primary_device'),
+    
+    # --------------------------
+    # Admin Dashboard & User Management
+    # --------------------------
+    path('admin-dashboard/', views_admin.admin_dashboard, name='admin_dashboard'),
+    path('manage-users/', views_admin.manage_users, name='manage_users'),
+    path('users/<int:user_id>/edit-permissions/', views_admin.edit_user_permissions, name='edit_user_permissions'),
+    path('users/<int:user_id>/toggle-status/', views_admin.toggle_user_status, name='toggle_user_status'),
+    path('bulk-assign-app/', views_admin.bulk_assign_app, name='bulk_assign_app'),
     
     # Device blocking and registration
     path('device-blocked/', views_invitation.device_blocked, name='device_blocked'),
