@@ -6,8 +6,8 @@
 <div class="container mt-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'manage_invitations' %}">Invitations</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'accounts:manage_invitations' %}">Invitations</a></li>
             <li class="breadcrumb-item active">{{ managed_user.get_display_name }}</li>
         </ol>
     </nav>
@@ -72,7 +72,7 @@
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <!-- Toggle Active/Inactive -->
-                                    <form method="post" action="{% url 'admin_toggle_device' device.id %}" style="display:inline;">
+                                    <form method="post" action="{% url 'accounts:admin_toggle_device' device.id %}" style="display:inline;">
                                         {% csrf_token %}
                                         {% if device.is_active %}
                                         <button type="submit" class="btn btn-warning" title="Deactivate">
@@ -87,7 +87,7 @@
                                     
                                     <!-- Set as Primary -->
                                     {% if device.is_active and not device.is_primary %}
-                                    <form method="post" action="{% url 'admin_set_primary_device' device.id %}" style="display:inline;">
+                                    <form method="post" action="{% url 'accounts:admin_set_primary_device' device.id %}" style="display:inline;">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-primary" title="Set as Primary">
                                             <i class="bi bi-star"></i> Set Primary
@@ -97,7 +97,7 @@
                                     
                                     <!-- Delete Device -->
                                     {% if not device.is_primary %}
-                                    <form method="post" action="{% url 'admin_delete_device' device.id %}" 
+                                    <form method="post" action="{% url 'accounts:admin_delete_device' device.id %}" 
                                           onsubmit="return confirm('Permanently delete this device? This cannot be undone.')" 
                                           style="display:inline;">
                                         {% csrf_token %}

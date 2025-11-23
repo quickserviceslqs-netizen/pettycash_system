@@ -59,7 +59,7 @@
                     
                     <div class="btn-group btn-group-sm w-100">
                         {% if not device.is_primary and device.is_active %}
-                        <form method="post" action="{% url 'set_primary_device' device.id %}" style="flex: 1;">
+                        <form method="post" action="{% url 'accounts:set_primary_device' device.id %}" style="flex: 1;">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-outline-primary w-100">
                                 <i class="bi bi-star"></i> Set as Primary
@@ -68,7 +68,7 @@
                         {% endif %}
                         
                         {% if not device.is_primary and device.is_active %}
-                        <form method="post" action="{% url 'deactivate_device' device.id %}" 
+                        <form method="post" action="{% url 'accounts:deactivate_device' device.id %}" 
                               onsubmit="return confirm('Deactivate this device?')" style="flex: 1;">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-outline-danger w-100">
