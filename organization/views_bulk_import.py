@@ -23,52 +23,94 @@ from settings_manager.views import log_activity
 @login_required
 @permission_required('organization.add_company', raise_exception=True)
 def download_companies_template(request):
-    """Download CSV template for bulk company import"""
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="companies_import_template.csv"'
+    """Download Excel template for bulk company import"""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Companies"
     
-    writer = csv.writer(response)
-    writer.writerow(['name', 'code'])
-    writer.writerow(['Quick Services LQS', 'QSLQS'])
-    writer.writerow(['ABC Corporation', 'ABC'])
-    writer.writerow(['XYZ Limited', 'XYZ'])
-    writer.writerow([])
-    writer.writerow(['INSTRUCTIONS:'])
-    writer.writerow(['- name: Company name (must be unique)'])
-    writer.writerow(['- code: Short code (2-10 characters, must be unique)'])
-    writer.writerow(['- Delete example rows before uploading'])
+    # Headers
+    headers = ['name', 'code']
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.value = header
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
     
+    # Example rows
+    ws.append(['Quick Services LQS', 'QSLQS'])
+    ws.append(['ABC Corporation', 'ABC'])
+    ws.append(['XYZ Limited', 'XYZ'])
+    
+    # Column widths
+    ws.column_dimensions['A'].width = 30
+    ws.column_dimensions['B'].width = 15
+    
+    # Instructions sheet
+    ws2 = wb.create_sheet("Instructions")
+    ws2['A1'] = "Company Import Instructions"
+    ws2['A1'].font = Font(bold=True, size=14)
+    instructions = [
+        "",
+        "FIELD REQUIREMENTS:",
+        "• name: Company name (must be unique)",
+        "• code: Short code (2-10 characters, must be unique)",
+        "",
+        "INSTRUCTIONS:",
+        "1. Fill in the 'Companies' sheet with your data",
+        "2. Delete the example rows before uploading",
+        "3. Save and upload the file"
+    ]
+    for row_num, instruction in enumerate(instructions, 2):
+        ws2[f'A{row_num}'] = instruction
+    ws2.column_dimensions['A'].width = 60
+    
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="companies_import_template.xlsx"'
+    wb.save(response)
     return response
 
 
 @login_required
 @permission_required('organization.add_company', raise_exception=True)
 def import_companies(request):
-    """Bulk import companies from CSV"""
+    """Bulk import companies from Excel or CSV"""
     if request.method == 'POST' and request.FILES.get('csv_file'):
-        csv_file = request.FILES['csv_file']
+        uploaded_file = request.FILES['csv_file']
         
-        if not csv_file.name.endswith('.csv'):
-            messages.error(request, 'Please upload a CSV file')
+        is_excel = uploaded_file.name.endswith(('.xlsx', '.xls'))
+        is_csv = uploaded_file.name.endswith('.csv')
+        
+        if not (is_excel or is_csv):
+            messages.error(request, 'Please upload an Excel or CSV file')
             return redirect('import_organizations')
         
         try:
-            decoded_file = csv_file.read().decode('utf-8')
-            io_string = io.StringIO(decoded_file)
-            reader = csv.DictReader(io_string)
+            if is_excel:
+                df = pd.read_excel(uploaded_file)
+                data_rows = df.to_dict('records')
+            else:
+                decoded_file = uploaded_file.read().decode('utf-8')
+                io_string = io.StringIO(decoded_file)
+                reader = csv.DictReader(io_string)
+                data_rows = list(reader)
             
             success_count = 0
             error_count = 0
             errors = []
             
             with transaction.atomic():
-                for row_num, row in enumerate(reader, start=2):
+                for row_num, row in enumerate(data_rows, start=2):
                     try:
-                        if not row.get('name') or row['name'].startswith('INSTRUCTIONS'):
+                        if is_excel:
+                            row = {k: (str(v) if pd.notna(v) else \'\') for k, v in row.items()}
+                        
+                        if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
                         
-                        name = row['name'].strip()
-                        code = row['code'].strip()
+                        name = str(row['name']).strip()
+                        code = str(row['code']).strip()
                         
                         if not name or not code:
                             errors.append(f"Row {row_num}: Missing name or code")
@@ -181,14 +223,17 @@ def import_regions(request):
             errors = []
             
             with transaction.atomic():
-                for row_num, row in enumerate(reader, start=2):
+                for row_num, row in enumerate(data_rows, start=2):
                     try:
-                        if not row.get('name') or row['name'].startswith('INSTRUCTIONS'):
+                        if is_excel:
+                            row = {k: (str(v) if pd.notna(v) else \'\') for k, v in row.items()}
+                        
+                        if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
                         
-                        name = row['name'].strip()
-                        code = row['code'].strip()
-                        company_name = row['company_name'].strip()
+                        name = str(row['name']).strip()
+                        code = str(row['code']).strip()
+                        company_name = str(row['company_name']).strip()
                         
                         if not all([name, code, company_name]):
                             errors.append(f"Row {row_num}: Missing required fields")
@@ -320,16 +365,19 @@ def import_branches(request):
             errors = []
             
             with transaction.atomic():
-                for row_num, row in enumerate(reader, start=2):
+                for row_num, row in enumerate(data_rows, start=2):
                     try:
-                        if not row.get('name') or row['name'].startswith('INSTRUCTIONS'):
+                        if is_excel:
+                            row = {k: (str(v) if pd.notna(v) else \'\') for k, v in row.items()}
+                        
+                        if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
                         
-                        name = row['name'].strip()
-                        code = row['code'].strip()
+                        name = str(row['name']).strip()
+                        code = str(row['code']).strip()
                         phone = row.get('phone', '').strip()
-                        region_name = row['region_name'].strip()
-                        company_name = row['company_name'].strip()
+                        region_name = str(row['region_name']).strip()
+                        company_name = str(row['company_name']).strip()
                         
                         if not all([name, code, region_name, company_name]):
                             errors.append(f"Row {row_num}: Missing required fields")
@@ -481,13 +529,16 @@ def import_departments(request):
             errors = []
             
             with transaction.atomic():
-                for row_num, row in enumerate(reader, start=2):
+                for row_num, row in enumerate(data_rows, start=2):
                     try:
-                        if not row.get('name') or row['name'].startswith('INSTRUCTIONS'):
+                        if is_excel:
+                            row = {k: (str(v) if pd.notna(v) else \'\') for k, v in row.items()}
+                        
+                        if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
                         
-                        name = row['name'].strip()
-                        branch_name = row['branch_name'].strip()
+                        name = str(row['name']).strip()
+                        branch_name = str(row['branch_name']).strip()
                         
                         if not all([name, branch_name]):
                             errors.append(f"Row {row_num}: Missing required fields")
