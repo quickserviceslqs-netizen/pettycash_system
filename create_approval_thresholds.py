@@ -58,7 +58,7 @@ def create_sample_thresholds():
             "origin_type": "ANY",
             "min_amount": 250001,
             "max_amount": 999999999,
-            "roles_sequence": ["regional_manager", "cfo"],
+            "roles_sequence": ["regional_manager", "cfo", "ceo"],
             "allow_urgent_fasttrack": False,
             "requires_cfo": True,
             "priority": 4,
