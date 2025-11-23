@@ -11,3 +11,4 @@ gunicorn
 psutil
 requests
 openpyxl
+pandas

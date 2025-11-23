@@ -106,6 +106,7 @@ urlpatterns = [
     path('apps/<int:app_id>/users/', views_apps.app_users, name='app_users'),
     path('users/<int:user_id>/assign-apps/', views_apps.assign_apps_to_user, name='assign_apps_to_user'),
     path('bulk-assign-apps/', views_apps.bulk_assign_apps, name='bulk_assign_apps'),
+    path('bulk-assign-apps/template/', views_apps.download_bulk_assign_template, name='download_bulk_assign_template'),
     
     # Device blocking and registration
     path('device-blocked/', views_invitation.device_blocked, name='device_blocked'),

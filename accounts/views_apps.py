@@ -7,9 +7,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 
 from accounts.models import App, User
+import openpyxl
+from openpyxl.styles import Font, PatternFill
+import pandas as pd
 
 
 def is_admin_user(user):
@@ -194,42 +197,135 @@ def assign_apps_to_user(request, user_id):
 @user_passes_test(is_admin_user)
 def bulk_assign_apps(request):
     """
-    Bulk assign apps to multiple users at once.
+    Bulk assign apps to multiple users via Excel upload.
     """
-    if request.method == 'POST':
-        user_ids = request.POST.getlist('users')
-        app_ids = request.POST.getlist('apps')
-        action = request.POST.get('action', 'add')  # add or replace
-        
-        users = User.objects.filter(id__in=user_ids)
-        apps = App.objects.filter(id__in=app_ids)
-        
-        count = 0
-        for user in users:
-            if action == 'replace':
-                user.assigned_apps.set(apps)
-            else:  # add
-                user.assigned_apps.add(*apps)
-            count += 1
-        
-        messages.success(
-            request,
-            f"{'Replaced' if action == 'replace' else 'Added'} {apps.count()} apps for {count} users."
-        )
-        return redirect('accounts:manage_users')
+    if request.method == 'POST' and request.FILES.get('file'):
+        try:
+            excel_file = request.FILES['file']
+            df = pd.read_excel(excel_file)
+            
+            # Validate columns
+            required_columns = ['email', 'app_name']
+            if not all(col in df.columns for col in required_columns):
+                messages.error(request, f"Excel file must contain columns: {', '.join(required_columns)}")
+                return redirect('accounts:bulk_assign_apps')
+            
+            results = {
+                'total': len(df),
+                'successful': 0,
+                'failed': 0,
+                'errors': []
+            }
+            
+            for index, row in df.iterrows():
+                try:
+                    email = str(row['email']).strip()
+                    app_name = str(row['app_name']).strip()
+                    
+                    # Find user
+                    try:
+                        user = User.objects.get(email=email)
+                    except User.DoesNotExist:
+                        results['errors'].append(f"Row {index + 2}: User not found: {email}")
+                        results['failed'] += 1
+                        continue
+                    
+                    # Find app
+                    try:
+                        app = App.objects.get(name=app_name)
+                    except App.DoesNotExist:
+                        results['errors'].append(f"Row {index + 2}: App not found: {app_name}")
+                        results['failed'] += 1
+                        continue
+                    
+                    # Assign app to user
+                    user.assigned_apps.add(app)
+                    results['successful'] += 1
+                    
+                except Exception as e:
+                    results['errors'].append(f"Row {index + 2}: {str(e)}")
+                    results['failed'] += 1
+            
+            messages.success(
+                request,
+                f"Processed {results['total']} rows: {results['successful']} successful, {results['failed']} failed."
+            )
+            
+            context = {
+                'results': results,
+            }
+            return render(request, 'accounts/bulk_assign_apps.html', context)
+            
+        except Exception as e:
+            messages.error(request, f"Error processing file: {str(e)}")
+            return redirect('accounts:bulk_assign_apps')
     
-    # Get all users and apps
-    users = User.objects.filter(is_active=True).select_related(
-        'company', 'department'
-    ).order_by('first_name', 'last_name')
+    return render(request, 'accounts/bulk_assign_apps.html')
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def download_bulk_assign_template(request):
+    """
+    Download Excel template for bulk app assignment.
+    """
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Bulk App Assignment"
     
+    # Headers
+    headers = ['email', 'app_name']
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.value = header
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    
+    # Add example rows
+    ws.append(['user@example.com', 'Treasury'])
+    ws.append(['user2@example.com', 'Transactions'])
+    
+    # Add instructions sheet
+    ws2 = wb.create_sheet("Instructions")
+    ws2['A1'] = "Bulk App Assignment Instructions"
+    ws2['A1'].font = Font(bold=True, size=14)
+    
+    instructions = [
+        "",
+        "1. Fill in the 'Bulk App Assignment' sheet with user emails and app names",
+        "2. Available app names:",
+    ]
+    
+    # Get all active apps
     apps = App.objects.filter(is_active=True).order_by('display_name')
+    for app in apps:
+        instructions.append(f"   - {app.name}")
     
-    context = {
-        'users': users,
-        'apps': apps,
-    }
-    return render(request, 'accounts/bulk_assign_apps.html', context)
+    instructions.extend([
+        "",
+        "3. Save the file and upload it in the Bulk Assign Apps page",
+        "4. Each row represents one user-app assignment",
+        "",
+        "Note: Make sure the email addresses and app names match exactly"
+    ])
+    
+    for row_num, instruction in enumerate(instructions, 2):
+        ws2[f'A{row_num}'] = instruction
+    
+    # Adjust column widths
+    ws.column_dimensions['A'].width = 30
+    ws.column_dimensions['B'].width = 20
+    ws2.column_dimensions['A'].width = 60
+    
+    # Prepare response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=bulk_app_assignment_template.xlsx'
+    wb.save(response)
+    
+    return response
 
 
 @login_required
