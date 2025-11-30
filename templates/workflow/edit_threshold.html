@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Edit Approval Threshold</h2>
         <a href="{% url 'workflow:manage_thresholds' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Thresholds
+            <i aria-hidden="true" class="fas fa-arrow-left"></i> Back to Thresholds
         </a>
     </div>
 
@@ -59,7 +59,7 @@
                             <!-- Populated by JavaScript -->
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRole()">
-                            <i class="fas fa-plus"></i> Add Approval Level
+                            <i aria-hidden="true" class="fas fa-plus"></i> Add Approval Level
                         </button>
 
                         <!-- Options -->
@@ -156,7 +156,7 @@ function addRole(selectedRole = null) {
                 ${optionsHtml}
             </select>
             <button type="button" class="btn btn-outline-danger" onclick="removeRole(this)">
-                <i class="fas fa-times"></i>
+                <i aria-hidden="true" class="fas fa-times"></i>
             </button>
         </div>
     `;

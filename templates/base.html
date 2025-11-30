@@ -47,34 +47,86 @@
             font-size: 1.25rem;
         }
 
-        .nav-item .nav-link {
+        .navbar-nav .nav-link {
             color: #6c757d !important;
-            font-size: 0.95rem;
-            margin-right: 0.5rem;
-            transition: color 0.2s;
+            font-size: 0.92rem; /* slightly smaller nav font */
+            margin-right: 0.35rem;
+            transition: all 0.16s ease;
+            border-radius: 6px;
+            padding: 0.3rem 0.75rem !important; /* compact nav padding */
         }
 
-        .nav-item .nav-link:hover {
+        .navbar-nav .nav-link:hover {
             color: var(--primary-color) !important;
+            background-color: rgba(13, 110, 253, 0.1);
         }
 
-        .nav-item .nav-link.active {
+        .navbar-nav .nav-link.active {
             color: var(--primary-color) !important;
+            background-color: rgba(13, 110, 253, 0.15);
             border-bottom: 2px solid var(--primary-color);
+        }
+
+        /* Improved dropdown styling */
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            padding: 0.5rem 0;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+            color: var(--primary-color) !important;
+        }
+
+        .dropdown-header {
+            font-weight: 600;
+            color: var(--primary-color) !important;
+            padding: 0.5rem 1.5rem;
+            margin-bottom: 0.25rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .dropdown-divider {
+            margin: 0.25rem 0;
         }
 
         main {
             flex: 1;
-            padding: 2rem;
+            padding: 0.75rem 0; /* reduced top/bottom spacing for a tighter layout */
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: calc(100vh - 120px);
+        }
+
+        .container-fluid {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Main content centering to reduce side whitespace */
+        .main-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 0.75rem;
         }
 
         footer {
-            background: #f8f9fa;
-            border-top: 1px solid #dee2e6;
-            padding: 2rem;
+            background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+            border-top: none;
+            padding: 2rem 0;
             text-align: center;
-            color: #6c757d;
+            color: #adb5bd;
             margin-top: auto;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
         }
 
         .user-menu {
@@ -84,7 +136,15 @@
         }
 
         .user-menu .badge {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+        }
+
+        .user-menu .btn {
+            border-radius: 20px;
+            padding: 0.4rem 1rem;
+            font-weight: 500;
         }
 
         @media (max-width: 768px) {
@@ -96,301 +156,820 @@
                 padding: 1rem;
             }
         }
+
+        /* Sidebar Layout */
+        /* Remove sidebar-layout, restore default body layout */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            order: 1;
+            width: 220px;
+            background: linear-gradient(180deg, #3a4250 0%, #5a6270 100%);
+            color: #f8f9fa;
+            position: relative;
+            flex-shrink: 0;
+            flex-grow: 0;
+            flex-basis: 220px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+            box-shadow: 0 0 24px 0 rgba(44, 62, 80, 0.12), 2px 0 8px rgba(44, 62, 80, 0.08);
+            border-right: 1px solid rgba(44, 62, 80, 0.08);
+            border-top-right-radius: 18px;
+            z-index: 2;
+            backdrop-filter: blur(8px);
+        }
+
+        .sidebar.collapsed {
+            flex-basis: 60px;
+            width: 60px;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        /* Sidebar Header */
+            /* Remove sidebar styles */
+            .sidebar {
+                display: none; /* Hide sidebar */
+            }
+        }
+
+        .sidebar-brand:hover {
+            background: rgba(44, 62, 80, 0.12);
+        }
+
+        .sidebar-brand i {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+
+        .sidebar.collapsed .sidebar-brand {
+            justify-content: center;
+            padding: 0.5rem;
+        }
+
+        .sidebar.collapsed .sidebar-brand span {
+            display: none;
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            min-height: 32px;
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar-nav {
+            padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        .sidebar-nav-item {
+            margin-bottom: 0.125rem;
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.65rem 0.75rem;
+            color: #e2e6ea;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 10px;
+            margin: 0.15rem 0.15rem;
+            position: relative;
+            font-size: 0.92rem;
+            font-weight: 500;
+        }
+
+        .sidebar-nav-link:hover {
+            color: #fff;
+            background: rgba(44, 62, 80, 0.16);
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+        }
+
+        .sidebar-nav-link.active {
+            color: #fff;
+            background: var(--primary-color);
+            box-shadow: 0 2px 12px rgba(13, 110, 253, 0.18);
+        }
+
+        .sidebar-nav-link i {
+            font-size: 1rem;
+            width: 18px;
+            margin-right: 0.75rem;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        .sidebar-nav-link.active i {
+            opacity: 1;
+        }
+
+        .sidebar.collapsed .sidebar-nav-link {
+            justify-content: center;
+            padding: 0.75rem 0.5rem;
+            margin: 0 0.25rem;
+        }
+
+        .sidebar.collapsed .sidebar-nav-link i {
+            margin-right: 0;
+            font-size: 1.1rem;
+        }
+
+        .sidebar.collapsed .sidebar-nav-link span {
+            display: none;
+        }
+
+        /* Sidebar Dropdown */
+        .sidebar-dropdown {
+            margin-bottom: 0.125rem;
+        }
+
+        .sidebar-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin: 0 0.25rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .sidebar-dropdown-toggle:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            transform: translateX(2px);
+        }
+
+        .sidebar-dropdown-toggle i:first-child {
+            font-size: 1rem;
+            width: 18px;
+            margin-right: 0.75rem;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        .sidebar-dropdown-toggle .dropdown-arrow {
+            font-size: 0.75rem;
+            transition: transform 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .sidebar-dropdown.open .dropdown-arrow {
+            transform: rotate(90deg);
+        }
+
+        .sidebar.collapsed .sidebar-dropdown-toggle {
+            justify-content: center;
+            padding: 0.75rem 0.5rem;
+            margin: 0 0.25rem;
+        }
+
+        .sidebar.collapsed .sidebar-dropdown-toggle i:first-child {
+            margin-right: 0;
+            font-size: 1.1rem;
+        }
+
+        .sidebar.collapsed .sidebar-dropdown-toggle span,
+        .sidebar.collapsed .dropdown-arrow {
+            display: none;
+        }
+
+        .sidebar-dropdown-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin: 0.25rem 0.5rem;
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-dropdown.open .sidebar-dropdown-menu {
+            max-height: 500px;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-dropdown-item {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .sidebar-dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .sidebar-dropdown-link {
+            display: flex;
+            align-items: center;
+            padding: 0.625rem 1.25rem 0.625rem 2.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            font-weight: 400;
+            position: relative;
+        }
+
+        .sidebar-dropdown-link:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.08);
+            text-decoration: none;
+            padding-left: 2.75rem;
+        }
+
+        .sidebar-dropdown-link i {
+            font-size: 0.9rem;
+            width: 16px;
+            margin-right: 0.5rem;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        .sidebar.collapsed .sidebar-dropdown-menu,
+        .sidebar.collapsed .sidebar-dropdown-link {
+            display: none;
+        }
+
+        /* User Menu in Sidebar */
+        .sidebar-user {
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.75rem 0.5rem 0.75rem 0.5rem;
+            border-top: 1px solid rgba(44, 62, 80, 0.08);
+            background: rgba(44, 62, 80, 0.10);
+            backdrop-filter: blur(8px);
+            border-bottom-right-radius: 18px;
+        }
+
+        .sidebar-user-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 12px;
+            background: rgba(44, 62, 80, 0.08);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-user-info:hover {
+            background: rgba(44, 62, 80, 0.14);
+        }
+
+        .sidebar-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-right: 0.65rem;
+            flex-shrink: 0;
+            border: 2px solid rgba(44, 62, 80, 0.12);
+        }
+
+        .sidebar-user-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar-user-name {
+            font-weight: 600;
+            color: #f8f9fa;
+            font-size: 0.87rem;
+            margin-bottom: 0.1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-user-role {
+            font-size: 0.74rem;
+            color: #cfd8dc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar.collapsed .sidebar-user-info {
+            justify-content: center;
+            padding: 0.5rem;
+        }
+
+        .sidebar.collapsed .sidebar-user-avatar {
+            margin-right: 0;
+            width: 32px;
+            height: 32px;
+            font-size: 0.8rem;
+        }
+
+        .sidebar.collapsed .sidebar-user-details {
+            display: none;
+        }
+
+        .sidebar-logout-btn {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background: rgba(220, 53, 69, 0.12);
+            border: 1px solid rgba(220, 53, 69, 0.18);
+            color: #ff6b7a;
+            border-radius: 10px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 0.5rem;
+        }
+
+        .sidebar-logout-btn:hover {
+            background: rgba(220, 53, 69, 0.18);
+            border-color: rgba(220, 53, 69, 0.28);
+            color: #fff;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.08);
+        }
+
+        .sidebar-logout-btn i {
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* Main Content */
+        .main-content {
+              min-height: 100vh;
+              background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+              padding: 2.5rem 2.5rem 2.5rem 2.5rem;
+              transition: none;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-toggle-mobile {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle-mobile:hover {
+            background: rgba(13, 110, 253, 0.1);
+        }
+
+        /* Content Area */
+        .content-wrapper {
+            padding: 1rem; /* reduced spacing */
+        }
+
+        /* Overlay for mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 280px;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar.collapsed {
+                width: 70px;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.collapsed.open {
+                transform: translateX(0);
+            }
+
+            .sidebar-toggle-mobile {
+                display: block;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+        }
     </style>
     
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <!-- Header Navigation -->
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-light">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="/">
-                    <i class="bi bi-cash-coin"></i> Petty Cash System
-                </a>
-                
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto">
-                        {% if user.is_authenticated %}
-                            <!-- Main Navigation -->
+            <!-- Top Navigation Bar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+                <div class="container-fluid">
+                    <a class="navbar-brand d-flex align-items-center" href="/">
+                        <i aria-hidden="true" class="bi bi-cash-coin me-2"></i>
+                        Petty Cash
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                             <li class="nav-item">
-                                <a class="nav-link" href="/">
-                                    <i class="bi bi-house"></i> Home
+                                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="/">
+                                    <i aria-hidden="true" class="bi bi-house"></i> Home
                                 </a>
                             </li>
-
-                            <!-- Treasury Module (Phase 5-6) -->
                             {% if user.role == 'treasury' or user.is_staff %}
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="treasuryDropdown" role="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-piggy-bank"></i> Treasury
+                                <a class="nav-link dropdown-toggle" href="#" id="treasuryDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i aria-hidden="true" class="bi bi-piggy-bank"></i> Treasury
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="treasuryDropdown">
-                                    <li><a class="dropdown-item" href="/treasury/dashboard/">
-                                        <i class="bi bi-graph-up"></i> Dashboard
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/treasury/funds/">
-                                        <i class="bi bi-safe2"></i> Manage Funds
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/treasury/payment-execute/">
-                                        <i class="bi bi-credit-card"></i> Execute Payment
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="/treasury/alerts/">
-                                        <i class="bi bi-bell"></i> Alerts
-                                    </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/treasury/variances/">
-                                        <i class="bi bi-exclamation-triangle"></i> Variances
-                                    </a></li>
+                                    <li><a class="dropdown-item" href="/treasury/dashboard/"><i class="bi bi-graph-up" aria-hidden="true"></i> Dashboard</a></li>
+                                    <li><a class="dropdown-item" href="/treasury/funds/"><i aria-hidden="true" class="bi bi-safe2"></i> Manage Funds</a></li>
+                                    <li><a class="dropdown-item" href="/treasury/payment-execute/"><i aria-hidden="true" class="bi bi-credit-card"></i> Execute Payment</a></li>
+                                    <li><a class="dropdown-item" href="/treasury/alerts/"><i aria-hidden="true" class="bi bi-bell"></i> Alerts</a></li>
+                                    <li><a class="dropdown-item" href="/treasury/variances/"><i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Variances</a></li>
                                 </ul>
                             </li>
                             {% endif %}
-
-                            <!-- Reports Module (Phase 6) -->
                             {% if user.role == 'fp&a' or user.role == 'cfo' or user.is_staff %}
                             <li class="nav-item">
                                 <a class="nav-link" href="/reports/dashboard/">
-                                    <i class="bi bi-file-earmark-text"></i> Reports
+                                    <i aria-hidden="true" class="bi bi-file-earmark-text"></i> Reports
                                 </a>
                             </li>
                             {% endif %}
-
-                            <!-- Requisitions (Phase 4) - available to any authenticated user -->
                             {% if user.is_authenticated %}
                             <li class="nav-item">
                                 <a class="nav-link" href="/transactions/">
-                                    <i class="bi bi-file-check"></i> Requisitions
+                                    <i aria-hidden="true" class="bi bi-file-check"></i> Requisitions
                                 </a>
                             </li>
                             {% endif %}
-
-                            <!-- Admin Panel -->
                             {% if user.is_staff %}
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-sliders"></i> Admin
+                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i aria-hidden="true" class="bi bi-sliders"></i> Admin
                                 </a>
-                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown" style="max-height: 80vh; overflow-y: auto;">
-                                    <!-- User & Access Management -->
-                                    <li><h6 class="dropdown-header"><i class="bi bi-people"></i> User & Access</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_users' %}">
-                                        <i class="bi bi-person-gear"></i> Users & Permissions
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_groups' %}">
-                                        <i class="bi bi-diagram-3"></i> Permission Groups
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_invitations' %}">
-                                        <i class="bi bi-envelope"></i> User Invitations
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_apps' %}">
-                                        <i class="bi bi-grid-3x3-gap"></i> Application Access
-                                    </a></li>
-                                    
-                                    <li><hr class="dropdown-divider"></li>
-                                    
-                                    <!-- Organization & Structure -->
-                                    <li><h6 class="dropdown-header"><i class="bi bi-building"></i> Organization</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'organization:manage_cost_centers' %}">
-                                        <i class="bi bi-diagram-3"></i> Cost Centers & Positions
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'settings_manager:manage_departments' %}">
-                                        <i class="bi bi-building"></i> Departments & Regions
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'organization:manage_companies' %}">
-                                        <i class="bi bi-buildings"></i> Companies & Branches
-                                    </a></li>
-                                    
-                                    <li><hr class="dropdown-divider"></li>
-                                    
-                                    <!-- Workflow & Approvals -->
-                                    <li><h6 class="dropdown-header"><i class="bi bi-arrow-repeat"></i> Workflow</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'workflow:manage_thresholds' %}">
-                                        <i class="bi bi-graph-up"></i> Approval Thresholds
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'transactions:manage_requisitions' %}">
-                                        <i class="bi bi-file-check"></i> Requisitions
-                                    </a></li>
-                                    
-                                    <li><hr class="dropdown-divider"></li>
-                                    
-                                    <!-- Treasury & Payments -->
-                                    <li><h6 class="dropdown-header"><i class="bi bi-wallet2"></i> Treasury</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_funds' %}">
-                                        <i class="bi bi-cash-stack"></i> Funds & Balances
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_payments' %}">
-                                        <i class="bi bi-credit-card"></i> Payments
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'treasury:select_payments_for_bulk' %}">
-                                        <i class="bi bi-list-check"></i> Bulk M-Pesa Payments
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'treasury:view_ledger' %}">
-                                        <i class="bi bi-journal-text"></i> Ledger
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_variances' %}">
-                                        <i class="bi bi-exclamation-triangle"></i> Variances
-                                    </a></li>
-                                    
-                                    <li><hr class="dropdown-divider"></li>
-                                    
-                                    <!-- Bulk Import Tools -->
-                                    <li><h6 class="dropdown-header"><i class="bi bi-upload"></i> Bulk Import</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts:bulk_import' %}">
-                                        <i class="bi bi-people-fill"></i> Import Users
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'organization:import_organizations' %}">
-                                        <i class="bi bi-building"></i> Import Organizations
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts:bulk_assign_apps' %}">
-                                        <i class="bi bi-layers"></i> Bulk Assign Apps
-                                    </a></li>
-                                    
-                                    <li><hr class="dropdown-divider"></li>
-                                    
-                                    <!-- System & Monitoring -->
-                                    <li><h6 class="dropdown-header"><i class="bi bi-gear"></i> System</h6></li>
-                                    <li><a class="dropdown-item" href="{% url 'system_maintenance:dashboard' %}">
-                                        <i class="bi bi-tools"></i> Backup & Restore
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'settings_manager:admin_activity_logs' %}">
-                                        <i class="bi bi-clock-history"></i> Activity Logs
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'reports:dashboard' %}">
-                                        <i class="bi bi-graph-up"></i> Reports
-                                    </a></li>
-                                    
-                                    <li><hr class="dropdown-divider"></li>
-                                    
-                                    <li><a class="dropdown-item" href="{% url 'admin:index' %}">
-                                        <i class="bi bi-gear-fill text-danger"></i> Django Admin (Advanced)
-                                    </a></li>
+                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_users' %}"><i aria-hidden="true" class="bi bi-person-gear"></i> Users & Permissions</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_groups' %}"><i aria-hidden="true" class="bi bi-diagram-3"></i> Permission Groups</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_invitations' %}"><i aria-hidden="true" class="bi bi-envelope"></i> User Invitations</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:manage_apps' %}"><i aria-hidden="true" class="bi bi-grid-3x3-gap"></i> Application Access</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'organization:manage_cost_centers' %}"><i aria-hidden="true" class="bi bi-diagram-3"></i> Cost Centers & Positions</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'settings_manager:manage_departments' %}"><i aria-hidden="true" class="bi bi-building"></i> Departments & Regions</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'organization:manage_companies' %}"><i aria-hidden="true" class="bi bi-buildings"></i> Companies & Branches</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'workflow:manage_thresholds' %}"><i class="bi bi-graph-up" aria-hidden="true"></i> Approval Thresholds</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'transactions:manage_requisitions' %}"><i aria-hidden="true" class="bi bi-file-check"></i> Requisitions</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_funds' %}"><i aria-hidden="true" class="bi bi-cash-stack"></i> Funds & Balances</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_payments' %}"><i aria-hidden="true" class="bi bi-credit-card"></i> Payments</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'treasury:select_payments_for_bulk' %}"><i aria-hidden="true" class="bi bi-list-check"></i> Bulk M-Pesa Payments</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'treasury:view_ledger' %}"><i aria-hidden="true" class="bi bi-journal-text"></i> Ledger</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'treasury:manage_variances' %}"><i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Variances</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:bulk_import' %}"><i aria-hidden="true" class="bi bi-people-fill"></i> Import Users</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'organization:import_organizations' %}"><i aria-hidden="true" class="bi bi-building"></i> Import Organizations</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:bulk_assign_apps' %}"><i aria-hidden="true" class="bi bi-layers"></i> Bulk Assign Apps</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'system_maintenance:dashboard' %}"><i aria-hidden="true" class="bi bi-tools"></i> Backup & Restore</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'settings_manager:admin_activity_logs' %}"><i aria-hidden="true" class="bi bi-clock-history"></i> Activity Logs</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'reports:dashboard' %}"><i class="bi bi-graph-up" aria-hidden="true"></i> Reports</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i aria-hidden="true" class="bi bi-gear-fill text-danger"></i> Django Admin</a></li>
                                 </ul>
                             </li>
                             {% endif %}
-
-                            <!-- System Settings -->
-                            {% if user.is_staff or user.role == 'admin' %}
+                            {% if user.is_superuser or user.role == 'admin' %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'settings_manager:dashboard' %}">
-                                    <i class="bi bi-gear-fill"></i> Settings
-                                </a>
+                                <a class="nav-link" href="{% url 'settings_manager:dashboard' %}"><i aria-hidden="true" class="bi bi-gear-fill"></i> Settings</a>
                             </li>
                             {% endif %}
-                        {% endif %}
-                    </ul>
-
-                    <!-- User Menu (Right Side) -->
-                    <div class="user-menu ms-auto">
+                        </ul>
                         {% if user.is_authenticated %}
-                            <span class="text-muted small">
-                                {{ user.get_display_name }}
-                            </span>
-                            <span class="badge bg-primary">{{ user.get_role_display }}</span>
-                            <form method="post" action="{% url 'logout' %}" style="display:inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-danger">
-                                    <i class="bi bi-box-arrow-right"></i> Logout
-                                </button>
-                            </form>
-                        {% else %}
-                            <a href="{% url 'login' %}" class="btn btn-sm btn-primary">
-                                <i class="bi bi-box-arrow-in-right"></i> Login
-                            </a>
+                        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <span class="avatar bg-primary text-white rounded-circle me-2" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem;">{{ user.get_display_name|slice:":1"|upper }}</span>
+                                    {{ user.get_display_name }}
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    <li><span class="dropdown-item-text text-muted">{{ user.get_role_display }}</span></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="post" action="{% url 'logout' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item text-danger"><i aria-hidden="true" class="bi bi-box-arrow-right"></i> Logout</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
                         {% endif %}
                     </div>
                 </div>
-            </div>
-        </nav>
-    </header>
-
-    <!-- Main Content -->
-    <main class="flex-grow-1">
-        <!-- Breadcrumbs (optional, can be overridden) -->
-        {% block breadcrumbs %}{% endblock %}
-
-        <!-- Flash Messages -->
-        {% if messages %}
-        <div class="container-fluid mb-4">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
+            </nav>
+        {% if request.maintenance %}
+        <div class="alert alert-warning mb-0 text-center" role="alert">
+            <strong>Maintenance:</strong>
+            {{ request.maintenance.custom_message|default:"System is currently under maintenance" }}
+            {% if request.maintenance.expected_completion %}
+                — Expected until {{ request.maintenance.expected_completion }}
+            {% endif %}
         </div>
         {% endif %}
 
-        <!-- Page Content -->
-        {% block content %}{% endblock %}
-    </main>
-
-    <!-- Footer -->
-    <footer>
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-4">
-                    <h6>Petty Cash System</h6>
-                    <small>Enterprise Financial Management</small>
-                </div>
-                <div class="col-md-4 text-center">
-                    <small>&copy; 2025 All Rights Reserved</small>
-                </div>
-                <div class="col-md-4 text-end">
-                    <small>
-                        <a href="#" class="text-muted text-decoration-none">Help</a> | 
-                        <a href="#" class="text-muted text-decoration-none">Support</a>
-                    </small>
+        <div class="main-content">
+            <div class="top-bar">
+                <button class="sidebar-toggle-mobile" id="sidebarToggleMobile">
+                    <i aria-hidden="true" class="bi bi-list"></i>
+                </button>
+                <div class="ms-auto">
+                    <!-- Page title or breadcrumbs can go here -->
+                    {% block page_title %}{% endblock %}
                 </div>
             </div>
+
+        <!-- Content Wrapper -->
+        <div class="container main-container">
+            <div class="content-wrapper">
+            <!-- Breadcrumbs -->
+            {% block breadcrumbs %}{% endblock %}
+
+            <!-- Flash Messages -->
+            {% if messages %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                        <i aria-hidden="true" class="bi bi-info-circle me-2"></i>{{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+            </div>
         </div>
-    </footer>
+    </div>
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Global Scripts -->
+    <!-- Sidebar Functionality -->
     <script>
-        // CSRF Token helper
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarToggleMobile = document.getElementById('sidebarToggleMobile');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const body = document.body;
+
+            // Toggle sidebar collapse (guarded)
+            function toggleSidebar() {
+                if (!sidebar || !sidebarToggle) return; // nothing to do when sidebar not present
+                sidebar.classList.toggle('collapsed');
+                const icon = sidebarToggle.querySelector('i');
+                if (icon) {
+                    if (sidebar.classList.contains('collapsed')) {
+                        icon.className = 'bi bi-chevron-right';
+                    } else {
+                        icon.className = 'bi bi-chevron-left';
                     }
                 }
+                // Save state to localStorage
+                try { localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed')); } catch (e) {}
             }
-            return cookieValue;
-        }
 
-        // Show toast notifications
-        function showToast(message, type = 'info') {
-            const alertHTML = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            const container = document.querySelector('main') || document.body;
-            container.insertAdjacentHTML('afterbegin', alertHTML);
-            
-            // Auto-dismiss after 5 seconds
-            setTimeout(() => {
-                const alerts = container.querySelectorAll('.alert');
-                if (alerts.length > 0) {
-                    const alert = alerts[0];
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
+            // Toggle mobile sidebar (guarded)
+            function toggleMobileSidebar() {
+                if (!sidebar || !sidebarOverlay) return;
+                sidebar.classList.toggle('open');
+                sidebarOverlay.classList.toggle('active');
+            }
+
+            // Event listeners
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', toggleSidebar);
+            }
+
+            if (sidebarToggleMobile) {
+                sidebarToggleMobile.addEventListener('click', toggleMobileSidebar);
+            }
+
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', toggleMobileSidebar);
+            }
+
+            // Handle dropdown toggles
+            const dropdownToggles = document.querySelectorAll('.sidebar-dropdown-toggle');
+            dropdownToggles.forEach(toggle => {
+                toggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const dropdown = this.closest('.sidebar-dropdown');
+                    const menu = dropdown.querySelector('.sidebar-dropdown-menu');
+                    const arrow = this.querySelector('.dropdown-arrow');
+
+                    // Close other dropdowns
+                    document.querySelectorAll('.sidebar-dropdown.open').forEach(openDropdown => {
+                        if (openDropdown !== dropdown) {
+                            openDropdown.classList.remove('open');
+                            const openMenu = openDropdown.querySelector('.sidebar-dropdown-menu');
+                            const openArrow = openDropdown.querySelector('.dropdown-arrow');
+                            if (openMenu && openArrow) {
+                                openMenu.classList.remove('show');
+                                openArrow.style.transform = 'rotate(0deg)';
+                            }
+                        }
+                    });
+
+                    // Toggle current dropdown
+                    dropdown.classList.toggle('open');
+                    if (menu) {
+                        menu.classList.toggle('show');
+                    }
+                    if (arrow) {
+                        arrow.style.transform = dropdown.classList.contains('open') ? 'rotate(90deg)' : 'rotate(0deg)';
+                    }
+                });
+            });
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.sidebar-dropdown')) {
+                    document.querySelectorAll('.sidebar-dropdown.open').forEach(dropdown => {
+                        dropdown.classList.remove('open');
+                        const menu = dropdown.querySelector('.sidebar-dropdown-menu');
+                        const arrow = dropdown.querySelector('.dropdown-arrow');
+                        if (menu && arrow) {
+                            menu.classList.remove('show');
+                            arrow.style.transform = 'rotate(0deg)';
+                        }
+                    });
                 }
-            }, 5000);
-        }
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('open');
+                    sidebarOverlay.classList.remove('active');
+                }
+            });
+
+            // Restore sidebar state from localStorage
+            const sidebarCollapsed = typeof localStorage !== 'undefined' && localStorage.getItem('sidebarCollapsed') === 'true';
+            if (sidebarCollapsed && sidebar) {
+                sidebar.classList.add('collapsed');
+                if (sidebarToggle) {
+                    const icon = sidebarToggle.querySelector('i');
+                    if (icon) icon.className = 'bi bi-chevron-right';
+                }
+            }
+
+            // CSRF Token helper
+            window.getCookie = function(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            };
+
+            // Show toast notifications
+            window.showToast = function(message, type = 'info') {
+                const alertHTML = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+                const container = document.querySelector('.content-wrapper') || document.body;
+                container.insertAdjacentHTML('afterbegin', alertHTML);
+                
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    const alerts = container.querySelectorAll('.alert');
+                    if (alerts.length > 0) {
+                        const alert = alerts[0];
+                        const bsAlert = new bootstrap.Alert(alert);
+                        bsAlert.close();
+                    }
+                }, 5000);
+            };
+        });
     </script>
 
     <!-- Phase 6 frontend modules -->

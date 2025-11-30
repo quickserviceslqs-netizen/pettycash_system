@@ -7,17 +7,17 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1"><i class="bi bi-heart-pulse"></i> System Health Check</h2>
+            <h2 class="mb-1"><i aria-hidden="true" class="bi bi-heart-pulse"></i> System Health Check</h2>
             <p class="text-muted mb-0">Monitor system health and identify issues</p>
         </div>
         <div>
             <a href="{% url 'system_maintenance:dashboard' %}" class="btn btn-outline-secondary me-2">
-                <i class="bi bi-arrow-left"></i> Back
+                <i aria-hidden="true" class="bi bi-arrow-left"></i> Back
             </a>
             <form method="post" class="d-inline">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-clipboard-pulse"></i> Run Health Check
+                    <i aria-hidden="true" class="bi bi-clipboard-pulse"></i> Run Health Check
                 </button>
             </form>
         </div>
@@ -36,20 +36,20 @@
     {% if latest_check %}
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-bottom">
-            <h5 class="mb-0"><i class="bi bi-activity"></i> Latest Health Check</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-activity"></i> Latest Health Check</h5>
         </div>
         <div class="card-body">
             <div class="row align-items-center">
                 <div class="col-md-2 text-center">
                     <div class="mb-2">
                         {% if latest_check.overall_status == 'success' %}
-                            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                            <i aria-hidden="true" class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
                         {% elif latest_check.overall_status == 'warning' %}
-                            <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 4rem;"></i>
+                            <i aria-hidden="true" class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 4rem;"></i>
                         {% elif latest_check.overall_status == 'critical' %}
-                            <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+                            <i aria-hidden="true" class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
                         {% else %}
-                            <i class="bi bi-info-circle-fill text-info" style="font-size: 4rem;"></i>
+                            <i aria-hidden="true" class="bi bi-info-circle-fill text-info" style="font-size: 4rem;"></i>
                         {% endif %}
                     </div>
                     <h2 class="mb-0">{{ latest_check.health_score }}%</h2>
@@ -66,7 +66,7 @@
                                             {{ latest_check.critical_issues|length }}
                                         </h4>
                                     </div>
-                                    <i class="bi bi-exclamation-octagon text-danger" style="font-size: 2rem;"></i>
+                                    <i aria-hidden="true" class="bi bi-exclamation-octagon text-danger" style="font-size: 2rem;"></i>
                                 </div>
                             </div>
                         </div>
@@ -79,7 +79,7 @@
                                             {{ latest_check.warnings|length }}
                                         </h4>
                                     </div>
-                                    <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                                    <i aria-hidden="true" class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
                                 </div>
                             </div>
                         </div>
@@ -90,7 +90,7 @@
                                         <small class="text-muted">Disk Usage</small>
                                         <h4 class="mb-0">{{ latest_check.disk_usage_percent|floatformat:1 }}%</h4>
                                     </div>
-                                    <i class="bi bi-hdd text-primary" style="font-size: 2rem;"></i>
+                                    <i aria-hidden="true" class="bi bi-hdd text-primary" style="font-size: 2rem;"></i>
                                 </div>
                             </div>
                         </div>
@@ -101,7 +101,7 @@
                                         <small class="text-muted">Memory Usage</small>
                                         <h4 class="mb-0">{{ latest_check.memory_usage_percent|floatformat:1 }}%</h4>
                                     </div>
-                                    <i class="bi bi-memory text-info" style="font-size: 2rem;"></i>
+                                    <i aria-hidden="true" class="bi bi-memory text-info" style="font-size: 2rem;"></i>
                                 </div>
                             </div>
                         </div>
@@ -109,7 +109,7 @@
 
                     {% if latest_check.critical_issues %}
                     <div class="alert alert-danger">
-                        <h6 class="alert-heading"><i class="bi bi-exclamation-octagon"></i> Critical Issues:</h6>
+                        <h6 class="alert-heading"><i aria-hidden="true" class="bi bi-exclamation-octagon"></i> Critical Issues:</h6>
                         <ul class="mb-0">
                             {% for issue in latest_check.critical_issues %}
                                 <li>{{ issue }}</li>
@@ -120,7 +120,7 @@
 
                     {% if latest_check.warnings %}
                     <div class="alert alert-warning">
-                        <h6 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Warnings:</h6>
+                        <h6 class="alert-heading"><i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Warnings:</h6>
                         <ul class="mb-0">
                             {% for warning in latest_check.warnings %}
                                 <li>{{ warning }}</li>
@@ -146,7 +146,7 @@
     <!-- Health Check History -->
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-bottom">
-            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Health Check History</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-clock-history"></i> Health Check History</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -170,19 +170,19 @@
                             <td>
                                 {% if check.overall_status == 'success' %}
                                     <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Success
+                                        <i aria-hidden="true" class="bi bi-check-circle"></i> Success
                                     </span>
                                 {% elif check.overall_status == 'warning' %}
                                     <span class="badge bg-warning">
-                                        <i class="bi bi-exclamation-triangle"></i> Warning
+                                        <i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Warning
                                     </span>
                                 {% elif check.overall_status == 'critical' %}
                                     <span class="badge bg-danger">
-                                        <i class="bi bi-x-circle"></i> Critical
+                                        <i aria-hidden="true" class="bi bi-x-circle"></i> Critical
                                     </span>
                                 {% else %}
                                     <span class="badge bg-info">
-                                        <i class="bi bi-info-circle"></i> Info
+                                        <i aria-hidden="true" class="bi bi-info-circle"></i> Info
                                     </span>
                                 {% endif %}
                             </td>
@@ -216,7 +216,7 @@
                             <td>{{ check.performed_at|date:"M d, Y H:i" }}</td>
                             <td>
                                 <a href="{% url 'system_maintenance:health_check_detail' check.check_id %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> View
+                                    <i aria-hidden="true" class="bi bi-eye"></i> View
                                 </a>
                             </td>
                         </tr>

@@ -14,7 +14,7 @@
     
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2><i class="bi bi-laptop"></i> Device Management</h2>
+            <h2><i aria-hidden="true" class="bi bi-laptop"></i> Device Management</h2>
             <p class="text-muted mb-0">
                 User: <strong>{{ managed_user.get_display_name }}</strong> ({{ managed_user.username }})
             </p>
@@ -44,7 +44,7 @@
                         {% for device in devices %}
                         <tr>
                             <td>
-                                <i class="bi bi-laptop"></i> <strong>{{ device.device_name }}</strong>
+                                <i aria-hidden="true" class="bi bi-laptop"></i> <strong>{{ device.device_name }}</strong>
                                 {% if device.is_primary %}
                                 <span class="badge bg-primary ms-1">Primary</span>
                                 {% endif %}
@@ -52,7 +52,7 @@
                             <td><code>{{ device.ip_address }}</code></td>
                             <td>
                                 {% if device.location %}
-                                <small><i class="bi bi-geo-alt"></i> {{ device.location }}</small>
+                                <small><i aria-hidden="true" class="bi bi-geo-alt"></i> {{ device.location }}</small>
                                 {% else %}
                                 <span class="text-muted">-</span>
                                 {% endif %}
@@ -76,11 +76,11 @@
                                         {% csrf_token %}
                                         {% if device.is_active %}
                                         <button type="submit" class="btn btn-warning" title="Deactivate">
-                                            <i class="bi bi-pause-circle"></i> Deactivate
+                                            <i aria-hidden="true" class="bi bi-pause-circle"></i> Deactivate
                                         </button>
                                         {% else %}
                                         <button type="submit" class="btn btn-success" title="Activate">
-                                            <i class="bi bi-play-circle"></i> Activate
+                                            <i aria-hidden="true" class="bi bi-play-circle"></i> Activate
                                         </button>
                                         {% endif %}
                                     </form>
@@ -90,7 +90,7 @@
                                     <form method="post" action="{% url 'accounts:admin_set_primary_device' device.id %}" style="display:inline;">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-primary" title="Set as Primary">
-                                            <i class="bi bi-star"></i> Set Primary
+                                            <i aria-hidden="true" class="bi bi-star"></i> Set Primary
                                         </button>
                                     </form>
                                     {% endif %}
@@ -102,7 +102,7 @@
                                           style="display:inline;">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-danger" title="Delete">
-                                            <i class="bi bi-trash"></i> Delete
+                                            <i aria-hidden="true" class="bi bi-trash"></i> Delete
                                         </button>
                                     </form>
                                     {% endif %}

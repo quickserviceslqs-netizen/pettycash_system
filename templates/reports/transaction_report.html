@@ -12,7 +12,7 @@
             <p class="text-muted mb-0">Detailed requisition analysis</p>
         </div>
         <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
         </a>
     </div>
 
@@ -66,10 +66,10 @@
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-funnel"></i> Apply Filters
+                        <i aria-hidden="true" class="bi bi-funnel"></i> Apply Filters
                     </button>
                     <a href="{% url 'reports:transaction-report' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-circle"></i> Clear Filters
+                        <i aria-hidden="true" class="bi bi-x-circle"></i> Clear Filters
                     </a>
                 </div>
             </form>
@@ -109,7 +109,7 @@
         <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Requisitions</h5>
             <button class="btn btn-sm btn-success" onclick="exportToCSV()">
-                <i class="bi bi-download"></i> Export CSV
+                <i aria-hidden="true" class="bi bi-download"></i> Export CSV
             </button>
         </div>
         <div class="card-body p-0">

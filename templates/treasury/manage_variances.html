@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Variance Adjustments</h2>
         <a href="{% url 'treasury:create_variance' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Create Variance Adjustment
+            <i aria-hidden="true" class="fas fa-plus"></i> Create Variance Adjustment
         </a>
     </div>
 
@@ -87,7 +87,7 @@
                                     <td>
                                         {% if variance.status == 'pending' and user.role|lower == 'cfo' or user.role|lower == 'admin' %}
                                             <a href="{% url 'treasury:approve_variance' variance.adjustment_id %}" class="btn btn-sm btn-primary">
-                                                <i class="fas fa-check"></i> Review
+                                                <i aria-hidden="true" class="fas fa-check"></i> Review
                                             </a>
                                         {% else %}
                                             <button class="btn btn-sm btn-secondary" disabled>-</button>
@@ -100,7 +100,7 @@
                 </div>
             {% else %}
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> No variance adjustments found.
+                    <i aria-hidden="true" class="fas fa-info-circle"></i> No variance adjustments found.
                 </div>
             {% endif %}
         </div>

@@ -235,6 +235,9 @@ class MaintenanceMode(models.Model):
     class Meta:
         ordering = ['-activated_at']
         get_latest_by = 'activated_at'
+        permissions = (
+            ('manage_maintenance', 'Can manage maintenance sessions and settings'),
+        )
     
     def __str__(self):
         status = "Active" if self.is_active else "Inactive"

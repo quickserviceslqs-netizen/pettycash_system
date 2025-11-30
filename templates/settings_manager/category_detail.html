@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ category_name }} - Settings{% endblock %}
+
+{% block content %}
+<div class="card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="mb-0"><i aria-hidden="true" class="bi bi-folder-fill me-2"></i>{{ category_name }}</h3>
+            <p class="text-muted mb-0">Settings for category: <strong>{{ category_key }}</strong></p>
+        </div>
+        <div class="text-end">
+            <a href="{% url 'settings_manager:dashboard' %}" class="btn btn-outline-secondary">Back to Settings</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="get" class="row g-2 mb-3 align-items-end">
+            <div class="col-md-7">
+                <label for="search" class="form-label">Search {{ category_name }}</label>
+                <input id="search" name="search" class="form-control" placeholder="Search by name, key or description" value="{{ search_query }}">
+            </div>
+            <div class="col-md-3">
+                <label for="per_page" class="form-label">Items per page</label>
+                <select id="per_page" name="per_page" class="form-select" aria-label="Items per page for {{ category_name }}">
+                    <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                    <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100">Apply</button>
+            </div>
+        </form>
+
+        <script>
+            // Auto-submit per-page selector for faster UX
+            (function(){
+                var per = document.getElementById('per_page');
+                if(per){
+                    per.addEventListener('change', function(){
+                        // submit nearest form
+                        var f = per.closest('form');
+                        if(f) f.submit();
+                    });
+                }
+                var perAll = document.getElementById('per_page_all');
+                if(perAll){
+                    perAll.addEventListener('change', function(){
+                        var f = perAll.closest('form');
+                        if(f) f.submit();
+                    });
+                }
+            })();
+        </script>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-compact">
+                <thead>
+                    <tr>
+                        <th>Setting</th>
+                        <th>Key</th>
+                        <th>Description</th>
+                        <th>Current Value</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for setting in page_obj %}
+                    <tr>
+                        <td><strong>{{ setting.display_name }}</strong></td>
+                        <td>{{ setting.key }}</td>
+                        <td><small>{{ setting.description }}</small></td>
+                        <td>{% if setting.is_sensitive %}<span class="badge bg-secondary">Hidden</span>{% else %}{{ setting.value|default:'N/A' }}{% endif %}</td>
+                        <td>{% if setting.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-danger">Inactive</span>{% endif %}</td>
+                        <td><a href="{% url 'settings_manager:edit_setting' setting.id %}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-muted">No settings found for this category.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+        <nav aria-label="Page navigation" class="mt-3">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if search_query %}search={{ search_query }}&amp;{% endif %}{% if per_page %}per_page={{ per_page }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                {% endif %}
+
+                {% for num in page_numbers %}
+                    {% if num == 'gap' %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% else %}
+                        <li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?{% if search_query %}search={{ search_query }}&amp;{% endif %}{% if per_page %}per_page={{ per_page }}&amp;{% endif %}page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if search_query %}search={{ search_query }}&amp;{% endif %}{% if per_page %}per_page={{ per_page }}&amp;{% endif %}page={{ page_obj.next_page_number }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

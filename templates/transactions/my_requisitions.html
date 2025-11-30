@@ -11,21 +11,21 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2><i class="bi bi-person-circle"></i> My Requisitions</h2>
+                    <h2><i aria-hidden="true" class="bi bi-person-circle"></i> My Requisitions</h2>
                     <p class="text-muted">Requisitions I created
                         {% if is_centralized %}
                             <span class="badge bg-info ms-2">
-                                <i class="bi bi-globe"></i> {{ scope_label }}
+                                <i aria-hidden="true" class="bi bi-globe"></i> {{ scope_label }}
                             </span>
                         {% endif %}
                     </p>
                 </div>
                 <div>
                     <a href="{% url 'transactions:transactions-home' %}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                        <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
                     </a>
                     <a href="{% url 'transactions:create-requisition' %}" class="btn btn-success">
-                        <i class="bi bi-plus-circle"></i> Create New
+                        <i aria-hidden="true" class="bi bi-plus-circle"></i> Create New
                     </a>
                 </div>
             </div>
@@ -39,6 +39,14 @@
                 <div class="card-body">
                     <h4 class="mb-0">{{ metrics.total }}</h4>
                     <small class="text-muted">Total</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-light">
+                <div class="card-body">
+                    <h4 class="mb-0 text-dark">{{ metrics.drafts }}</h4>
+                    <small class="text-muted">Drafts</small>
                 </div>
             </div>
         </div>
@@ -112,6 +120,7 @@
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
                         <option value="">All Statuses</option>
+                        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
                         <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
                         <option value="pending_urgency_confirmation" {% if status_filter == 'pending_urgency_confirmation' %}selected{% endif %}>Pending Urgency</option>
                         <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
@@ -129,7 +138,7 @@
                 <div class="col-md-2">
                     <label class="form-label">&nbsp;</label>
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Filter
+                        <i aria-hidden="true" class="bi bi-search"></i> Filter
                     </button>
                 </div>
             </form>
@@ -159,7 +168,9 @@
                             <td>{{ req.amount|currency }}</td>
                             <td>{{ req.description|truncatewords:5 }}</td>
                             <td>
-                                {% if req.status == 'pending' %}
+                                {% if req.status == 'draft' %}
+                                    <span class="badge bg-light text-dark">Draft</span>
+                                {% elif req.status == 'pending' %}
                                     <span class="badge bg-warning">Pending</span>
                                 {% elif req.status == 'pending_urgency_confirmation' %}
                                     <span class="badge bg-warning">Pending Urgency</span>
@@ -191,14 +202,20 @@
                             <td>
                                 <a href="{% url 'transactions:requisition-detail' req.transaction_id %}" 
                                    class="btn btn-sm btn-primary">
-                                    <i class="bi bi-eye"></i> View
+                                    <i aria-hidden="true" class="bi bi-eye"></i> View
                                 </a>
+                                {% if req.status == 'draft' %}
+                                    <a href="{% url 'transactions:edit-draft' req.transaction_id %}" 
+                                       class="btn btn-sm btn-warning ms-1">
+                                        <i aria-hidden="true" class="bi bi-pencil"></i> Edit
+                                    </a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
                             <td colspan="7" class="text-center text-muted">
-                                <i class="bi bi-info-circle"></i> No requisitions found.
+                                <i aria-hidden="true" class="bi bi-info-circle"></i> No requisitions found.
                             </td>
                         </tr>
                         {% endfor %}

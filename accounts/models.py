@@ -88,6 +88,9 @@ class User(AbstractUser):
 
     phone_number = models.CharField(max_length=20, blank=True, null=True)
 
+    # Email verification for organization settings
+    email_verification_token = models.UUIDField(null=True, blank=True, unique=True)
+
     # ✅ New field to mark centralized/company-wide approvers
     is_centralized_approver = models.BooleanField(
         default=False,

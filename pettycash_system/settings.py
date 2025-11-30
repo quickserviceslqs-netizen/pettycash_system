@@ -2,9 +2,14 @@
 Django settings for pettycash_system project.
 """
 
+
 from pathlib import Path
 import os
 import dj_database_url
+import time
+
+# Set server start time for uptime calculation
+SERVER_START_TIME = time.time()
 
 # ---------------------------------------------------------------------
 # BASE DIR
@@ -15,8 +20,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 # ---------------------------------------------------------------------
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-%7!es6s0(ak^5(mmz_uh65^vy6*za^h+9+9ojdotnwe0-&pn%@')
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.railway.app,.render.com,.onrender.com').split(',')
+DEBUG = True
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_BROWSER_XSS_FILTER = False
+SECURE_CONTENT_TYPE_NOSNIFF = False
+X_FRAME_OPTIONS = 'DENY'
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.railway.app,.render.com,.onrender.com,testserver').split(',')
 
 # Site URL for email invitations
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
@@ -75,6 +86,7 @@ MIDDLEWARE = [
     'pettycash_system.ip_whitelist_middleware.IPWhitelistMiddleware',  # IP whitelist security
     'pettycash_system.device_auth_middleware.DeviceAuthenticationMiddleware',  # Device whitelist enforcement
     'pettycash_system.middleware.CompanyMiddleware',  # Multi-tenancy: Set company context
+    # 'pettycash_system.middleware.HTTPSMiddleware',  # HTTPS enforcement based on settings - DISABLED FOR DEV
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'pettycash_system.ip_whitelist_middleware.SecurityLoggingMiddleware',  # Log security events
@@ -121,9 +133,12 @@ DATABASES = {
     )
 }
 
+
 # ---------------------------------------------------------------------
-# AUTHENTICATION
+# AUTHENTICATION & SECURITY SETTINGS (dynamic from SystemSetting)
 # ---------------------------------------------------------------------
+# Note: Dynamic loading moved to avoid import-time database access
+
 AUTH_USER_MODEL = 'accounts.User'
 
 # Redirects
@@ -132,18 +147,43 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'        # After logout
 LOGIN_URL = '/accounts/login/'                  # Default login
 
 AUTHENTICATION_BACKENDS = [
+    'accounts.auth_backend.SystemSettingAuthBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-# ---------------------------------------------------------------------
-# PASSWORD VALIDATION
-# ---------------------------------------------------------------------
+# Session timeout (default 30 minutes, overridden dynamically in middleware)
+SESSION_COOKIE_AGE = 30 * 60
+
+# Password validation (defaults, overridden dynamically in auth backend)
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
+# Password complexity enforcement (defaults)
+REQUIRE_PASSWORD_COMPLEXITY = True
+
+# Account lockout (defaults)
+MAX_LOGIN_ATTEMPTS = 5
+ACCOUNT_LOCKOUT_DURATION_MINUTES = 30
+
+# Two-factor authentication (defaults, loaded dynamically in middleware/views)
+ENABLE_TWO_FACTOR_AUTH = False
+REQUIRE_2FA_FOR_APPROVERS = False
+
+# IP Whitelist (defaults, loaded dynamically in middleware)
+ENABLE_IP_WHITELIST = False
+ALLOWED_IP_ADDRESSES = []
+
+# Device Whitelist (defaults, loaded dynamically in middleware)
+ENFORCE_DEVICE_WHITELIST = False
+
+# Fraud detection (defaults, loaded dynamically in views)
+ENABLE_FRAUD_DETECTION = False
+RAPID_TRANSACTION_THRESHOLD = 5
+RAPID_TRANSACTION_WINDOW_MINUTES = 10
 
 # ---------------------------------------------------------------------
 # INTERNATIONALIZATION
@@ -201,4 +241,21 @@ MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', '')
 MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE', '')
 MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', '')
 MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', 'https://pettycash-system.onrender.com/treasury/api/mpesa/callback/')
+
+# ---------------------------------------------------------------------
+# SYSTEM SETTINGS CATEGORIES
+# ---------------------------------------------------------------------
+SYSTEM_SETTING_CATEGORIES = [
+    ('email', 'Email Configuration'),
+    ('approval', 'Approval Workflow'),
+    ('payment', 'Payment Settings'),
+    ('security', 'Security & Auth'),
+    ('notifications', 'Notifications'),
+    ('general', 'General Settings'),
+    ('reporting', 'Reports & Analytics'),
+    ('requisition', 'Requisition Mgmt'),
+    ('treasury', 'Treasury Operations'),
+    ('workflow', 'Workflow Automation'),
+    ('organization', 'Users & Organization'),
+]
 

@@ -12,7 +12,7 @@
                 </div>
                 <div class="card-body">
                     <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-circle"></i> <strong>Warning:</strong> You are about to reject this requisition. This action will end the approval workflow.
+                        <i aria-hidden="true" class="fas fa-exclamation-circle"></i> <strong>Warning:</strong> You are about to reject this requisition. This action will end the approval workflow.
                     </div>
 
                     <dl class="row">
@@ -39,10 +39,10 @@
 
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'transactions:view_requisition' requisition.transaction_id %}" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Cancel
+                                <i aria-hidden="true" class="fas fa-times"></i> Cancel
                             </a>
                             <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-ban"></i> Reject Requisition
+                                <i aria-hidden="true" class="fas fa-ban"></i> Reject Requisition
                             </button>
                         </div>
                     </form>

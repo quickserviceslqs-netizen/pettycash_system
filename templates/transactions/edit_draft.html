@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit Draft Requisition - Petty Cash System{% endblock %}
+
+{% block content %}
+<div style="max-width:800px; margin:0 auto;">
+
+    <h2 style="text-align:center; margin-bottom:20px;">Edit Draft Requisition</h2>
+    <p style="text-align:center; color:#666; margin-bottom:30px;">
+        Transaction ID: <strong>{{ requisition.transaction_id }}</strong>
+    </p>
+
+    <form method="post" enctype="multipart/form-data" novalidate id="requisitionForm">
+        {% csrf_token %}
+        {{ form.is_draft }}
+        {% if form.non_field_errors %}
+            <div style="color:red; margin-bottom:10px;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div style="display:grid; gap:15px;">
+            <!-- Origin Type -->
+            <div>
+                <label for="{{ form.origin_type.id_for_label }}">Origin Type</label><br>
+                {{ form.origin_type }}
+                {% if form.origin_type.errors %}
+                    <div style="color:red;">{{ form.origin_type.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Company -->
+            <div>
+                <label for="{{ form.company.id_for_label }}">Company</label><br>
+                {{ form.company }}
+                {% if form.company.errors %}
+                    <div style="color:red;">{{ form.company.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Region -->
+            <div>
+                <label for="{{ form.region.id_for_label }}">Region</label><br>
+                {{ form.region }}
+                {% if form.region.errors %}
+                    <div style="color:red;">{{ form.region.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Branch -->
+            <div>
+                <label for="{{ form.branch.id_for_label }}">Branch</label><br>
+                {{ form.branch }}
+                {% if form.branch.errors %}
+                    <div style="color:red;">{{ form.branch.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Department -->
+            <div>
+                <label for="{{ form.department.id_for_label }}">Department</label><br>
+                {{ form.department }}
+                {% if form.department.errors %}
+                    <div style="color:red;">{{ form.department.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Cost Center -->
+            <div>
+                <label for="{{ form.cost_center.id_for_label }}">Cost Center</label><br>
+                {{ form.cost_center }}
+                {% if form.cost_center.errors %}
+                    <div style="color:red;">{{ form.cost_center.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Amount -->
+            <div>
+                <label for="{{ form.amount.id_for_label }}">Amount</label><br>
+                {{ form.amount }}
+                {% if form.amount.errors %}
+                    <div style="color:red;">{{ form.amount.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Purpose -->
+            <div>
+                <label for="{{ form.purpose.id_for_label }}">Purpose</label><br>
+                {{ form.purpose }}
+                {% if form.purpose.errors %}
+                    <div style="color:red;">{{ form.purpose.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Receipt -->
+            <div>
+                <label for="{{ form.receipt.id_for_label }}">Receipt/Supporting Document</label><br>
+                {{ form.receipt }}
+                {% if form.receipt.errors %}
+                    <div style="color:red;">{{ form.receipt.errors }}</div>
+                {% endif %}
+                {% if requisition.receipt %}
+                    <div style="margin-top:5px;">
+                        <small style="color:#666;">Current file: <a href="{{ requisition.receipt.url }}" target="_blank">{{ requisition.receipt.name }}</a></small>
+                    </div>
+                {% endif %}
+                <small style="color:#666;">Upload receipt, invoice, or supporting document (PDF, Image)</small>
+            </div>
+
+            <!-- Is Urgent -->
+            <div>
+                <label for="{{ form.is_urgent.id_for_label }}">Is Urgent?</label><br>
+                {{ form.is_urgent }}
+                {% if form.is_urgent.errors %}
+                    <div style="color:red;">{{ form.is_urgent.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Urgency Reason -->
+            <div>
+                <label for="{{ form.urgency_reason.id_for_label }}">Urgency Reason</label><br>
+                {{ form.urgency_reason }}
+                {% if form.urgency_reason.errors %}
+                    <div style="color:red;">{{ form.urgency_reason.errors }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Submit Button -->
+            <div style="text-align:center; margin-top:20px;">
+                <a href="{% url 'transactions:my-requisitions' %}" class="btn btn-secondary" style="margin-right:10px;">
+                    <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to My Requisitions
+                </a>
+                <button type="button" id="saveDraftBtn"
+                        style="padding:10px 20px; background:#ffc107; color:#000; border:none; border-radius:5px; margin-right:10px;">
+                    Update Draft
+                </button>
+                <button type="submit" name="action" value="submit"
+                        style="padding:10px 20px; background:#28a745; color:#fff; border:none; border-radius:5px;">
+                    Submit Requisition
+                </button>
+            </div>
+        </div>
+    </form>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('requisitionForm');
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    const isDraftField = document.querySelector('input[name="is_draft"]');
+
+    // Auto-save functionality
+    let autoSaveTimer;
+    const autoSaveInterval = {{ auto_save_interval|default:60 }} * 1000; // Convert seconds to milliseconds
+
+    function autoSave() {
+        // Only auto-save if form has been modified and we're not already submitting
+        if (form.dataset.modified === 'true' && !form.dataset.submitting) {
+            saveAsDraft(true); // Silent auto-save
+        }
+    }
+
+    // Mark form as modified when any input changes
+    form.addEventListener('input', function() {
+        form.dataset.modified = 'true';
+        // Reset auto-save timer
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(autoSave, autoSaveInterval);
+    });
+
+    // Save as draft function
+    function saveAsDraft(silent = false) {
+        if (form.dataset.submitting) return;
+
+        form.dataset.submitting = 'true';
+        isDraftField.value = 'true';
+
+        const formData = new FormData(form);
+
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            if (silent) {
+                // For auto-save, just show a brief indicator
+                showAutoSaveIndicator();
+            } else {
+                // For manual save, show success message and stay on page
+                if (html.includes('Draft requisition') && html.includes('updated successfully')) {
+                    showSuccessMessage('Draft updated successfully!');
+                } else {
+                    // Show error message
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    const errorMsg = tempDiv.querySelector('.alert-danger, .error');
+                    if (errorMsg) {
+                        alert(errorMsg.textContent);
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Draft save failed:', error);
+            if (!silent) {
+                alert('Failed to save draft. Please try again.');
+            }
+        })
+        .finally(() => {
+            form.dataset.submitting = '';
+            isDraftField.value = '';
+        });
+    }
+
+    // Manual save draft button
+    saveDraftBtn.addEventListener('click', function() {
+        saveAsDraft(false);
+    });
+
+    // Show auto-save indicator
+    function showAutoSaveIndicator() {
+        let indicator = document.getElementById('autoSaveIndicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'autoSaveIndicator';
+            indicator.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s;
+            `;
+            indicator.textContent = 'Draft auto-saved';
+            document.body.appendChild(indicator);
+        }
+
+        indicator.style.opacity = '1';
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+        }, 2000);
+    }
+
+    // Show success message
+    function showSuccessMessage(message) {
+        let msgDiv = document.getElementById('successMessage');
+        if (!msgDiv) {
+            msgDiv = document.createElement('div');
+            msgDiv.id = 'successMessage';
+            msgDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                padding: 12px 16px;
+                border-radius: 4px;
+                font-size: 14px;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s;
+            `;
+            document.body.appendChild(msgDiv);
+        }
+        msgDiv.textContent = message;
+        msgDiv.style.opacity = '1';
+        setTimeout(() => {
+            msgDiv.style.opacity = '0';
+        }, 3000);
+    }
+
+    // Prevent form submission when saving draft
+    form.addEventListener('submit', function(e) {
+        if (e.submitter && e.submitter.id === 'saveDraftBtn') {
+            e.preventDefault();
+            saveAsDraft(false);
+        }
+    });
+});
+</script>
+
+{% endblock %}

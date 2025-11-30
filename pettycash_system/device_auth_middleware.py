@@ -6,45 +6,33 @@ from django.shortcuts import redirect
 from django.contrib import messages
 from django.urls import reverse
 from accounts.models_device import WhitelistedDevice, DeviceAccessAttempt
-from settings_manager.models import get_setting
+from workflow.services.resolver import is_device_whitelist_enforced, is_activity_geolocation_enabled
+
 
 
 def get_device_info(request):
     """Extract device information from request"""
     user_agent = request.META.get('HTTP_USER_AGENT', '')
-    
-    # Parse device name from user agent
-    device_name = "Unknown Device"
-    if 'Windows' in user_agent:
-        if 'Windows NT 10' in user_agent or 'Windows NT 11' in user_agent:
-            device_name = "Windows 10/11"
-        elif 'Windows NT 6' in user_agent:
-            device_name = "Windows 7/8"
-        else:
-            device_name = "Windows"
-    elif 'Macintosh' in user_agent or 'Mac OS X' in user_agent:
-        device_name = "macOS"
-    elif 'Linux' in user_agent:
-        device_name = "Linux"
-    elif 'Android' in user_agent:
-        device_name = "Android"
-    elif 'iPhone' in user_agent or 'iPad' in user_agent:
-        device_name = "iOS"
-    
-    # Add browser info
-    if 'Chrome' in user_agent and 'Edg' not in user_agent:
-        device_name += " - Chrome"
-    elif 'Edg' in user_agent:
-        device_name += " - Edge"
-    elif 'Firefox' in user_agent:
-        device_name += " - Firefox"
-    elif 'Safari' in user_agent and 'Chrome' not in user_agent:
-        device_name += " - Safari"
-    
+    # ...existing code...
     return {
         'device_name': device_name,
         'user_agent': user_agent
     }
+
+class DeviceAuthenticationMiddleware:
+    """
+    Middleware to restrict login to whitelisted devices only (dynamic)
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        enforce_device_whitelist = get_setting('ENFORCE_DEVICE_WHITELIST', 'false') == 'true'
+        if enforce_device_whitelist:
+            # ...existing device whitelist logic...
+            pass
+        response = self.get_response(request)
+        return response
 
 
 def get_client_ip(request):
@@ -59,9 +47,7 @@ def get_client_ip(request):
 
 def get_location(ip_address):
     """Get location from IP address using geolocation API"""
-    enable_geolocation = get_setting('ENABLE_ACTIVITY_GEOLOCATION', 'true')
-    
-    if enable_geolocation != 'true':
+    if not is_activity_geolocation_enabled():
         return ''
     
     try:
@@ -106,9 +92,7 @@ class DeviceAuthenticationMiddleware:
     
     def __call__(self, request):
         # Check if device whitelist enforcement is enabled
-        enforce_device_whitelist = get_setting('ENFORCE_DEVICE_WHITELIST', 'false')
-        
-        if enforce_device_whitelist == 'true' and request.user.is_authenticated:
+        if is_device_whitelist_enforced() and request.user.is_authenticated:
             # Skip exempt URLs
             if not self.is_exempt_url(request.path):
                 # Check if device is whitelisted

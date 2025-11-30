@@ -6,15 +6,31 @@ from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from datetime import timedelta
 import csv
+import sys
+import platform
+from django import get_version as django_version
+from django.core.paginator import Paginator
+from django.conf import settings as django_settings
+import locale
+from django.utils import timezone as django_timezone
 
 from settings_manager.models import SystemSetting, ActivityLog, get_setting
 from accounts.models import User, App
 from organization.models import Company, Region, Branch, Department, CostCenter, Position
+from system_maintenance.models import MaintenanceMode
 
 
 def is_admin_user(user):
     """Check if user is superuser or has admin role"""
     return user.is_superuser or user.role == 'admin'
+
+
+def can_manage_maintenance(user):
+    """Allow superusers, admin role, or users with explicit manage_maintenance permission"""
+    try:
+        return user.is_superuser or getattr(user, 'role', '') == 'admin' or user.has_perm('system_maintenance.manage_maintenance')
+    except Exception:
+        return False
 
 
 @login_required
@@ -26,24 +42,29 @@ def settings_dashboard(request):
                  description='Viewed settings dashboard', request=request)
     
     # Get all settings grouped by category
-    categories = SystemSetting.CATEGORY_CHOICES
+    from django.conf import settings as django_settings
+    categories = getattr(django_settings, 'SYSTEM_SETTING_CATEGORIES', SystemSetting.CATEGORY_CHOICES)
     settings_by_category = {}
-    
     for category_key, category_name in categories:
-        settings = SystemSetting.objects.filter(category=category_key, is_active=True)
+        settings = SystemSetting.objects.filter(category=category_key)
         if settings.exists():
-            settings_by_category[category_name] = settings
-    
+            settings_by_category[category_key] = settings
+
     # Get filter and search
     category_filter = request.GET.get('category')
     search_query = request.GET.get('search', '').strip()
-    
+
+    # Filter settings
+    settings = SystemSetting.objects.all()
     if category_filter:
-        settings = SystemSetting.objects.filter(category=category_filter, is_active=True)
-    else:
-        settings = SystemSetting.objects.filter(is_active=True)
-    
-    # Apply search filter if provided
+        settings = settings.filter(category=category_filter)
+        # For security category, show only settings that need attention
+        if category_filter == 'security':
+            settings = settings.filter(
+                Q(is_active=False) | 
+                Q(setting_type='boolean', value__in=['false', 'False']) |
+                Q(value__in=['', None])
+            )
     if search_query:
         settings = settings.filter(
             Q(display_name__icontains=search_query) |
@@ -51,15 +72,64 @@ def settings_dashboard(request):
             Q(description__icontains=search_query)
         )
     
+    # Security status
+    secure_settings = [
+        getattr(django_settings, 'SECURE_SSL_REDIRECT', False),
+        getattr(django_settings, 'SESSION_COOKIE_SECURE', False),
+        getattr(django_settings, 'CSRF_COOKIE_SECURE', False),
+        getattr(django_settings, 'SECURE_BROWSER_XSS_FILTER', False),
+        getattr(django_settings, 'SECURE_CONTENT_TYPE_NOSNIFF', False),
+        getattr(django_settings, 'X_FRAME_OPTIONS', None) == 'DENY',
+    ]
+    secure_status = all(secure_settings)
+    # Pagination for the All Settings table (default 25 per page)
+    try:
+        per_page = int(request.GET.get('per_page', 25))
+    except (TypeError, ValueError):
+        per_page = 25
+    if per_page not in (10, 25, 50, 100):
+        per_page = 25
+
+    paginator = Paginator(settings, per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
         'settings_by_category': settings_by_category,
-        'all_settings': settings,
+        'all_settings': page_obj,  # paginated page object used in template
         'categories': categories,
         'selected_category': category_filter,
         'search_query': search_query,
         'total_settings': SystemSetting.objects.filter(is_active=True).count(),
+        'secure_status': secure_status,
+        'per_page': per_page,
+        'total_results': paginator.count,
+        'page_obj': page_obj,
     }
-    
+    # Provide direct edit links for some critical settings when available
+    try:
+        currency_setting = SystemSetting.objects.filter(key='CURRENCY_CODE').first()
+        maintenance_setting = SystemSetting.objects.filter(key='SYSTEM_MAINTENANCE_MODE').first()
+        context['currency_setting_id'] = currency_setting.id if currency_setting else None
+        context['maintenance_setting_id'] = maintenance_setting.id if maintenance_setting else None
+    except Exception:
+        context['currency_setting_id'] = None
+        context['maintenance_setting_id'] = None
+    # Expose maintenance mode value to template (use get_setting to respect typed value)
+    try:
+        context['system_maintenance_mode'] = get_setting('SYSTEM_MAINTENANCE_MODE', 'false')
+    except Exception:
+        context['system_maintenance_mode'] = False
+    # Expose whether there's an active MaintenanceMode session (middleware uses this)
+    try:
+        context['maintenance_session_active'] = MaintenanceMode.is_maintenance_active()
+        # also provide latest session object if needed in template
+        latest = MaintenanceMode.objects.order_by('-activated_at').first()
+        context['maintenance_latest'] = latest
+    except Exception:
+        context['maintenance_session_active'] = False
+        context['maintenance_latest'] = None
+    # debug prints removed to keep logs clean
     return render(request, 'settings_manager/dashboard.html', context)
 
 
@@ -71,13 +141,16 @@ def edit_setting(request, setting_id):
     
     if not setting.editable_by_admin:
         messages.error(request, "This setting cannot be edited through the UI.")
-        return redirect('settings-dashboard')
+        return redirect('settings_manager:dashboard')
     
     if request.method == 'POST':
         old_value = setting.value
+        old_active = setting.is_active
         new_value = request.POST.get('value')
+        new_active = request.POST.get('is_active') == 'on'
         
         setting.value = new_value
+        setting.is_active = new_active
         setting.last_modified_by = request.user
         
         try:
@@ -85,14 +158,20 @@ def edit_setting(request, setting_id):
             setting.save()
             
             # Log the change
+            changes = {}
+            if old_value != new_value:
+                changes['value'] = {'old': old_value, 'new': new_value}
+            if old_active != new_active:
+                changes['is_active'] = {'old': old_active, 'new': new_active}
+            
             log_activity(
                 request.user,
                 'setting_change',
                 'System Setting',
                 object_id=setting.key,
                 object_repr=setting.display_name,
-                description=f"Changed '{setting.display_name}' from '{old_value}' to '{new_value}'",
-                changes={'old_value': old_value, 'new_value': new_value},
+                description=f"Updated setting '{setting.display_name}'",
+                changes=changes,
                 request=request
             )
             
@@ -116,7 +195,11 @@ def edit_setting(request, setting_id):
                 request=request
             )
         
-        return redirect('settings-dashboard')
+        # After saving, prefer to return the user to the edit page (so they remain on the specific setting)
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('settings_manager:edit_setting', setting_id=setting.id)
     
     context = {
         'setting': setting,
@@ -186,27 +269,314 @@ def activity_logs(request):
 
 @login_required
 @user_passes_test(is_admin_user)
+def category_detail(request, category_key):
+    """Dedicated page showing settings for a single category"""
+    # Log activity
+    log_activity(request.user, 'view', content_type=f'Category: {category_key}',
+                 description=f'Viewed settings for category {category_key}', request=request)
+
+    from django.conf import settings as django_settings
+    categories = getattr(django_settings, 'SYSTEM_SETTING_CATEGORIES', SystemSetting.CATEGORY_CHOICES)
+    # Resolve display name
+    display_name = None
+    for key, name in categories:
+        if key == category_key:
+            display_name = name
+            break
+    if not display_name:
+        display_name = category_key.title()
+
+    # Query settings for the category
+    settings_qs = SystemSetting.objects.filter(category=category_key).order_by('display_name')
+
+    # Optional search
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        settings_qs = settings_qs.filter(
+            Q(display_name__icontains=search_query) |
+            Q(key__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+
+    # Paginate results (default 25 per page, overridable via ?per_page=)
+    try:
+        per_page = int(request.GET.get('per_page', 25))
+    except (TypeError, ValueError):
+        per_page = 25
+    # clamp to reasonable options
+    if per_page not in (10, 25, 50, 100):
+        per_page = 25
+
+    paginator = Paginator(settings_qs, per_page)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'category_key': category_key,
+        'category_name': display_name,
+        'settings_list': page_obj.object_list,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'per_page': per_page,
+    }
+
+    # Build a compact page range for the template (show first, last, and up to 2 pages around current)
+    total = paginator.num_pages
+    current = page_obj.number
+    page_numbers = []
+    if total <= 9:
+        page_numbers = list(paginator.page_range)
+    else:
+        page_numbers.append(1)
+        left = current - 2
+        right = current + 2
+        if left > 2:
+            page_numbers.append('gap')
+        for n in range(max(left, 2), min(right, total - 1) + 1):
+            page_numbers.append(n)
+        if right < total - 1:
+            page_numbers.append('gap')
+        page_numbers.append(total)
+
+    context['page_numbers'] = page_numbers
+
+    return render(request, 'settings_manager/category_detail.html', context)
+
+
+@login_required
+@user_passes_test(can_manage_maintenance)
+def maintenance_manage(request):
+    """Full maintenance management page: shows setting, active sessions, history, and controls."""
+    from system_maintenance.models import MaintenanceMode as MM
+    # Log activity
+    log_activity(request.user, 'view', content_type='Maintenance', description='Viewed maintenance management', request=request)
+
+    # Get system setting for maintenance (if exists)
+    maintenance_setting = SystemSetting.objects.filter(key='SYSTEM_MAINTENANCE_MODE').first()
+    try:
+        maintenance_setting_value = get_setting('SYSTEM_MAINTENANCE_MODE', False)
+    except Exception:
+        maintenance_setting_value = False
+
+    # Get latest maintenance session (active or most recent)
+    latest_session = MM.objects.order_by('-activated_at').first()
+    active_session = MM.objects.filter(is_active=True).order_by('-activated_at').first()
+
+    # Handle POST actions
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'toggle_setting' and maintenance_setting:
+            new_state = request.POST.get('is_active') == 'on'
+            old_state = maintenance_setting.is_active
+            maintenance_setting.is_active = new_state
+            maintenance_setting.value = 'true' if new_state else 'false'
+            maintenance_setting.last_modified_by = request.user
+            try:
+                maintenance_setting.full_clean()
+                maintenance_setting.save()
+                log_activity(request.user, 'setting_change', 'System Setting', object_id=maintenance_setting.key,
+                             object_repr=maintenance_setting.display_name,
+                             description=f"Toggled SYSTEM_MAINTENANCE_MODE to {new_state}", request=request)
+                messages.success(request, 'Maintenance setting updated successfully.')
+            except Exception as e:
+                messages.error(request, f'Error updating maintenance setting: {e}')
+
+        elif action == 'create_session':
+            reason = request.POST.get('reason', '').strip() or 'Manual maintenance'
+            try:
+                duration = int(request.POST.get('duration_minutes', 30))
+            except (TypeError, ValueError):
+                duration = 30
+
+            # Deactivate existing active sessions
+            for s in MM.objects.filter(is_active=True):
+                s.deactivate(request.user, success=False, notes='Superseded by new session')
+
+            session = MM.objects.create(
+                is_active=True,
+                activated_by=request.user,
+                activated_at=timezone.now(),
+                reason=reason,
+                estimated_duration_minutes=duration,
+                expected_completion=timezone.now() + timezone.timedelta(minutes=duration),
+                notify_users=request.POST.get('notify_users') == 'on',
+                custom_message=request.POST.get('custom_message', '').strip(),
+            )
+            messages.success(request, 'Maintenance session created and activated.')
+            log_activity(request.user, 'create', 'MaintenanceMode', object_id=session.id, object_repr=str(session),
+                         description='Created maintenance session', request=request)
+
+        elif action == 'deactivate_session':
+            sid = request.POST.get('session_id')
+            try:
+                session = MM.objects.get(id=int(sid))
+                session.deactivate(request.user, success=True, notes=request.POST.get('notes', '').strip())
+                messages.success(request, 'Maintenance session deactivated.')
+                log_activity(request.user, 'deactivate', 'MaintenanceMode', object_id=session.id, object_repr=str(session),
+                             description='Deactivated maintenance session', request=request)
+            except Exception as e:
+                messages.error(request, f'Error deactivating session: {e}')
+
+        elif action == 'sync_to_session':
+            # Sync behavior: if setting true -> create session if none active; if false -> deactivate active
+            try:
+                setting_val = get_setting('SYSTEM_MAINTENANCE_MODE', False)
+            except Exception:
+                setting_val = False
+
+            if setting_val:
+                if not MM.objects.filter(is_active=True).exists():
+                    s = MM.objects.create(
+                        is_active=True,
+                        activated_by=request.user,
+                        activated_at=timezone.now(),
+                        reason='Synced from SYSTEM_MAINTENANCE_MODE',
+                        estimated_duration_minutes=30,
+                        expected_completion=timezone.now() + timezone.timedelta(minutes=30),
+                    )
+                    messages.success(request, 'Created maintenance session to match setting.')
+                    log_activity(request.user, 'create', 'MaintenanceMode', object_id=s.id, object_repr=str(s), description='Synced setting to session', request=request)
+                else:
+                    messages.info(request, 'An active maintenance session already exists.')
+            else:
+                for s in MM.objects.filter(is_active=True):
+                    s.deactivate(request.user, success=True, notes='Synced from setting (disabled)')
+                messages.success(request, 'Deactivated active maintenance sessions to match setting.')
+
+        return redirect('settings_manager:maintenance')
+
+    # Prepare history list (last 20)
+    history = MM.objects.order_by('-activated_at')[:20]
+
+    context = {
+        'maintenance_setting': maintenance_setting,
+        'maintenance_setting_value': maintenance_setting_value,
+        'latest_session': latest_session,
+        'active_session': active_session,
+        'history': history,
+    }
+
+    return render(request, 'settings_manager/maintenance_manage.html', context)
+
+@login_required
 def system_info(request):
-    """Display system information and diagnostics"""
+    from django.conf import settings as django_settings
+    # Security status
+    secure_settings = [
+        getattr(django_settings, 'SECURE_SSL_REDIRECT', False),
+        getattr(django_settings, 'SESSION_COOKIE_SECURE', False),
+        getattr(django_settings, 'CSRF_COOKIE_SECURE', False),
+        getattr(django_settings, 'SECURE_BROWSER_XSS_FILTER', False),
+        getattr(django_settings, 'SECURE_CONTENT_TYPE_NOSNIFF', False),
+        getattr(django_settings, 'X_FRAME_OPTIONS', None) == 'DENY',
+    ]
+    secure_status = all(secure_settings)
     import sys
     import platform
+    import os
+    import time
     from django import get_version as django_version
-    from django.conf import settings as django_settings
-    
-    # Log activity
-    log_activity(request.user, 'view', content_type='System Info', 
-                 description='Viewed system information', request=request)
-    
+    from django.db import connection
+    import locale
+    from django.utils import timezone as django_timezone
+    # Project name
+    project_name = os.path.basename(str(django_settings.BASE_DIR)) if hasattr(django_settings, 'BASE_DIR') else 'N/A'
+    # Server time
+    server_time = django_timezone.now() if django_timezone else 'N/A'
+    # Database name/host
+    db_settings = django_settings.DATABASES.get('default', {})
+    db_name = db_settings.get('NAME') or 'N/A'
+    db_host = db_settings.get('HOST') or 'N/A'
+    # Recent migrations
+    migrations_error = None
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT app, name, applied FROM django_migrations ORDER BY applied DESC LIMIT 5;")
+            recent_migrations = cursor.fetchall()
+    except Exception as e:
+        recent_migrations = []
+        migrations_error = str(e)
+    # Storage usage (disk/database size)
+    db_size = None
+    try:
+        if 'postgres' in db_settings.get('ENGINE', ''):
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT pg_database_size(current_database());")
+                db_size = cursor.fetchone()[0]
+        elif 'sqlite' in db_settings.get('ENGINE', ''):
+            db_path = db_settings.get('NAME', '')
+            if db_path and os.path.exists(db_path):
+                db_size = os.path.getsize(db_path)
+    except Exception:
+        db_size = None
+    if db_size is None:
+        db_size = 'N/A'
+    # Uptime
+    uptime_error = None
+    try:
+        if hasattr(django_settings, 'SERVER_START_TIME'):
+            uptime_seconds = int(time.time() - django_settings.SERVER_START_TIME)
+        else:
+            uptime_seconds = 'N/A'
+            uptime_error = 'SERVER_START_TIME not set in settings.'
+    except Exception as e:
+        uptime_seconds = 'N/A'
+        uptime_error = str(e)
+    # Environment
+    environment_error = None
+    environment = os.environ.get('DJANGO_ENV')
+    if not environment:
+        # Fallback: infer from DEBUG and database host
+        if django_settings.DEBUG:
+            environment = 'development'
+        elif db_host and ('render' in db_host or 'railway' in db_host or 'supabase' in db_host):
+            environment = 'production'
+        else:
+            environment = 'staging'
+        environment_error = 'DJANGO_ENV environment variable not set. Value inferred.'
+    # Warnings/errors
+    warnings = []
+    errors = []
+    # Statistics
+    total_users = User.objects.count()
+    active_users = User.objects.filter(is_active=True).count()
+    total_settings = SystemSetting.objects.filter(is_active=True).count()
+    total_logs = ActivityLog.objects.count()
     context = {
-        'python_version': sys.version,
-        'django_version': django_version(),
-        'platform': platform.platform(),
+        'project_name': project_name,
+        'server_time': server_time,
+        'python_version': sys.version if sys.version else 'N/A',
+        'python_implementation': platform.python_implementation() if platform.python_implementation() else 'N/A',
+        'python_executable': sys.executable if sys.executable else 'N/A',
+        'django_version': django_version() if django_version else 'N/A',
         'debug_mode': django_settings.DEBUG,
-        'database_engine': django_settings.DATABASES['default']['ENGINE'],
-        'installed_apps': django_settings.INSTALLED_APPS,
-        'middleware': django_settings.MIDDLEWARE,
+        'database_engine': db_settings.get('ENGINE', 'N/A'),
+        'database_name': db_name,
+        'database_host': db_host,
+        'recent_migrations': recent_migrations,
+        'migrations_error': migrations_error,
+        'db_size': db_size,
+        'uptime_seconds': uptime_seconds,
+        'uptime_error': uptime_error,
+        'timezone': str(django_settings.TIME_ZONE) if hasattr(django_settings, 'TIME_ZONE') else 'N/A',
+        'language': locale.getdefaultlocale()[0] if locale.getdefaultlocale() and locale.getdefaultlocale()[0] else 'N/A',
+        'platform_system': platform.system() if platform.system() else 'N/A',
+        'platform_release': platform.release() if platform.release() else 'N/A',
+        'platform_machine': platform.architecture()[0] if platform.architecture() else 'N/A',
+        'platform_processor': platform.processor() if platform.processor() else 'N/A',
+        'installed_apps': django_settings.INSTALLED_APPS if hasattr(django_settings, 'INSTALLED_APPS') else [],
+        'middleware': django_settings.MIDDLEWARE if hasattr(django_settings, 'MIDDLEWARE') else [],
+        'secret_key': django_settings.SECRET_KEY if hasattr(django_settings, 'SECRET_KEY') else 'N/A',
+        'environment': environment,
+        'environment_error': environment_error,
+        'warnings': warnings,
+        'errors': errors,
+        'total_users': total_users,
+        'active_users': active_users,
+        'total_settings': total_settings,
+        'total_logs': total_logs,
+        'secure_status': secure_status,
     }
-    
     return render(request, 'settings_manager/system_info.html', context)
 
 

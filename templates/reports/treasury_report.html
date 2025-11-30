@@ -12,7 +12,7 @@
             <p class="text-muted mb-0">Fund balances and payment activity</p>
         </div>
         <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
         </a>
     </div>
 
@@ -76,11 +76,11 @@
                             <td>
                                 {% if fund.needs_replenishment %}
                                     <span class="badge bg-danger">
-                                        <i class="bi bi-exclamation-triangle"></i> Below Reorder Level
+                                        <i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Below Reorder Level
                                     </span>
                                 {% else %}
                                     <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Healthy
+                                        <i aria-hidden="true" class="bi bi-check-circle"></i> Healthy
                                     </span>
                                 {% endif %}
                             </td>
@@ -126,11 +126,11 @@
                                 <tr>
                                     <td>
                                         {% if stat.method == 'mpesa' %}
-                                            <i class="bi bi-phone text-success"></i> MPESA
+                                            <i aria-hidden="true" class="bi bi-phone text-success"></i> MPESA
                                         {% elif stat.method == 'bank' %}
-                                            <i class="bi bi-bank text-primary"></i> Bank Transfer
+                                            <i aria-hidden="true" class="bi bi-bank text-primary"></i> Bank Transfer
                                         {% elif stat.method == 'cash' %}
-                                            <i class="bi bi-cash text-warning"></i> Cash
+                                            <i aria-hidden="true" class="bi bi-cash text-warning"></i> Cash
                                         {% else %}
                                             {{ stat.method|title }}
                                         {% endif %}

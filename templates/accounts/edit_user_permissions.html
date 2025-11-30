@@ -6,12 +6,12 @@
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-md-6">
-            <h2><i class="bi bi-pencil-square"></i> Edit User Permissions</h2>
+            <h2><i aria-hidden="true" class="bi bi-pencil-square"></i> Edit User Permissions</h2>
             <p class="text-muted">{{ user_to_edit.get_display_name }} ({{ user_to_edit.username }})</p>
         </div>
         <div class="col-md-6 text-end">
             <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Users
+                <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Users
             </a>
         </div>
     </div>
@@ -24,7 +24,7 @@
             <div class="col-md-4 mb-4">
                 <div class="card">
                     <div class="card-header bg-primary text-white">
-                        <i class="bi bi-person-badge"></i> User Information
+                        <i aria-hidden="true" class="bi bi-person-badge"></i> User Information
                     </div>
                     <div class="card-body">
                         <p><strong>Username:</strong> {{ user_to_edit.username }}</p>
@@ -57,7 +57,7 @@
                 <!-- Role -->
                 <div class="card mb-4">
                     <div class="card-header bg-info text-white">
-                        <i class="bi bi-diagram-3"></i> Role & Organization
+                        <i aria-hidden="true" class="bi bi-diagram-3"></i> Role & Organization
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -125,7 +125,7 @@
                 <!-- App Access -->
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
-                        <i class="bi bi-grid-3x3-gap"></i> App Access
+                        <i aria-hidden="true" class="bi bi-grid-3x3-gap"></i> App Access
                     </div>
                     <div class="card-body">
                         <p class="text-muted">Select which applications this user can access</p>
@@ -159,7 +159,7 @@
                 <!-- Permission Groups -->
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
-                        <i class="bi bi-people"></i> Permission Groups
+                        <i aria-hidden="true" class="bi bi-people"></i> Permission Groups
                     </div>
                     <div class="card-body">
                         <p class="text-muted small">Assign user to groups. Users inherit all permissions from their groups.</p>
@@ -182,7 +182,7 @@
                         </div>
                         {% else %}
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> No groups defined yet. Create groups in Django Admin to organize permissions.
+                            <i aria-hidden="true" class="bi bi-info-circle"></i> No groups defined yet. Create groups in Django Admin to organize permissions.
                         </div>
                         {% endif %}
                     </div>
@@ -191,7 +191,7 @@
                 <!-- Detailed Permissions -->
                 <div class="card mb-4">
                     <div class="card-header bg-warning text-dark">
-                        <i class="bi bi-shield-lock"></i> Detailed Permissions (In-App Access)
+                        <i aria-hidden="true" class="bi bi-shield-lock"></i> Detailed Permissions (In-App Access)
                     </div>
                     <div class="card-body">
                         <p class="text-muted small">Granular permissions for specific actions within each app. Only select what this user needs.</p>
@@ -199,7 +199,7 @@
                         {% for app_label, perms in permissions_by_app.items %}
                         <div class="mb-4">
                             <h6 class="text-uppercase text-primary border-bottom pb-2">
-                                <i class="bi bi-app"></i> {{ app_label|title }}
+                                <i aria-hidden="true" class="bi bi-app"></i> {{ app_label|title }}
                             </h6>
                             <div class="row">
                                 {% for perm in perms %}
@@ -226,10 +226,10 @@
                 <!-- Save Button -->
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-save"></i> Save Changes
+                        <i aria-hidden="true" class="bi bi-save"></i> Save Changes
                     </button>
                     <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
-                        <i class="bi bi-x-circle"></i> Cancel
+                        <i aria-hidden="true" class="bi bi-x-circle"></i> Cancel
                     </a>
                 </div>
             </div>

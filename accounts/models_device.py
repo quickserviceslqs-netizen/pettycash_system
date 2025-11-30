@@ -134,9 +134,12 @@ class UserInvitation(models.Model):
     
     def send_invitation_email(self):
         """Send invitation email to user"""
+        from workflow.services.resolver import get_system_email_from, get_email_reply_to, get_email_subject_prefix
+        
         signup_url = f"{settings.SITE_URL}{self.get_signup_url()}" if hasattr(settings, 'SITE_URL') else self.get_signup_url()
         
-        subject = f"You've been invited to join {getattr(settings, 'SITE_NAME', 'Petty Cash System')}"
+        subject_prefix = get_email_subject_prefix()
+        subject = f"{subject_prefix} You've been invited to join {getattr(settings, 'SITE_NAME', 'Petty Cash System')}"
         
         message = f"""
 Hello {self.first_name or 'there'},
@@ -209,9 +212,10 @@ The Petty Cash System Team
             send_mail(
                 subject=subject,
                 message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
+                from_email=get_system_email_from(),
                 recipient_list=[self.email],
                 html_message=html_message,
+                reply_to=[get_email_reply_to()],
                 fail_silently=False,
             )
             return True

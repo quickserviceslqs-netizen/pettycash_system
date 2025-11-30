@@ -83,6 +83,25 @@ class BackupService:
             
         except Exception as e:
             backup_record.mark_failed(str(e))
+            
+            # Send notification for backup failure
+            from workflow.services.resolver import send_system_maintenance_notification
+            subject = f"Backup Failed: {backup_id}"
+            message = f"""
+Backup Failure Alert:
+
+Backup ID: {backup_id}
+Type: {backup_type}
+Created by: {user.get_full_name() if user else 'System'}
+Error: {str(e)}
+
+The backup process failed. Please investigate and ensure system backups are working properly.
+
+Best regards,
+Petty Cash System Backup Service
+"""
+            send_system_maintenance_notification(subject, message)
+            
             raise
     
     def _backup_database(self, backup_record):

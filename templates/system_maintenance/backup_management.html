@@ -7,11 +7,11 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1"><i class="bi bi-database-fill-up"></i> Backup Management</h2>
+            <h2 class="mb-1"><i aria-hidden="true" class="bi bi-database-fill-up"></i> Backup Management</h2>
             <p class="text-muted mb-0">Create, verify, and manage system backups</p>
         </div>
         <a href="{% url 'system_maintenance:dashboard' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
         </a>
     </div>
 
@@ -27,7 +27,7 @@
     <!-- Create Backup Section -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-bottom">
-            <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Create New Backup</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-plus-circle"></i> Create New Backup</h5>
         </div>
         <div class="card-body">
             <form method="post">
@@ -48,7 +48,7 @@
                         <label class="form-label">&nbsp;</label>
                         <div>
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-cloud-arrow-up"></i> Create Backup
+                                <i aria-hidden="true" class="bi bi-cloud-arrow-up"></i> Create Backup
                             </button>
                         </div>
                     </div>
@@ -60,7 +60,7 @@
     <!-- Backups List -->
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-archive"></i> All Backups</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-archive"></i> All Backups</h5>
             <div>
                 <span class="badge bg-primary">{{ backups|length }} Total</span>
             </div>
@@ -86,22 +86,22 @@
                             <td>
                                 <code class="small">{{ backup.backup_id|slice:":12" }}...</code>
                                 {% if backup.is_protected %}
-                                    <i class="bi bi-shield-fill-check text-success" title="Protected"></i>
+                                    <i aria-hidden="true" class="bi bi-shield-fill-check text-success" title="Protected"></i>
                                 {% endif %}
                             </td>
                             <td><span class="badge bg-secondary">{{ backup.get_backup_type_display }}</span></td>
                             <td>
                                 {% if backup.status == 'completed' %}
                                     <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> {{ backup.get_status_display }}
+                                        <i aria-hidden="true" class="bi bi-check-circle"></i> {{ backup.get_status_display }}
                                     </span>
                                 {% elif backup.status == 'failed' %}
                                     <span class="badge bg-danger">
-                                        <i class="bi bi-x-circle"></i> {{ backup.get_status_display }}
+                                        <i aria-hidden="true" class="bi bi-x-circle"></i> {{ backup.get_status_display }}
                                     </span>
                                 {% elif backup.status == 'in_progress' %}
                                     <span class="badge bg-warning">
-                                        <i class="bi bi-hourglass-split"></i> {{ backup.get_status_display }}
+                                        <i aria-hidden="true" class="bi bi-hourglass-split"></i> {{ backup.get_status_display }}
                                     </span>
                                 {% else %}
                                     <span class="badge bg-info">{{ backup.get_status_display }}</span>
@@ -123,27 +123,27 @@
                                         <!-- Download Dropdown -->
                                         <div class="dropdown">
                                             <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                <i class="bi bi-download"></i>
+                                                <i aria-hidden="true" class="bi bi-download"></i>
                                             </button>
                                             <ul class="dropdown-menu">
                                                 {% if backup.database_file %}
                                                     <li>
                                                         <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=database">
-                                                            <i class="bi bi-database"></i> Database
+                                                            <i aria-hidden="true" class="bi bi-database"></i> Database
                                                         </a>
                                                     </li>
                                                 {% endif %}
                                                 {% if backup.media_archive %}
                                                     <li>
                                                         <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=media">
-                                                            <i class="bi bi-file-earmark-image"></i> Media
+                                                            <i aria-hidden="true" class="bi bi-file-earmark-image"></i> Media
                                                         </a>
                                                     </li>
                                                 {% endif %}
                                                 {% if backup.settings_file %}
                                                     <li>
                                                         <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=settings">
-                                                            <i class="bi bi-gear"></i> Settings
+                                                            <i aria-hidden="true" class="bi bi-gear"></i> Settings
                                                         </a>
                                                     </li>
                                                 {% endif %}
@@ -156,7 +156,7 @@
                                             <input type="hidden" name="action" value="verify">
                                             <input type="hidden" name="backup_id" value="{{ backup.backup_id }}">
                                             <button type="submit" class="btn btn-outline-info" title="Verify Backup">
-                                                <i class="bi bi-check2-square"></i>
+                                                <i aria-hidden="true" class="bi bi-check2-square"></i>
                                             </button>
                                         </form>
 
@@ -167,7 +167,7 @@
                                             <input type="hidden" name="backup_id" value="{{ backup.backup_id }}">
                                             <button type="submit" class="btn btn-outline-{% if backup.is_protected %}warning{% else %}success{% endif %}" 
                                                     title="{% if backup.is_protected %}Unprotect{% else %}Protect{% endif %} Backup">
-                                                <i class="bi bi-shield-{% if backup.is_protected %}slash{% else %}check{% endif %}"></i>
+                                                <i aria-hidden="true" class="bi bi-shield-{% if backup.is_protected %}slash{% else %}check{% endif %}"></i>
                                             </button>
                                         </form>
                                     {% endif %}
@@ -179,7 +179,7 @@
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="backup_id" value="{{ backup.backup_id }}">
                                             <button type="submit" class="btn btn-outline-danger" title="Delete Backup">
-                                                <i class="bi bi-trash"></i>
+                                                <i aria-hidden="true" class="bi bi-trash"></i>
                                             </button>
                                         </form>
                                     {% endif %}

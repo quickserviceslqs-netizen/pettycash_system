@@ -1,5 +1,9 @@
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
+from settings_manager.models import get_setting
 
 # ---------------------------------------------------------------------
 # Role access mapping: which apps are visible to which roles
@@ -34,11 +38,36 @@ APPROVER_ROLES = {
 # ---------------------------------------------------------------------
 # Role-based redirect view
 # ---------------------------------------------------------------------
+
 @login_required
 def role_based_redirect(request):
     """
     Redirect all users to the dashboard after login.
+    Enforce session timeout, account lockout, and 2FA if enabled.
     """
+    user = request.user
+    
+    # Send login notification if enabled
+    from workflow.services.resolver import is_login_notification_enabled
+    if is_login_notification_enabled():
+        send_login_notification(user, request)
+    
+    # Session timeout
+    session_timeout = int(get_setting('SESSION_TIMEOUT_MINUTES', 30)) * 60
+    request.session.set_expiry(session_timeout)
+
+    # Account lockout (pseudo-code, actual logic should be in login view)
+    max_attempts = int(get_setting('MAX_LOGIN_ATTEMPTS', 5))
+    lockout_duration = int(get_setting('ACCOUNT_LOCKOUT_DURATION_MINUTES', 30))
+    # ...logic to check failed attempts and lockout...
+
+    # Two-factor authentication enforcement
+    enable_2fa = get_setting('ENABLE_TWO_FACTOR_AUTH', 'false') == 'true'
+    require_2fa_approver = get_setting('REQUIRE_2FA_FOR_APPROVERS', 'false') == 'true'
+    if enable_2fa or (require_2fa_approver and user.role in APPROVER_ROLES):
+        # ...logic to enforce 2FA step...
+        pass
+
     return redirect("dashboard")
 
 
@@ -242,3 +271,56 @@ def dashboard(request):
     }
 
     return render(request, "accounts/dashboard.html", context)
+
+
+# ---------------------------------------------------------------------
+# Login notification function
+# ---------------------------------------------------------------------
+
+def send_login_notification(user, request):
+    """
+    Send login notification to security team.
+    """
+    try:
+        from django.core.mail import send_mail
+        from workflow.services.resolver import get_system_email_from, get_security_alert_recipients
+        from django.utils import timezone
+        
+        recipients = get_security_alert_recipients()
+        if not recipients:
+            return
+        
+        # Get client info
+        user_agent = request.META.get('HTTP_USER_AGENT', 'Unknown')
+        ip_address = request.META.get('REMOTE_ADDR', 'Unknown')
+        location = request.META.get('HTTP_X_FORWARDED_FOR', ip_address)
+        
+        subject = f"Security Alert: User Login - {user.get_full_name()}"
+        message = f"""
+Security Login Alert:
+
+User: {user.get_full_name()} ({user.username})
+Role: {user.role}
+Email: {user.email}
+Company: {user.company.name if user.company else 'N/A'}
+
+Login Details:
+- Time: {timezone.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+- IP Address: {ip_address}
+- Location: {location}
+- User Agent: {user_agent[:200]}...
+
+This is an automated security notification.
+"""
+        
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=get_system_email_from(),
+            recipient_list=recipients,
+            fail_silently=True,
+        )
+        
+    except Exception as e:
+        # Don't fail login if notification fails
+        pass

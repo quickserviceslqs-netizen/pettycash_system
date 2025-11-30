@@ -8,8 +8,9 @@
 
     <h2 style="text-align:center; margin-bottom:20px;">Create New Requisition</h2>
 
-    <form method="post" enctype="multipart/form-data" novalidate>
+    <form method="post" enctype="multipart/form-data" novalidate id="requisitionForm">
         {% csrf_token %}
+        {{ form.is_draft }}
         {% if form.non_field_errors %}
             <div style="color:red; margin-bottom:10px;">
                 {{ form.non_field_errors }}
@@ -119,7 +120,11 @@
 
             <!-- Submit Button -->
             <div style="text-align:center; margin-top:20px;">
-                <button type="submit" 
+                <button type="button" id="saveDraftBtn"
+                        style="padding:10px 20px; background:#ffc107; color:#000; border:none; border-radius:5px; margin-right:10px;">
+                    Save as Draft
+                </button>
+                <button type="submit" name="action" value="submit"
                         style="padding:10px 20px; background:#28a745; color:#fff; border:none; border-radius:5px;">
                     Submit Requisition
                 </button>
@@ -128,4 +133,122 @@
     </form>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('requisitionForm');
+    const saveDraftBtn = document.getElementById('saveDraftBtn');
+    const isDraftField = document.querySelector('input[name="is_draft"]');
+    
+    // Auto-save functionality
+    let autoSaveTimer;
+    const autoSaveInterval = {{ auto_save_interval|default:60 }} * 1000; // Convert seconds to milliseconds
+    
+    function autoSave() {
+        // Only auto-save if form has been modified and we're not already submitting
+        if (form.dataset.modified === 'true' && !form.dataset.submitting) {
+            saveAsDraft(true); // Silent auto-save
+        }
+    }
+    
+    // Mark form as modified when any input changes
+    form.addEventListener('input', function() {
+        form.dataset.modified = 'true';
+        // Reset auto-save timer
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(autoSave, autoSaveInterval);
+    });
+    
+    // Save as draft function
+    function saveAsDraft(silent = false) {
+        if (form.dataset.submitting) return;
+        
+        form.dataset.submitting = 'true';
+        isDraftField.value = 'true';
+        
+        const formData = new FormData(form);
+        
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            if (silent) {
+                // For auto-save, just show a brief indicator
+                showAutoSaveIndicator();
+            } else {
+                // For manual save, redirect or show message
+                    if (html.includes('Draft requisition') && html.includes('saved successfully')) {
+                    window.location.href = '{% url "transactions:transactions-home" %}';
+                } else {
+                    // Show error message
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    const errorMsg = tempDiv.querySelector('.alert-danger, .error');
+                    if (errorMsg) {
+                        alert(errorMsg.textContent);
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Draft save failed:', error);
+            if (!silent) {
+                alert('Failed to save draft. Please try again.');
+            }
+        })
+        .finally(() => {
+            form.dataset.submitting = '';
+            isDraftField.value = '';
+        });
+    }
+    
+    // Manual save draft button
+    saveDraftBtn.addEventListener('click', function() {
+        saveAsDraft(false);
+    });
+    
+    // Show auto-save indicator
+    function showAutoSaveIndicator() {
+        let indicator = document.getElementById('autoSaveIndicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'autoSaveIndicator';
+            indicator.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 12px;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s;
+            `;
+            indicator.textContent = 'Draft auto-saved';
+            document.body.appendChild(indicator);
+        }
+        
+        indicator.style.opacity = '1';
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+        }, 2000);
+    }
+    
+    // Prevent form submission when saving draft
+    form.addEventListener('submit', function(e) {
+        if (e.submitter && e.submitter.id === 'saveDraftBtn') {
+            e.preventDefault();
+            saveAsDraft(false);
+        }
+    });
+});
+</script>
+
 {% endblock %}

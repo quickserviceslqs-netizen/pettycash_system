@@ -6,13 +6,60 @@ from datetime import timedelta
 from transactions.models import Requisition, ApprovalTrail
 from treasury.models import Payment, TreasuryFund
 from django.contrib.auth import get_user_model
+from workflow.services.resolver import (
+    get_report_export_formats, get_report_retention_months, get_report_email_recipients,
+    is_auto_generate_monthly_reports_enabled, get_financial_year_start_month,
+    is_report_scheduling_enabled, get_report_privacy_level, get_report_access_roles,
+    is_report_audit_trail_enabled, is_report_data_masking_enabled,
+    get_report_template_choices, get_report_kpi_list, get_report_timezone
+)
 
 User = get_user_model()
 
 
 def is_admin_user(user):
-    """Check if user has admin role"""
-    return user.role in ['Admin', 'Super Admin']
+    """Check if user has admin role or is in report access roles"""
+    if user.role in ['Admin', 'Super Admin']:
+        return True
+    
+    # Check if user's role is in the allowed report access roles
+    allowed_roles = get_report_access_roles()
+    return user.role.lower() in [role.lower() for role in allowed_roles]
+
+
+def is_valid_export_format(format_type):
+    """Check if the export format is allowed by settings"""
+    allowed_formats = get_report_export_formats()
+    return format_type.lower() in [fmt.lower() for fmt in allowed_formats]
+
+
+def should_mask_data(user):
+    """Check if data should be masked for this user"""
+    if not is_report_data_masking_enabled():
+        return False
+    
+    # Don't mask for admin/super admin
+    if user.role in ['Admin', 'Super Admin']:
+        return False
+    
+    # Mask for users not in privileged roles
+    privileged_roles = ['cfo', 'treasury', 'admin']
+    return user.role.lower() not in privileged_roles
+
+
+def log_report_access(user, report_type, action='view'):
+    """Log report access for audit trail"""
+    if not is_report_audit_trail_enabled():
+        return
+    
+    from settings_manager.models import ActivityLog
+    ActivityLog.objects.create(
+        user=user,
+        action='report_access',
+        content_type='Report',
+        object_id=report_type,
+        description=f'{action.capitalize()} {report_type} report',
+    )
 
 
 @login_required
@@ -22,6 +69,8 @@ def reports_dashboard(request):
     Main reports dashboard with overview metrics and quick access to detailed reports.
     Shows key statistics across transactions, treasury, and approvals.
     """
+    # Log report access
+    log_report_access(request.user, 'dashboard', 'view')
     # Get date range from request (default: last 30 days)
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -71,10 +120,10 @@ def reports_dashboard(request):
         total=Count('id')
     ).order_by('-total')[:5]
     
+    from settings_manager.models import get_setting
     context = {
         'days': days,
         'start_date': start_date,
-        
         # Transaction metrics
         'total_requisitions': total_requisitions,
         'total_amount': total_amount,
@@ -82,27 +131,36 @@ def reports_dashboard(request):
         'paid_count': paid_count,
         'rejected_count': rejected_count,
         'status_breakdown': status_breakdown,
-        
         # Treasury metrics
         'total_treasury_balance': total_treasury_balance,
         'funds_below_reorder': funds_below_reorder,
-        
         # Payment metrics
         'successful_payments': successful_payments,
         'failed_payments': failed_payments,
         'total_paid_amount': total_paid_amount,
-        
         # Activity metrics
         'active_users': active_users,
         'total_approvals': total_approvals,
         'total_rejections': total_rejections,
         'avg_approval_time': avg_approval_time,
-        
         # Top users
         'top_requesters': top_requesters,
         'top_approvers': top_approvers,
+        # Advanced Reporting Settings
+        'report_export_formats': get_report_export_formats(),
+        'auto_generate_monthly_reports': is_auto_generate_monthly_reports_enabled(),
+        'report_email_recipients': get_report_email_recipients(),
+        'financial_year_start_month': get_financial_year_start_month(),
+        'report_retention_months': get_report_retention_months(),
+        'report_scheduling_enabled': is_report_scheduling_enabled(),
+        'report_privacy_level': get_report_privacy_level(),
+        'report_access_roles': get_report_access_roles(),
+        'enable_report_audit_trail': is_report_audit_trail_enabled(),
+        'report_data_masking': is_report_data_masking_enabled(),
+        'report_template_choices': get_report_template_choices(),
+        'report_kpi_list': get_report_kpi_list(),
+        'report_timezone': get_report_timezone(),
     }
-    
     return render(request, 'reports/dashboard.html', context)
 
 
@@ -112,6 +170,8 @@ def transaction_report(request):
     """
     Detailed transaction/requisition report with filters and export capability.
     """
+    # Log report access
+    log_report_access(request.user, 'transaction', 'view')
     # Get filter parameters
     days = int(request.GET.get('days', 30))
     status = request.GET.get('status', '')
@@ -149,6 +209,7 @@ def transaction_report(request):
     branches = Branch.objects.all().order_by('name')
     departments = Department.objects.all().order_by('name')
     
+    from settings_manager.models import get_setting
     context = {
         'requisitions': requisitions,
         'total_count': total_count,
@@ -163,8 +224,11 @@ def transaction_report(request):
         'branches': branches,
         'departments': departments,
         'status_choices': Requisition.STATUS_CHOICES,
+        # Reporting settings
+        'report_export_formats': get_report_export_formats(),
+        'report_retention_months': get_report_retention_months(),
+        'report_email_recipients': get_report_email_recipients(),
     }
-    
     return render(request, 'reports/transaction_report.html', context)
 
 
@@ -174,6 +238,8 @@ def treasury_report(request):
     """
     Treasury fund balances and payment activity report.
     """
+    # Log report access
+    log_report_access(request.user, 'treasury', 'view')
     # Get all treasury funds with annotations
     funds = TreasuryFund.objects.select_related('company', 'region', 'branch').annotate(
         needs_replenishment=Q(current_balance__lt=F('reorder_level'))
@@ -203,6 +269,7 @@ def treasury_report(request):
     total_balance = funds.aggregate(Sum('current_balance'))['current_balance__sum'] or 0
     funds_needing_replenishment = funds.filter(current_balance__lt=F('reorder_level')).count()
     
+    from settings_manager.models import get_setting
     context = {
         'funds': funds,
         'total_balance': total_balance,
@@ -210,8 +277,11 @@ def treasury_report(request):
         'payment_stats': payment_stats,
         'status_stats': status_stats,
         'days': days,
+        # Reporting settings
+        'report_export_formats': get_report_export_formats(),
+        'report_retention_months': get_report_retention_months(),
+        'report_email_recipients': get_report_email_recipients(),
     }
-    
     return render(request, 'reports/treasury_report.html', context)
 
 
@@ -221,6 +291,8 @@ def approval_report(request):
     """
     Approval workflow analytics: approval times, bottlenecks, approver performance.
     """
+    # Log report access
+    log_report_access(request.user, 'approval', 'view')
     # Get date range
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -252,14 +324,18 @@ def approval_report(request):
         status__in=['paid', 'reviewed']
     ).select_related('requested_by')
     
+    from settings_manager.models import get_setting
     context = {
         'approval_logs': recent_approvals,
         'approver_stats': approver_stats,
         'action_breakdown': action_breakdown,
         'days': days,
         'total_logs': approval_trails.count(),
+        # Reporting settings
+        'report_export_formats': get_report_export_formats(),
+        'report_retention_months': get_report_retention_months(),
+        'report_email_recipients': get_report_email_recipients(),
     }
-    
     return render(request, 'reports/approval_report.html', context)
 
 
@@ -269,6 +345,8 @@ def user_activity_report(request):
     """
     User activity report: requisition creation, approval actions, payment execution.
     """
+    # Log report access
+    log_report_access(request.user, 'user_activity', 'view')
     # Get date range
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -309,11 +387,15 @@ def user_activity_report(request):
         total_amount_paid=Sum('executed_payments__amount', filter=Q(executed_payments__status='success'))
     ).filter(total_payments__gt=0).order_by('-total_payments')
     
+    from settings_manager.models import get_setting
     context = {
         'user_requisition_stats': user_requisition_stats,
         'user_approval_stats': user_approval_stats,
         'user_payment_stats': user_payment_stats,
         'days': days,
+        # Reporting settings
+        'report_export_formats': get_report_export_formats(),
+        'report_retention_months': get_report_retention_months(),
+        'report_email_recipients': get_report_email_recipients(),
     }
-    
     return render(request, 'reports/user_activity_report.html', context)

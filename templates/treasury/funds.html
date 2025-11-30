@@ -8,14 +8,14 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <h1 class="mb-0">
-                <i class="bi bi-piggy-bank"></i> Fund Management
+                <i aria-hidden="true" class="bi bi-piggy-bank"></i> Fund Management
             </h1>
             <small class="text-muted">Monitor and manage petty cash funds across locations</small>
         </div>
         <div class="col-md-4 text-end">
             {% if user.groups|stringformat:'s'|slice:':9' == 'treasury' or user.is_staff %}
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#replenishModal">
-                <i class="bi bi-plus-circle"></i> Request Replenishment
+                <i aria-hidden="true" class="bi bi-plus-circle"></i> Request Replenishment
             </button>
             {% endif %}
         </div>

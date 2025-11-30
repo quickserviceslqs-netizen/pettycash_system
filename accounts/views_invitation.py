@@ -260,6 +260,10 @@ def signup(request, token):
     """
     invitation = get_object_or_404(UserInvitation, token=token)
     
+    # Check organization settings
+    require_email_verification = get_setting('REQUIRE_EMAIL_VERIFICATION', True)
+    allow_self_registration = get_setting('ALLOW_USER_SELF_REGISTRATION', False)
+    
     # Check if invitation is valid
     if not invitation.is_valid():
         context = {
@@ -357,27 +361,66 @@ def signup(request, token):
             invitation.user = user
             invitation.save()
             
-            # Log activity
-            log_activity(
-                user=user,
-                action='create',
-                content_type='User Account',
-                object_id=user.id,
-                object_repr=str(user),
-                description=f"New user registered via invitation: {user.username}",
-                changes={
-                    'username': username,
-                    'email': invitation.email,
-                    'role': invitation.role,
-                    'device_whitelisted': device_info['device_name'],
-                    'ip': ip_address,
-                    'location': location
-                },
-                success=True,
-                request=request
-            )
+            # Check email verification requirement
+            if require_email_verification:
+                # Mark user as inactive until email verified
+                user.is_active = False
+                user.save()
+                
+                # Generate verification token
+                import uuid
+                verification_token = str(uuid.uuid4())
+                user.email_verification_token = verification_token
+                user.save()
+                
+                # Send verification email
+                verification_url = request.build_absolute_uri(
+                    f"/accounts/verify-email/{verification_token}/"
+                )
+                
+                subject = get_setting('EMAIL_SUBJECT_PREFIX', '[Petty Cash System]') + " Verify Your Email Address"
+                message = f"""
+Hello {user.get_display_name()},
+
+Welcome to Petty Cash System! Please verify your email address by clicking the link below:
+
+{verification_url}
+
+This link will expire in 24 hours.
+
+If you did not create this account, please ignore this email.
+
+Best regards,
+Petty Cash System Team
+                """
+                
+                try:
+                    from django.core.mail import send_mail
+                    send_mail(
+                        subject,
+                        message,
+                        get_setting('SYSTEM_EMAIL_FROM', settings.DEFAULT_FROM_EMAIL),
+                        [user.email],
+                        fail_silently=False,
+                    )
+                    
+                    messages.success(
+                        request,
+                        "✅ Account created successfully! Please check your email and click the verification link to activate your account."
+                    )
+                    
+                    return redirect('accounts:login')
+                    
+                except Exception as e:
+                    # If email fails, activate account anyway to avoid blocking user
+                    user.is_active = True
+                    user.save()
+                    messages.warning(
+                        request,
+                        "Account created but email verification failed. Please contact administrator."
+                    )
             
-            # Auto-login user
+            # Auto-login user (if email verification not required)
             login(request, user)
             
             messages.success(
@@ -399,6 +442,42 @@ def signup(request, token):
     }
     
     return render(request, 'accounts/signup.html', context)
+
+
+def verify_email(request, token):
+    """
+    Email verification view for new user accounts.
+    """
+    user = get_object_or_404(User, email_verification_token=token)
+    
+    if user.is_active:
+        messages.info(request, "Your email is already verified.")
+        return redirect('accounts:login')
+    
+    # Check if token is expired (24 hours)
+    if user.date_joined and (timezone.now() - user.date_joined) > timedelta(hours=24):
+        messages.error(request, "Verification link has expired. Please contact administrator.")
+        return redirect('accounts:login')
+    
+    # Activate user
+    user.is_active = True
+    user.email_verification_token = None
+    user.save()
+    
+    # Log activity
+    log_activity(
+        user=user,
+        action='verify_email',
+        content_type='User Account',
+        object_id=user.id,
+        object_repr=str(user),
+        description=f"Email verified for user: {user.username}",
+        success=True,
+        request=request
+    )
+    
+    messages.success(request, "✅ Email verified successfully! You can now log in to your account.")
+    return redirect('accounts:login')
 
 
 @login_required

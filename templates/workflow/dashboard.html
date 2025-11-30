@@ -8,14 +8,14 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <h1 class="mb-0">
-                <i class="bi bi-diagram-3"></i> Workflow Dashboard
+                <i aria-hidden="true" class="bi bi-diagram-3"></i> Workflow Dashboard
             </h1>
             <small class="text-muted">Approval thresholds and routing configuration</small>
         </div>
         <div class="col-md-4 text-end">
             {% if user.is_superuser or perms.workflow.add_approvalthreshold %}
             <a href="/admin/workflow/approvalthreshold/add/" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Add Threshold
+                <i aria-hidden="true" class="bi bi-plus-circle"></i> Add Threshold
             </a>
             {% endif %}
         </div>
@@ -95,10 +95,10 @@
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary me-2">
-                                <i class="bi bi-funnel"></i> Filter
+                                <i aria-hidden="true" class="bi bi-funnel"></i> Filter
                             </button>
                             <a href="{% url 'workflow:dashboard' %}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> Clear
+                                <i aria-hidden="true" class="bi bi-x-circle"></i> Clear
                             </a>
                         </div>
                     </form>
@@ -113,7 +113,7 @@
             <div class="card">
                 <div class="card-header bg-light">
                     <h5 class="mb-0">
-                        <i class="bi bi-table"></i> Approval Thresholds
+                        <i aria-hidden="true" class="bi bi-table"></i> Approval Thresholds
                     </h5>
                 </div>
                 <div class="card-body">
@@ -155,17 +155,17 @@
                                     <td>
                                         {% if threshold.allow_urgent_fasttrack %}
                                         <span class="badge bg-warning text-dark" title="Urgent fast-track enabled">
-                                            <i class="bi bi-lightning-fill"></i> Fast-Track
+                                            <i aria-hidden="true" class="bi bi-lightning-fill"></i> Fast-Track
                                         </span><br>
                                         {% endif %}
                                         {% if threshold.requires_cfo %}
                                         <span class="badge bg-danger" title="CFO approval required">
-                                            <i class="bi bi-shield-fill-check"></i> CFO Required
+                                            <i aria-hidden="true" class="bi bi-shield-fill-check"></i> CFO Required
                                         </span><br>
                                         {% endif %}
                                         {% if threshold.requires_ceo %}
                                         <span class="badge bg-dark" title="CEO approval required">
-                                            <i class="bi bi-person-fill-check"></i> CEO Required
+                                            <i aria-hidden="true" class="bi bi-person-fill-check"></i> CEO Required
                                         </span>
                                         {% endif %}
                                         {% if not threshold.allow_urgent_fasttrack and not threshold.requires_cfo and not threshold.requires_ceo %}
@@ -187,7 +187,7 @@
                                         <a href="{% url 'workflow:threshold_edit' threshold.id %}" 
                                            class="btn btn-sm btn-outline-primary" 
                                            title="Edit">
-                                            <i class="bi bi-pencil"></i>
+                                            <i aria-hidden="true" class="bi bi-pencil"></i>
                                         </a>
                                         {% else %}
                                         <span class="text-muted">-</span>
@@ -200,7 +200,7 @@
                     </div>
                     {% else %}
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> No approval thresholds found. 
+                        <i aria-hidden="true" class="bi bi-info-circle"></i> No approval thresholds found. 
                         {% if user.is_superuser %}
                         <a href="/admin/workflow/approvalthreshold/add/" class="alert-link">Create one now</a>
                         {% endif %}
@@ -217,7 +217,7 @@
             <div class="card">
                 <div class="card-header bg-light">
                     <h6 class="mb-0">
-                        <i class="bi bi-question-circle"></i> How It Works
+                        <i aria-hidden="true" class="bi bi-question-circle"></i> How It Works
                     </h6>
                 </div>
                 <div class="card-body">

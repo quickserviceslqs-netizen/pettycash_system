@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Requisition Details</h2>
         <a href="{% url 'transactions:manage_requisitions' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Requisitions
+            <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Requisitions
         </a>
     </div>
 
@@ -103,15 +103,15 @@
                                     <div class="d-flex">
                                         <div class="me-3">
                                             {% if trail.action == 'approved' %}
-                                                <i class="fas fa-check-circle text-success fa-2x"></i>
+                                                <i class="fas fa-check-circle text-success fa-2x" aria-hidden="true"></i>
                                             {% elif trail.action == 'rejected' %}
-                                                <i class="fas fa-times-circle text-danger fa-2x"></i>
+                                                <i class="fas fa-times-circle text-danger fa-2x" aria-hidden="true"></i>
                                             {% elif trail.action == 'validated' %}
-                                                <i class="fas fa-clipboard-check text-info fa-2x"></i>
+                                                <i class="fas fa-clipboard-check text-info fa-2x" aria-hidden="true"></i>
                                             {% elif trail.action == 'paid' %}
-                                                <i class="fas fa-money-bill text-success fa-2x"></i>
+                                                <i class="fas fa-money-bill text-success fa-2x" aria-hidden="true"></i>
                                             {% else %}
-                                                <i class="fas fa-circle text-secondary fa-2x"></i>
+                                                <i class="fas fa-circle text-secondary fa-2x" aria-hidden="true"></i>
                                             {% endif %}
                                         </div>
                                         <div class="flex-grow-1">
@@ -181,10 +181,10 @@
                         <p>This requisition is waiting for your review.</p>
                         <div class="d-grid gap-2">
                             <a href="{% url 'transactions:approve_requisition' requisition.transaction_id %}" class="btn btn-success">
-                                <i class="fas fa-check"></i> Approve
+                                <i class="fas fa-check" aria-hidden="true"></i> Approve
                             </a>
                             <a href="{% url 'transactions:reject_requisition' requisition.transaction_id %}" class="btn btn-danger">
-                                <i class="fas fa-times"></i> Reject
+                                <i class="fas fa-times" aria-hidden="true"></i> Reject
                             </a>
                         </div>
                     </div>

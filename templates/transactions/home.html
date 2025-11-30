@@ -8,12 +8,12 @@
     <!-- Page Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <h2><i class="bi bi-receipt"></i> Transactions Dashboard</h2>
+            <h2><i aria-hidden="true" class="bi bi-receipt"></i> Transactions Dashboard</h2>
             <p class="text-muted">
                 Welcome, {{ user.get_full_name|default:user.username }}
                 {% if is_centralized %}
                     <span class="badge bg-info ms-2">
-                        <i class="bi bi-globe"></i> {{ scope_label }}
+                        <i aria-hidden="true" class="bi bi-globe"></i> {{ scope_label }}
                     </span>
                 {% endif %}
             </p>
@@ -24,7 +24,7 @@
     <div class="row mb-4">
         <div class="col-12 text-center">
             <a href="{% url 'transactions:create-requisition' %}" class="btn btn-success btn-lg">
-                <i class="bi bi-plus-circle"></i> Create New Requisition
+                <i aria-hidden="true" class="bi bi-plus-circle"></i> Create New Requisition
             </a>
         </div>
     </div>
@@ -36,32 +36,32 @@
             <div class="card h-100 border-primary">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
-                        <i class="bi bi-person-circle"></i> My Requisitions
+                        <i aria-hidden="true" class="bi bi-person-circle"></i> My Requisitions
                     </h5>
                     <small>Requisitions I created</small>
                 </div>
                 <div class="card-body">
                     <div class="row text-center mb-3">
                         <div class="col-3">
-                            <h3 class="mb-0">{{ my_metrics.total }}</h3>
+                            <h3 class="mb-0">{{ my_metrics.total|default:0 }}</h3>
                             <small class="text-muted">Total</small>
                         </div>
                         <div class="col-3">
-                            <h3 class="mb-0 text-warning">{{ my_metrics.pending }}</h3>
+                            <h3 class="mb-0 text-warning">{{ my_metrics.pending|default:0 }}</h3>
                             <small class="text-muted">Pending</small>
                         </div>
                         <div class="col-3">
-                            <h3 class="mb-0 text-success">{{ my_metrics.approved }}</h3>
+                            <h3 class="mb-0 text-success">{{ my_metrics.approved|default:0 }}</h3>
                             <small class="text-muted">Approved</small>
                         </div>
                         <div class="col-3">
-                            <h3 class="mb-0 text-danger">{{ my_metrics.rejected }}</h3>
+                            <h3 class="mb-0 text-danger">{{ my_metrics.rejected|default:0 }}</h3>
                             <small class="text-muted">Rejected</small>
                         </div>
                     </div>
                     <div class="text-center">
                         <a href="{% url 'transactions:my-requisitions' %}" class="btn btn-primary">
-                            <i class="bi bi-list-ul"></i> View All My Requisitions
+                            <i aria-hidden="true" class="bi bi-list-ul"></i> View All My Requisitions
                         </a>
                     </div>
                 </div>
@@ -74,28 +74,28 @@
             <div class="card h-100 border-warning">
                 <div class="card-header bg-warning text-dark">
                     <h5 class="mb-0">
-                        <i class="bi bi-clipboard-check"></i> Pending Approvals
+                        <i aria-hidden="true" class="bi bi-clipboard-check"></i> Pending Approvals
                     </h5>
                     <small>Requisitions awaiting my approval</small>
                 </div>
                 <div class="card-body">
                     <div class="row text-center mb-3">
                         <div class="col-4">
-                            <h3 class="mb-0 text-warning">{{ approval_metrics.pending_count }}</h3>
+                            <h3 class="mb-0 text-warning">{{ approval_metrics.pending_count|default:0 }}</h3>
                             <small class="text-muted">Pending</small>
                         </div>
                         <div class="col-4">
-                            <h3 class="mb-0 text-danger">{{ approval_metrics.urgent_count }}</h3>
+                            <h3 class="mb-0 text-danger">{{ approval_metrics.urgent_count|default:0 }}</h3>
                             <small class="text-muted">Urgent</small>
                         </div>
                         <div class="col-4">
-                            <h3 class="mb-0 text-success">{{ approval_metrics.approved_today }}</h3>
+                            <h3 class="mb-0 text-success">{{ approval_metrics.approved_today|default:0 }}</h3>
                             <small class="text-muted">Approved Today</small>
                         </div>
                     </div>
                     <div class="text-center">
                         <a href="{% url 'transactions:pending-approvals' %}" class="btn btn-warning">
-                            <i class="bi bi-list-check"></i> View Pending Approvals
+                            <i aria-hidden="true" class="bi bi-list-check"></i> View Pending Approvals
                         </a>
                     </div>
                 </div>
@@ -109,24 +109,24 @@
             <div class="card h-100 border-info">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0">
-                        <i class="bi bi-cash-stack"></i> Treasury Operations
+                        <i aria-hidden="true" class="bi bi-cash-stack"></i> Treasury Operations
                     </h5>
                     <small>Ready for payment disbursement</small>
                 </div>
                 <div class="card-body">
                     <div class="row text-center mb-3">
                         <div class="col-6">
-                            <h3 class="mb-0 text-info">{{ treasury_metrics.ready_for_payment }}</h3>
+                            <h3 class="mb-0 text-info">{{ treasury_metrics.ready_for_payment|default:0 }}</h3>
                             <small class="text-muted">Ready for Payment</small>
                         </div>
                         <div class="col-6">
-                            <h3 class="mb-0 text-success">{{ treasury_metrics.paid_today }}</h3>
+                            <h3 class="mb-0 text-success">{{ treasury_metrics.paid_today|default:0 }}</h3>
                             <small class="text-muted">Paid Today</small>
                         </div>
                     </div>
                     <div class="text-center">
                         <a href="{% url 'treasury:dashboard' %}" class="btn btn-info">
-                            <i class="bi bi-wallet2"></i> Go to Treasury Dashboard
+                            <i aria-hidden="true" class="bi bi-wallet2"></i> Go to Treasury Dashboard
                         </a>
                     </div>
                 </div>
@@ -140,7 +140,7 @@
     <div class="row mt-4">
         <div class="col-12">
             <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> <strong>Note for Approvers:</strong> 
+                <i aria-hidden="true" class="bi bi-info-circle"></i> <strong>Note for Approvers:</strong> 
                 Your requisitions and approval queue are now separated for clarity. 
                 Use <strong>"My Requisitions"</strong> to track requisitions you created, 
                 and <strong>"Pending Approvals"</strong> to review requisitions submitted by others.

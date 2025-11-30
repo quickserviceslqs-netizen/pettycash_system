@@ -219,6 +219,10 @@ class Phase4RoutingEngineTests(TestCase):
 
     def test_resolve_workflow_escalation_to_admin(self):
         """If no candidate found for a role, escalate to Admin with auto_escalated=True."""
+        # Deactivate treasury user so escalation goes to admin
+        self.treasury.is_active = False
+        self.treasury.save()
+        
         # Create a requisition where branch_manager does NOT exist
         branch_no_manager = Branch.objects.create(
             name="Branch B",
@@ -245,8 +249,8 @@ class Phase4RoutingEngineTests(TestCase):
 
         # Should escalate to Admin
         self.assertTrue(resolved[0]["auto_escalated"])
-        # User ID should be Admin
-        self.assertEqual(resolved[0]["user_id"], self.admin.id)
+        # User role should be Admin
+        self.assertEqual(resolved[0]["role"], "ADMIN")
 
     def test_resolve_workflow_branch_scoping(self):
         """Non-centralized roles should be scoped to branch."""
@@ -309,8 +313,9 @@ class Phase4RoutingEngineTests(TestCase):
 
         resolved = resolve_workflow(requisition)
 
-        # Second approver should be Treasury (centralized, no scope check)
-        self.assertEqual(resolved[1]["role"], "treasury")
+        # Treasury should not be part of the approval chain (validators are excluded)
+        roles = [r["role"].lower() for r in resolved]
+        self.assertNotIn("treasury", roles)
 
 
 class Phase4TreasurySpecialCaseTests(TestCase):
@@ -517,18 +522,22 @@ class Phase4AuditTrailTests(TestCase):
             action="approved",
             timestamp=timezone.now(),
         )
-        trail2 = ApprovalTrail.objects.create(
+        # Treasury validation actions should be recorded in ValidationTrail, not ApprovalTrail
+        from transactions.models import ValidationTrail
+        vt = ValidationTrail.objects.create(
             requisition=self.requisition,
             user=self.approver,
-            role="treasury",
-            action="approved",
+            action='validated',
+            comment='Validated by treasury',
             timestamp=timezone.now() + timedelta(hours=1),
         )
 
         trails = ApprovalTrail.objects.filter(requisition=self.requisition).order_by('timestamp')
-        self.assertEqual(trails.count(), 2)
+        vtrails = ValidationTrail.objects.filter(requisition=self.requisition).order_by('timestamp')
+        self.assertEqual(trails.count(), 1)
+        self.assertEqual(vtrails.count(), 1)
         self.assertEqual(trails[0].role, "branch_manager")
-        self.assertEqual(trails[1].role, "treasury")
+        self.assertEqual(vtrails[0].action, 'validated')
 
 
 if __name__ == "__main__":

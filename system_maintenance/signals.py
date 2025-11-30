@@ -7,6 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,11 @@ class RealTimeBackupManager:
     
     def create_realtime_backup(self, reason, user=None):
         """Create a real-time backup if cooldown has passed"""
+        # Do not perform real-time backups during test runs or when explicitly disabled
+        if 'test' in sys.argv or getattr(settings, 'DISABLE_REALTIME_BACKUPS_DURING_TESTS', False):
+            logger.debug('Skipping real-time backup because running in test mode or disabled by settings')
+            return None
+
         if not self.should_create_backup():
             logger.info(f"Skipping backup: cooldown active ({self._backup_cooldown_minutes} minutes)")
             return None

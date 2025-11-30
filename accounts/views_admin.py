@@ -12,6 +12,7 @@ from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from accounts.models import User, App
 from organization.models import Company, Branch, Department
+from settings_manager.models import get_setting
 
 
 @login_required
@@ -75,9 +76,34 @@ def edit_user_permissions(request, user_id):
     user_to_edit = get_object_or_404(User, id=user_id)
     
     if request.method == 'POST':
+        # Check organization settings
+        role_change_requires_approval = get_setting('ROLE_CHANGE_REQUIRES_APPROVAL', False)
+        allowed_user_roles = get_setting('ALLOWED_USER_ROLES', '')
+        
         # Update role
         new_role = request.POST.get('role')
         if new_role in dict(User.ROLE_CHOICES):
+            # Check if role is allowed
+            if allowed_user_roles and new_role not in allowed_user_roles.split(','):
+                messages.error(request, f"Role '{new_role}' is not in the allowed user roles list.")
+                return redirect('accounts:edit_user_permissions', user_id=user_id)
+            
+            # Check if role change requires approval
+            if role_change_requires_approval and new_role != user_to_edit.role:
+                messages.warning(request, f"Role change to '{new_role}' requires approval. Change logged but not applied yet.")
+                # TODO: Implement approval workflow for role changes
+                # For now, we'll allow the change but log it
+                from settings_manager.views import log_activity
+                log_activity(
+                    request.user,
+                    'role_change_pending',
+                    'User Account',
+                    object_id=user_to_edit.id,
+                    object_repr=str(user_to_edit),
+                    description=f"Role change requested: {user_to_edit.role} → {new_role}",
+                    request=request
+                )
+            
             user_to_edit.role = new_role
         
         # Update app access
@@ -90,12 +116,28 @@ def edit_user_permissions(request, user_id):
         branch_id = request.POST.get('branch')
         department_id = request.POST.get('department')
         
+        if department_id:
+            # Check max users per department setting
+            max_users_per_dept = int(get_setting('MAX_USERS_PER_DEPARTMENT', 0))
+            if max_users_per_dept > 0:
+                current_users_in_dept = User.objects.filter(
+                    department_id=department_id, 
+                    is_active=True
+                ).exclude(id=user_to_edit.id).count()
+                
+                if current_users_in_dept >= max_users_per_dept:
+                    messages.error(
+                        request, 
+                        f"Department already has {current_users_in_dept} users. Maximum allowed: {max_users_per_dept}."
+                    )
+                    return redirect('accounts:edit_user_permissions', user_id=user_id)
+            
+            user_to_edit.department_id = department_id or None
+        
         if company_id:
             user_to_edit.company_id = company_id or None
         if branch_id:
             user_to_edit.branch_id = branch_id or None
-        if department_id:
-            user_to_edit.department_id = department_id or None
         
         # Update centralized approver
         user_to_edit.is_centralized_approver = request.POST.get('is_centralized_approver') == 'on'

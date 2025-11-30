@@ -5,9 +5,9 @@
 {% block content %}
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-grid-3x3-gap"></i> Assign Apps to {{ user.get_full_name }}</h2>
+        <h2><i aria-hidden="true" class="bi bi-grid-3x3-gap"></i> Assign Apps to {{ user.get_full_name }}</h2>
         <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Users
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Users
         </a>
     </div>
 
@@ -43,7 +43,7 @@
                         {% csrf_token %}
                         
                         <p class="text-muted mb-3">
-                            <i class="bi bi-info-circle"></i> Select the applications this user should have access to. 
+                            <i aria-hidden="true" class="bi bi-info-circle"></i> Select the applications this user should have access to. 
                             Permissions within each app are controlled separately.
                         </p>
 
@@ -66,7 +66,7 @@
                             </div>
                         {% else %}
                             <div class="alert alert-warning">
-                                <i class="bi bi-exclamation-triangle"></i> No active applications available. 
+                                <i aria-hidden="true" class="bi bi-exclamation-triangle"></i> No active applications available. 
                                 <a href="{% url 'accounts:create_app' %}">Create an app first</a>.
                             </div>
                         {% endif %}
@@ -74,7 +74,7 @@
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">Cancel</a>
                             <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle"></i> Save App Assignments
+                                <i aria-hidden="true" class="bi bi-check-circle"></i> Save App Assignments
                             </button>
                         </div>
                     </form>
