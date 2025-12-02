@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.http import JsonResponse
+from django.http import HttpResponse
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.utils.crypto import get_random_string
@@ -66,6 +67,55 @@ def manage_users(request):
     }
     
     return render(request, 'accounts/manage_users.html', context)
+
+
+@login_required
+@permission_required('accounts.view_user', raise_exception=True)
+def export_users(request):
+    """Export filtered users to CSV using same filters as manage_users"""
+    import csv
+
+    role_filter = request.GET.get('role', '')
+    company_filter = request.GET.get('company', '')
+    status_filter = request.GET.get('status', '')
+    search = request.GET.get('search', '')
+
+    users = User.objects.select_related('company', 'branch', 'department').all()
+
+    if role_filter:
+        users = users.filter(role=role_filter)
+    if company_filter:
+        users = users.filter(company_id=company_filter)
+    if status_filter == 'active':
+        users = users.filter(is_active=True)
+    elif status_filter == 'inactive':
+        users = users.filter(is_active=False)
+    if search:
+        users = users.filter(
+            Q(username__icontains=search) |
+            Q(email__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search)
+        )
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="users_export.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Username', 'Name', 'Email', 'Role', 'Company', 'Branch', 'Department', 'Active'])
+    for u in users.order_by('username'):
+        writer.writerow([
+            u.username,
+            u.get_display_name(),
+            u.email or '',
+            u.get_role_display(),
+            u.company.name if u.company else '',
+            u.branch.name if u.branch else '',
+            u.department.name if u.department else '',
+            'Yes' if u.is_active else 'No',
+        ])
+
+    return response
 
 
 @login_required
@@ -491,6 +541,51 @@ def delete_user(request, user_id):
         
         messages.success(request, f'User "{username}" has been deleted successfully.')
     
+    return redirect('accounts:manage_users')
+
+
+@login_required
+@permission_required('accounts.change_user', raise_exception=True)
+def bulk_update_status(request):
+    """Bulk activate or deactivate users based on `status` query param (activate|deactivate)"""
+    if request.method != 'POST':
+        return redirect('accounts:manage_users')
+
+    status = request.GET.get('status')
+    user_ids = request.POST.getlist('user_ids')
+
+    if not user_ids:
+        messages.error(request, 'Please select at least one user.')
+        return redirect('accounts:manage_users')
+
+    if status not in ('activate', 'deactivate'):
+        messages.error(request, 'Invalid status action requested.')
+        return redirect('accounts:manage_users')
+
+    desired_state = True if status == 'activate' else False
+    users = User.objects.filter(id__in=user_ids)
+
+    count = 0
+    for user in users:
+        if user.is_active != desired_state:
+            was_active = user.is_active
+            user.is_active = desired_state
+            user.save(update_fields=['is_active'])
+            count += 1
+
+            UserAuditLog.objects.create(
+                target_user=user,
+                performed_by=request.user,
+                action='activate' if desired_state else 'deactivate',
+                changes={'is_active': {'from': was_active, 'to': desired_state}},
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+
+    if count:
+        messages.success(request, f'{"Activated" if desired_state else "Deactivated"} {count} user(s).')
+    else:
+        messages.info(request, 'No changes were necessary.')
+
     return redirect('accounts:manage_users')
 
 

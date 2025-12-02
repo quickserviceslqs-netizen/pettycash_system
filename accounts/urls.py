@@ -92,6 +92,8 @@ urlpatterns = [
     path('users/<int:user_id>/reset-password/', views_admin.reset_user_password, name='reset_user_password'),
     path('users/<int:user_id>/toggle-status/', views_admin.toggle_user_status, name='toggle_user_status'),
     path('users/<int:user_id>/delete/', views_admin.delete_user, name='delete_user'),
+    path('users/export/', views_admin.export_users, name='export_users'),
+    path('users/bulk-status/', views_admin.bulk_update_status, name='bulk_update_status'),
     path('bulk-assign-app/', views_admin.bulk_assign_app, name='bulk_assign_app'),
     
     # Permission Groups Management
