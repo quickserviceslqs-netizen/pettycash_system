@@ -100,6 +100,9 @@
                                 <button type="button" id="colsSelectAll" class="btn btn-sm btn-link p-0">Select all</button>
                                 <button type="button" id="colsClearAll" class="btn btn-sm btn-link text-danger p-0">Clear</button>
                             </div>
+                            <div class="mb-2">
+                                <button type="button" id="colsResetDefaults" class="btn btn-sm btn-outline-secondary w-100">Reset to default</button>
+                            </div>
                             <div class="form-check mb-2">
                                 <input class="form-check-input col-toggle" type="checkbox" value="cost-center" id="colCostCenter">
                                 <label class="form-check-label" for="colCostCenter">Cost Center</label>
@@ -242,7 +245,7 @@
     (function(){
         const root = document.querySelector('.manage-users');
         const STORAGE_KEY = 'manageUsersCols';
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        let saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
         const apply = () => {
             ['cost-center','position','region','phone'].forEach(key => {
                 const cls = 'show-col-' + key.replace(/_/g,'-');
@@ -281,6 +284,12 @@
         if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
             allKeys.forEach(k => saved[k] = false);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+            apply();
+        });
+        const resetBtn = document.getElementById('colsResetDefaults');
+        if (resetBtn) resetBtn.addEventListener('click', () => {
+            localStorage.removeItem(STORAGE_KEY);
+            saved = {};
             apply();
         });
         apply();
