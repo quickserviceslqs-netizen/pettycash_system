@@ -15,75 +15,43 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Use safe SQL-based additions so migration can be re-run against DBs
-        migrations.RunPython(
-            code=lambda apps, schema_editor: _safe_add_treasury_fields(apps, schema_editor),
-            reverse_code=migrations.RunPython.noop,
+        migrations.AddField(
+            model_name='payment',
+            name='created_by',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_payments', to=settings.AUTH_USER_MODEL),
         ),
-        # Ensure unique constraint at the DB level only if department exists
-        migrations.RunPython(
-            code=lambda apps, schema_editor: _safe_apply_treasury_unique_constraint(apps, schema_editor),
-            reverse_code=migrations.RunPython.noop,
+        migrations.AddField(
+            model_name='payment',
+            name='description',
+            field=models.TextField(blank=True, help_text='Purpose of payment', null=True),
+        ),
+        migrations.AddField(
+            model_name='payment',
+            name='voucher_number',
+            field=models.CharField(blank=True, help_text='Unique voucher/document number for M-Pesa bulk payments', max_length=50, null=True, unique=True),
+        ),
+        migrations.AddField(
+            model_name='treasuryfund',
+            name='auto_replenish',
+            field=models.BooleanField(blank=True, help_text='Override auto-replenishment for this fund. If null, uses system default.', null=True),
+        ),
+        migrations.AddField(
+            model_name='treasuryfund',
+            name='department',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='treasury_funds', to='organization.department'),
+        ),
+        migrations.AddField(
+            model_name='treasuryfund',
+            name='min_balance',
+            field=models.DecimalField(blank=True, decimal_places=2, help_text='Minimum allowed balance for this fund. Overrides system default if set.', max_digits=14, null=True),
+        ),
+        migrations.AlterField(
+            model_name='payment',
+            name='requisition',
+            field=models.ForeignKey(blank=True, help_text='Associated requisition (optional for bulk uploads)', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='payments', to='transactions.requisition'),
+        ),
+        migrations.AlterUniqueTogether(
+            name='treasuryfund',
+            unique_together={('company', 'region', 'branch', 'department')},
         ),
     ]
-
-
-def _safe_add_treasury_fields(apps, schema_editor):
-    """Add treasury fields only if they do not exist (idempotent).
-
-    This mirrors the defensive approach used in migration 0010.
-    """
-    from django.db import connection
-
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name='treasury_payment'
-        """)
-        existing = {row[0] for row in cursor.fetchall()}
-
-        if 'created_by_id' not in existing:
-            cursor.execute(
-                "ALTER TABLE treasury_payment ADD COLUMN created_by_id integer NULL;"
-            )
-            # Set up FK constraint if possible
-            try:
-                cursor.execute(
-                    "ALTER TABLE treasury_payment ADD CONSTRAINT treasury_payment_created_by_fk FOREIGN KEY (created_by_id) REFERENCES %s(id) DEFERRABLE INITIALLY DEFERRED;" % ('auth_user' if 'auth_user' in existing else 'accounts_user')
-                )
-            except Exception:
-                pass
-
-        if 'description' not in existing:
-            cursor.execute("ALTER TABLE treasury_payment ADD COLUMN description TEXT NULL;")
-
-        if 'voucher_number' not in existing:
-            cursor.execute("ALTER TABLE treasury_payment ADD COLUMN voucher_number VARCHAR(50) NULL;")
-
-        # treasuryfund columns
-        cursor.execute("""
-            SELECT column_name FROM information_schema.columns WHERE table_name='treasury_treasuryfund'
-        """)
-        fund_cols = {row[0] for row in cursor.fetchall()}
-        if 'auto_replenish' not in fund_cols:
-            cursor.execute("ALTER TABLE treasury_treasuryfund ADD COLUMN auto_replenish boolean NULL;")
-        if 'department_id' not in fund_cols:
-            cursor.execute("ALTER TABLE treasury_treasuryfund ADD COLUMN department_id integer NULL;")
-        if 'min_balance' not in fund_cols:
-            cursor.execute("ALTER TABLE treasury_treasuryfund ADD COLUMN min_balance numeric(14,2) NULL;")
-
-    # Optionally add unique constraint if department column exists
-
-
-def _safe_apply_treasury_unique_constraint(apps, schema_editor):
-    from django.db import connection
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT column_name FROM information_schema.columns WHERE table_name='treasury_treasuryfund';")
-        cols = {row[0] for row in cursor.fetchall()}
-        if {'company_id', 'region_id', 'branch_id', 'department_id'}.issubset(cols):
-            # Create unique index if not exists
-            try:
-                cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS treasury_treasuryfund_company_region_branch_department_uniq ON treasury_treasuryfund (company_id, region_id, branch_id, department_id);")
-            except Exception:
-                pass
