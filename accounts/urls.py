@@ -57,6 +57,7 @@ urlpatterns = [
     path('', views.dashboard, name='accounts-dashboard'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('role-redirect/', views.role_based_redirect, name='role_redirect'),
+    path('terminate-my-other-sessions/', views.terminate_my_other_sessions, name='terminate_my_other_sessions'),
     
     # --------------------------
     # User Invitations & Signup

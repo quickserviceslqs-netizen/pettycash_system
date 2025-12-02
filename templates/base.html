@@ -804,6 +804,13 @@
                                     <li><span class="dropdown-item-text text-muted">{{ user.get_role_display }}</span></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
+                                        <form method="post" action="{% url 'accounts:terminate_my_other_sessions' %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item"><i aria-hidden="true" class="bi bi-x-circle"></i> Terminate other sessions</button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
                                         <form method="post" action="{% url 'logout' %}">
                                             {% csrf_token %}
                                             <button type="submit" class="dropdown-item text-danger"><i aria-hidden="true" class="bi bi-box-arrow-right"></i> Logout</button>

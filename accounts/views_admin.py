@@ -15,6 +15,7 @@ from django.utils.crypto import get_random_string
 from accounts.models import User, App, UserAuditLog
 from organization.models import Company, Branch, Department
 from django.contrib.sessions.models import Session
+from django.utils import timezone
 
 
 @login_required
@@ -42,6 +43,8 @@ def manage_users(request):
         users = users.filter(is_active=True)
     elif status_filter == 'inactive':
         users = users.filter(is_active=False)
+    elif status_filter == 'locked':
+        users = users.filter(lockout_until__isnull=False, lockout_until__gt=timezone.now())
     if search:
         users = users.filter(
             Q(username__icontains=search) |
@@ -56,11 +59,13 @@ def manage_users(request):
     # Get filter options
     companies = Company.objects.all().order_by('name')
     roles = User.ROLE_CHOICES
+    all_apps = App.objects.filter(is_active=True).order_by('display_name', 'name')
     
     context = {
         'users': users,
         'companies': companies,
         'roles': roles,
+        'all_apps': all_apps,
         'role_filter': role_filter,
         'company_filter': company_filter,
         'status_filter': status_filter,
