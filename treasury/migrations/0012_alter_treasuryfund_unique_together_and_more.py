@@ -109,8 +109,23 @@ class Migration(migrations.Migration):
             name='requisition',
             field=models.ForeignKey(blank=True, help_text='Associated requisition (optional for bulk uploads)', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='payments', to='transactions.requisition'),
         ),
-        migrations.AlterUniqueTogether(
-            name='treasuryfund',
-            unique_together={('company', 'region', 'branch', 'department')},
+        migrations.RunSQL(
+            sql="""
+                DO $$ 
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM pg_constraint 
+                        WHERE conname = 'treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq'
+                    ) THEN
+                        ALTER TABLE treasury_treasuryfund 
+                        ADD CONSTRAINT treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq 
+                        UNIQUE (company_id, region_id, branch_id, department_id);
+                    END IF;
+                END $$;
+            """,
+            reverse_sql="""
+                ALTER TABLE treasury_treasuryfund 
+                DROP CONSTRAINT IF EXISTS treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq;
+            """,
         ),
     ]
