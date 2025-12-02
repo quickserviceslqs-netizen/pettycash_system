@@ -86,27 +86,27 @@
             <span><i aria-hidden="true" class="bi bi-table"></i> Users ({{ users.count }})</span>
         </div>
         <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 toolbar-wrap">
                 <div class="btn-group" role="group">
                     <a class="btn btn-outline-secondary" href="{% url 'accounts:export_users' %}?{{ request.GET.urlencode }}">
                         <i aria-hidden="true" class="bi bi-download"></i> Export CSV
                     </a>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <label class="me-2">Bulk assign app:</label>
-                    <select class="form-select form-select-sm" style="min-width: 220px;" name="app_id" form="bulkForm">
+                <div class="d-flex align-items-center gap-2 flex-wrap toolbar-actions">
+                    <label class="me-2 text-nowrap">Assign app:</label>
+                    <select class="form-select form-select-sm" style="min-width: 260px;" name="app_id" form="bulkForm">
                         <option value="">Select app</option>
                         {% for app in all_apps %}
                         <option value="{{ app.id }}">{{ app.display_name|default:app.name }}</option>
                         {% endfor %}
                     </select>
-                    <button type="submit" class="btn btn-sm btn-outline-success" form="bulkForm" formaction="{% url 'accounts:bulk_assign_app' %}">
-                        <i aria-hidden="true" class="bi bi-plus-circle"></i> Assign to selected
+                    <button type="submit" class="btn btn-sm btn-outline-success text-nowrap" form="bulkForm" formaction="{% url 'accounts:bulk_assign_app' %}" title="Assign selected app to checked users">
+                        <i aria-hidden="true" class="bi bi-plus-circle"></i> Assign
                     </button>
-                    <button type="submit" class="btn btn-sm btn-outline-primary" form="bulkForm" formaction="{% url 'accounts:bulk_update_status' %}?status=activate">
+                    <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap" form="bulkForm" formaction="{% url 'accounts:bulk_update_status' %}?status=activate">
                         <i aria-hidden="true" class="bi bi-play-circle"></i> Activate
                     </button>
-                    <button type="submit" class="btn btn-sm btn-outline-warning" form="bulkForm" formaction="{% url 'accounts:bulk_update_status' %}?status=deactivate">
+                    <button type="submit" class="btn btn-sm btn-outline-warning text-nowrap" form="bulkForm" formaction="{% url 'accounts:bulk_update_status' %}?status=deactivate">
                         <i aria-hidden="true" class="bi bi-pause-circle"></i> Deactivate
                     </button>
                 </div>
@@ -178,6 +178,12 @@
         background-color: rgba(13, 110, 253, 0.1);
     }
     #selectAll { cursor: pointer; }
+    .toolbar-actions .btn, .toolbar-actions label { white-space: nowrap; }
+    .toolbar-actions { row-gap: .5rem; }
+    .toolbar-wrap { overflow: visible; }
+    @media (max-width: 992px) {
+        .toolbar-actions select { min-width: 200px !important; }
+    }
 </style>
 
 <script>
