@@ -499,6 +499,9 @@ h6 {
     border-radius: 50px;
     font-size: 0.8125rem;
     letter-spacing: 0.3px;
+    white-space: normal; /* allow multiline content inside badges */
+    word-break: break-word; /* break long tokens */
+    overflow-wrap: anywhere; /* prevent overflow past container */
 }
 
 .badge-primary {
@@ -572,6 +575,33 @@ h6 {
     background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%);
     transform: scale(1.01);
     box-shadow: var(--shadow-sm);
+}
+
+/* Prevent long inline text from overflowing cards/badges */
+.text-break,
+.break-anywhere {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Code-like bubbles for remaining approvers list */
+.code-bubble {
+    display: inline-block;
+    max-width: 100%;
+    padding: 0.35rem 0.6rem;
+    border-radius: var(--radius-md);
+    background: var(--gray-100);
+    color: var(--gray-800);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.85rem;
+    line-height: 1.3;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Ensure card content clips correctly and doesn't overflow rounded corners */
+.card {
+    overflow: hidden;
 }
 
 .table-striped tbody tr:nth-of-type(odd) {
