@@ -126,8 +126,8 @@
                             <i aria-hidden="true" class="bi bi-table"></i> CSV Template Format
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm">
+                            <div class="table-responsive" style="overflow-x:auto;">
+                                <table class="table table-bordered table-sm" style="min-width: 900px;">
                                     <thead class="table-light">
                                         <tr>
                                             <th>email</th>
@@ -182,43 +182,29 @@
                                 <div class="col-md-3">
                                     <h6>Companies ({{ companies.count }})</h6>
                                     <ul class="small" style="max-height: 200px; overflow-y: auto;">
-                                        {% for company in companies %}
-                                        <li><code>{{ company.name }}</code></li>
-                                        {% empty %}
-                                        <li class="text-muted">No companies found</li>
-                                        {% endfor %}
+                                        <li class="text-muted">List omitted to keep template light.</li>
+                                        <li class="text-muted">Use the download button for a filtered reference.</li>
                                     </ul>
                                 </div>
                                 <div class="col-md-3">
                                     <h6>Departments ({{ departments.count }})</h6>
                                     <ul class="small" style="max-height: 200px; overflow-y: auto;">
-                                        {% for dept in departments %}
-                                        <li><code>{{ dept.name }}</code></li>
-                                        {% empty %}
-                                        <li class="text-muted">No departments found</li>
-                                        {% endfor %}
+                                        <li class="text-muted">List omitted to keep template light.</li>
+                                        <li class="text-muted">Use the download button for a filtered reference.</li>
                                     </ul>
                                 </div>
                                 <div class="col-md-3">
                                     <h6>Branches ({{ branches.count }})</h6>
                                     <ul class="small" style="max-height: 200px; overflow-y: auto;">
-                                        {% for branch in branches %}
-                                        <li><code>{{ branch.name }}</code></li>
-                                        {% empty %}
-                                        <li class="text-muted">No branches found</li>
-                                        {% endfor %}
+                                        <li class="text-muted">List omitted to keep template light.</li>
+                                        <li class="text-muted">Use the download button for a filtered reference.</li>
                                     </ul>
                                 </div>
                                 <div class="col-md-3">
                                     <h6>Regions</h6>
                                     <ul class="small" style="max-height: 200px; overflow-y: auto;">
-                                        {% for branch in branches %}
-                                            {% if branch.region %}
-                                            <li><code>{{ branch.region.name }}</code></li>
-                                            {% endif %}
-                                        {% empty %}
-                                        <li class="text-muted">No regions found</li>
-                                        {% endfor %}
+                                        <li class="text-muted">List omitted to keep template light.</li>
+                                        <li class="text-muted">Use the download button for a filtered reference.</li>
                                     </ul>
                                 </div>
                             </div>
