@@ -15,10 +15,31 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='payment',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_payments', to=settings.AUTH_USER_MODEL),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql=(
+                        "ALTER TABLE treasury_payment "
+                        "ADD COLUMN IF NOT EXISTS created_by_id integer; "
+                        "ALTER TABLE treasury_payment "
+                        "ADD CONSTRAINT IF NOT EXISTS treasury_payment_created_by_id_fkey "
+                        "FOREIGN KEY (created_by_id) REFERENCES auth_user(id) ON DELETE SET NULL;"
+                    ),
+                    reverse_sql=(
+                        "ALTER TABLE treasury_payment "
+                        "DROP CONSTRAINT IF EXISTS treasury_payment_created_by_id_fkey; "
+                        "ALTER TABLE treasury_payment "
+                        "DROP COLUMN IF EXISTS created_by_id;"
+                    ),
+                )
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='payment',
+                    name='created_by',
+                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_payments', to=settings.AUTH_USER_MODEL),
+                ),
+            ],
         ),
         migrations.AddField(
             model_name='payment',
