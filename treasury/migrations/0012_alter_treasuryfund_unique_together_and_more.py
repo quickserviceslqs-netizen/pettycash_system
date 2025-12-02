@@ -20,14 +20,9 @@ class Migration(migrations.Migration):
                 migrations.RunSQL(
                     sql=(
                         "ALTER TABLE treasury_payment "
-                        "ADD COLUMN IF NOT EXISTS created_by_id integer; "
-                        "ALTER TABLE treasury_payment "
-                        "ADD CONSTRAINT IF NOT EXISTS treasury_payment_created_by_id_fkey "
-                        "FOREIGN KEY (created_by_id) REFERENCES auth_user(id) ON DELETE SET NULL;"
+                        "ADD COLUMN IF NOT EXISTS created_by_id integer;"
                     ),
                     reverse_sql=(
-                        "ALTER TABLE treasury_payment "
-                        "DROP CONSTRAINT IF EXISTS treasury_payment_created_by_id_fkey; "
                         "ALTER TABLE treasury_payment "
                         "DROP COLUMN IF EXISTS created_by_id;"
                     ),
