@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <h2><i aria-hidden="true" class="bi bi-person-plus"></i> Create User</h2>
+      <p class="text-muted">Add a new user, assign role, apps and permissions</p>
+    </div>
+    <div class="col-md-6 text-end">
+      <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
+        <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Users
+      </a>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="row">
+      <div class="col-md-4 mb-4">
+        <div class="card">
+          <div class="card-header bg-primary text-white">
+            <i aria-hidden="true" class="bi bi-person-badge"></i> User Details
+          </div>
+          <div class="card-body">
+            <div class="mb-2">
+              <label for="username" class="form-label">Username *</label>
+              <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            <div class="mb-2">
+              <label for="first_name" class="form-label">First Name</label>
+              <input type="text" class="form-control" id="first_name" name="first_name">
+            </div>
+            <div class="mb-2">
+              <label for="last_name" class="form-label">Last Name</label>
+              <input type="text" class="form-control" id="last_name" name="last_name">
+            </div>
+            <div class="mb-2">
+              <label for="email" class="form-label">Email</label>
+              <input type="email" class="form-control" id="email" name="email">
+            </div>
+            <div class="form-check form-switch mt-3">
+              <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+              <label class="form-check-label" for="is_active"><strong>Active</strong></label>
+            </div>
+            <div class="form-text">A temporary password will be generated.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-8">
+        <div class="card mb-4">
+          <div class="card-header bg-info text-white">
+            <i aria-hidden="true" class="bi bi-diagram-3"></i> Role & Organization
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="role" class="form-label">Role *</label>
+                <select class="form-select" id="role" name="role" required>
+                  {% for role_value, role_label in roles %}
+                  <option value="{{ role_value }}">{{ role_label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="company" class="form-label">Company</label>
+                <select class="form-select" id="company" name="company">
+                  <option value="">No Company</option>
+                  {% for company in companies %}
+                  <option value="{{ company.id }}">{{ company.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="branch" class="form-label">Branch</label>
+                <select class="form-select" id="branch" name="branch">
+                  <option value="">No Branch</option>
+                  {% for branch in branches %}
+                  <option value="{{ branch.id }}">{{ branch.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="department" class="form-label">Department</label>
+                <select class="form-select" id="department" name="department">
+                  <option value="">No Department</option>
+                  {% for dept in departments %}
+                  <option value="{{ dept.id }}">{{ dept.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header bg-success text-white">
+            <i aria-hidden="true" class="bi bi-grid-3x3-gap"></i> App Access
+          </div>
+          <div class="card-body">
+            <div class="row">
+              {% for app in all_apps %}
+              <div class="col-md-6 mb-3">
+                <div class="card border-secondary">
+                  <div class="card-body">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="app_{{ app.id }}" name="apps" value="{{ app.id }}">
+                      <label class="form-check-label" for="app_{{ app.id }}"><strong>{{ app.display_name }}</strong></label>
+                    </div>
+                    <small class="text-muted">{{ app.description }}</small>
+                  </div>
+                </div>
+              </div>
+              {% empty %}
+              <div class="col-12"><p class="text-muted">No apps available</p></div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            <i aria-hidden="true" class="bi bi-people"></i> Permission Groups
+          </div>
+          <div class="card-body">
+            {% if all_groups %}
+            <div class="row">
+              {% for group in all_groups %}
+              <div class="col-md-6 mb-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="group_{{ group.id }}" name="groups" value="{{ group.id }}">
+                  <label class="form-check-label" for="group_{{ group.id }}"><strong>{{ group.name }}</strong></label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+              <i aria-hidden="true" class="bi bi-info-circle"></i> No groups defined yet.
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-header bg-warning text-dark">
+            <i aria-hidden="true" class="bi bi-shield-lock"></i> Detailed Permissions
+          </div>
+          <div class="card-body">
+            {% for app_label, perms in permissions_by_app.items %}
+            <div class="mb-3">
+              <h6 class="text-uppercase text-primary border-bottom pb-2"><i aria-hidden="true" class="bi bi-app"></i> {{ app_label|title }}</h6>
+              <div class="row">
+                {% for perm in perms %}
+                <div class="col-md-6 mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="perm_{{ perm.id }}" name="permissions" value="{{ perm.id }}">
+                    <label class="form-check-label" for="perm_{{ perm.id }}"><strong>{{ perm.name }}</strong> <br><small class="text-muted">{{ perm.model }} - {{ perm.codename }}</small></label>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% empty %}
+            <p class="text-muted">No permissions configured</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary btn-lg"><i aria-hidden="true" class="bi bi-save"></i> Create User</button>
+          <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary"><i aria-hidden="true" class="bi bi-x-circle"></i> Cancel</a>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

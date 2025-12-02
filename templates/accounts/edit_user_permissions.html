@@ -28,7 +28,18 @@
                     </div>
                     <div class="card-body">
                         <p><strong>Username:</strong> {{ user_to_edit.username }}</p>
-                        <p><strong>Email:</strong> {{ user_to_edit.email }}</p>
+                        <div class="mb-2">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user_to_edit.first_name }}">
+                        </div>
+                        <div class="mb-2">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user_to_edit.last_name }}">
+                        </div>
+                        <div class="mb-2">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user_to_edit.email }}">
+                        </div>
                         <p><strong>Joined:</strong> {{ user_to_edit.date_joined|date:"M d, Y" }}</p>
                         <p><strong>Last Login:</strong> 
                             {% if user_to_edit.last_login %}

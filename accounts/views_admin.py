@@ -10,6 +10,7 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
+from django.utils.crypto import get_random_string
 from accounts.models import User, App
 from organization.models import Company, Branch, Department
 
@@ -68,6 +69,102 @@ def manage_users(request):
 
 
 @login_required
+@permission_required('accounts.add_user', raise_exception=True)
+def create_user(request):
+    """Create a new user with details, apps, groups, and permissions"""
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        role = request.POST.get('role')
+        is_active = request.POST.get('is_active') == 'on'
+
+        company_id = request.POST.get('company') or None
+        branch_id = request.POST.get('branch') or None
+        department_id = request.POST.get('department') or None
+
+        if not username:
+            messages.error(request, 'Username is required.')
+        elif User.objects.filter(username=username).exists():
+            messages.error(request, 'Username already exists.')
+        else:
+            temp_password = get_random_string(12)
+            user = User.objects.create(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                role=role if role in dict(User.ROLE_CHOICES) else User.REQUESTER,
+                is_active=is_active,
+                company_id=company_id,
+                branch_id=branch_id,
+                department_id=department_id,
+            )
+            user.set_password(temp_password)
+            user.save()
+
+            # Apps
+            app_ids = request.POST.getlist('apps')
+            if app_ids:
+                apps = App.objects.filter(id__in=app_ids, is_active=True)
+                user.assigned_apps.set(apps)
+
+            # Groups
+            group_ids = request.POST.getlist('groups')
+            if group_ids:
+                groups = Group.objects.filter(id__in=group_ids)
+                user.groups.set(groups)
+
+            # Permissions
+            permission_ids = request.POST.getlist('permissions')
+            if permission_ids:
+                perms = Permission.objects.filter(id__in=permission_ids)
+                user.user_permissions.set(perms)
+
+            messages.success(
+                request,
+                f'User {username} created. Temporary password: {temp_password}'
+            )
+            return redirect('accounts:manage_users')
+
+    # GET: show form
+    companies = Company.objects.all().order_by('name')
+    branches = Branch.objects.all().order_by('name')
+    departments = Department.objects.all().order_by('name')
+    all_apps = App.objects.filter(is_active=True)
+    all_groups = Group.objects.all().order_by('name')
+
+    content_types = ContentType.objects.filter(
+        app_label__in=['transactions', 'workflow', 'treasury', 'reports', 'accounts', 'organization', 'settings_manager']
+    ).order_by('app_label', 'model')
+
+    permissions_by_app = {}
+    for ct in content_types:
+        app_label = ct.app_label
+        permissions_by_app.setdefault(app_label, [])
+        perms = Permission.objects.filter(content_type=ct).order_by('codename')
+        for perm in perms:
+            permissions_by_app[app_label].append({
+                'id': perm.id,
+                'name': perm.name,
+                'codename': perm.codename,
+                'model': ct.model,
+            })
+
+    context = {
+        'companies': companies,
+        'branches': branches,
+        'departments': departments,
+        'roles': User.ROLE_CHOICES,
+        'all_apps': all_apps,
+        'all_groups': all_groups,
+        'permissions_by_app': permissions_by_app,
+    }
+    return render(request, 'accounts/create_user.html', context)
+
+
+@login_required
 @permission_required('accounts.change_user', raise_exception=True)
 def edit_user_permissions(request, user_id):
     """Edit user's app access and role"""
@@ -80,6 +177,11 @@ def edit_user_permissions(request, user_id):
         if new_role in dict(User.ROLE_CHOICES):
             user_to_edit.role = new_role
         
+        # Update basic details
+        user_to_edit.first_name = request.POST.get('first_name', user_to_edit.first_name)
+        user_to_edit.last_name = request.POST.get('last_name', user_to_edit.last_name)
+        user_to_edit.email = request.POST.get('email', user_to_edit.email)
+
         # Update app access
         app_ids = request.POST.getlist('apps')
         apps = App.objects.filter(id__in=app_ids, is_active=True)
@@ -90,12 +192,9 @@ def edit_user_permissions(request, user_id):
         branch_id = request.POST.get('branch')
         department_id = request.POST.get('department')
         
-        if company_id:
-            user_to_edit.company_id = company_id or None
-        if branch_id:
-            user_to_edit.branch_id = branch_id or None
-        if department_id:
-            user_to_edit.department_id = department_id or None
+        user_to_edit.company_id = company_id or None
+        user_to_edit.branch_id = branch_id or None
+        user_to_edit.department_id = department_id or None
         
         # Update centralized approver
         user_to_edit.is_centralized_approver = request.POST.get('is_centralized_approver') == 'on'
