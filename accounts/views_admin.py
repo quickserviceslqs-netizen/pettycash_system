@@ -11,7 +11,7 @@ from django.http import JsonResponse
 from django.contrib.auth.models import Permission, Group
 from django.contrib.contenttypes.models import ContentType
 from django.utils.crypto import get_random_string
-from accounts.models import User, App
+from accounts.models import User, App, UserAuditLog
 from organization.models import Company, Branch, Department
 
 
@@ -69,6 +69,54 @@ def manage_users(request):
 
 
 @login_required
+@permission_required('accounts.view_user', raise_exception=True)
+def audit_logs(request):
+    """View user audit logs with filtering"""
+    logs = UserAuditLog.objects.select_related('target_user', 'performed_by').all()
+    
+    # Filters
+    target_user_id = request.GET.get('target_user')
+    performed_by_id = request.GET.get('performed_by')
+    action_filter = request.GET.get('action')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    
+    if target_user_id:
+        logs = logs.filter(target_user_id=target_user_id)
+    if performed_by_id:
+        logs = logs.filter(performed_by_id=performed_by_id)
+    if action_filter:
+        logs = logs.filter(action=action_filter)
+    if date_from:
+        logs = logs.filter(timestamp__gte=date_from)
+    if date_to:
+        logs = logs.filter(timestamp__lte=date_to)
+    
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(logs, 50)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Get filter options
+    all_users = User.objects.all().order_by('username')
+    
+    context = {
+        'page_obj': page_obj,
+        'all_users': all_users,
+        'action_choices': UserAuditLog.ACTION_CHOICES,
+        'filters': {
+            'target_user': target_user_id,
+            'performed_by': performed_by_id,
+            'action': action_filter,
+            'date_from': date_from,
+            'date_to': date_to,
+        }
+    }
+    return render(request, 'accounts/audit_logs.html', context)
+
+
+@login_required
 @permission_required('accounts.add_user', raise_exception=True)
 def create_user(request):
     """Create a new user with details, apps, groups, and permissions"""
@@ -88,8 +136,22 @@ def create_user(request):
             messages.error(request, 'Username is required.')
         elif User.objects.filter(username=username).exists():
             messages.error(request, 'Username already exists.')
+        elif email and User.objects.filter(email=email).exists():
+            messages.error(request, f'Email {email} is already in use.')
         else:
-            temp_password = get_random_string(12)
+            # Role-specific validation
+            validation_error = None
+            if role == 'branch_manager' and not branch_id:
+                validation_error = 'Branch Manager role requires a branch assignment.'
+            elif role == 'regional_manager' and not company_id:
+                validation_error = 'Regional Manager role requires a company assignment.'
+            elif role == 'department_head' and not department_id:
+                validation_error = 'Department Head role requires a department assignment.'
+            
+            if validation_error:
+                messages.error(request, validation_error)
+            else:
+                temp_password = get_random_string(12)
             user = User.objects.create(
                 username=username,
                 email=email,
@@ -121,6 +183,20 @@ def create_user(request):
             if permission_ids:
                 perms = Permission.objects.filter(id__in=permission_ids)
                 user.user_permissions.set(perms)
+
+            # Audit log
+            UserAuditLog.objects.create(
+                target_user=user,
+                performed_by=request.user,
+                action='create',
+                changes={
+                    'username': username,
+                    'role': role,
+                    'email': email,
+                    'is_active': is_active,
+                },
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
 
             messages.success(
                 request,
@@ -177,10 +253,16 @@ def edit_user_permissions(request, user_id):
         if new_role in dict(User.ROLE_CHOICES):
             user_to_edit.role = new_role
         
+        # Validate email uniqueness
+        new_email = request.POST.get('email', user_to_edit.email)
+        if new_email and User.objects.filter(email=new_email).exclude(id=user_to_edit.id).exists():
+            messages.error(request, f'Email {new_email} is already in use by another user.')
+            return redirect('accounts:edit_user_permissions', user_id=user_id)
+        
         # Update basic details
         user_to_edit.first_name = request.POST.get('first_name', user_to_edit.first_name)
         user_to_edit.last_name = request.POST.get('last_name', user_to_edit.last_name)
-        user_to_edit.email = request.POST.get('email', user_to_edit.email)
+        user_to_edit.email = new_email
 
         # Update app access
         app_ids = request.POST.getlist('apps')
@@ -213,6 +295,19 @@ def edit_user_permissions(request, user_id):
         user_to_edit.groups.set(groups)
         
         user_to_edit.save()
+        
+        # Audit log
+        UserAuditLog.objects.create(
+            target_user=user_to_edit,
+            performed_by=request.user,
+            action='update',
+            changes={
+                'role': new_role,
+                'apps': list(apps.values_list('name', flat=True)),
+                'groups': list(groups.values_list('name', flat=True)),
+            },
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
         
         messages.success(request, f'User {user_to_edit.username} updated successfully!')
         return redirect('accounts:manage_users')
@@ -274,11 +369,57 @@ def toggle_user_status(request, user_id):
     
     if request.method == 'POST':
         user = get_object_or_404(User, id=user_id)
+        was_active = user.is_active
         user.is_active = not user.is_active
         user.save()
         
         status = "activated" if user.is_active else "deactivated"
+        
+        # Audit log
+        UserAuditLog.objects.create(
+            target_user=user,
+            performed_by=request.user,
+            action='activate' if user.is_active else 'deactivate',
+            changes={'is_active': {'from': was_active, 'to': user.is_active}},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        
         messages.success(request, f'User {user.username} {status} successfully!')
+    
+    return redirect('accounts:manage_users')
+
+
+@login_required
+@permission_required('accounts.change_user', raise_exception=True)
+def reset_user_password(request, user_id):
+    """Send password reset email to user"""
+    if request.method == 'POST':
+        user = get_object_or_404(User, id=user_id)
+        
+        if not user.email:
+            messages.error(request, f'User {user.username} has no email address configured.')
+        else:
+            from django.contrib.auth.forms import PasswordResetForm
+            form = PasswordResetForm({'email': user.email})
+            if form.is_valid():
+                form.save(
+                    request=request,
+                    use_https=request.is_secure(),
+                    email_template_name='registration/password_reset_email.html',
+                )
+                
+                # Audit log
+                UserAuditLog.objects.create(
+                    target_user=user,
+                    performed_by=request.user,
+                    action='password_reset',
+                    notes=f'Password reset email sent to {user.email}',
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                )
+                
+                messages.success(request, f'Password reset email sent to {user.email}')
+            else:
+                messages.error(request, 'Failed to send password reset email.')
     
     return redirect('accounts:manage_users')
 
