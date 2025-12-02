@@ -55,6 +55,17 @@ def manage_users(request):
     
     # Order by username
     users = users.order_by('username')
+
+    # Pagination
+    from django.core.paginator import Paginator
+    try:
+        page_size = int(request.GET.get('page_size', 10))
+    except (TypeError, ValueError):
+        page_size = 10
+    page_size = max(5, min(page_size, 200))  # sane bounds
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(users, page_size)
+    page_obj = paginator.get_page(page_number)
     
     # Get filter options
     companies = Company.objects.all().order_by('name')
@@ -62,7 +73,7 @@ def manage_users(request):
     all_apps = App.objects.filter(is_active=True).order_by('display_name', 'name')
     
     context = {
-        'users': users,
+        'users': page_obj,
         'companies': companies,
         'roles': roles,
         'all_apps': all_apps,
@@ -70,6 +81,8 @@ def manage_users(request):
         'company_filter': company_filter,
         'status_filter': status_filter,
         'search': search,
+        'page_obj': page_obj,
+        'page_size': page_size,
     }
     
     return render(request, 'accounts/manage_users.html', context)
