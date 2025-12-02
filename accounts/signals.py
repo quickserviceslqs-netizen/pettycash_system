@@ -36,10 +36,31 @@ def on_user_logged_in(sender, request, user, **kwargs):
 
     # Store basic session context for session management
     try:
+        # Ensure a session key exists
+        if not request.session.session_key:
+            request.session.save()
         request.session['login_time'] = timezone.now().isoformat()
         request.session['ip'] = user.last_login_ip
         request.session['ua'] = user.last_login_user_agent
     except Exception:
+        pass
+
+    # Enforce single-session policy if enabled
+    try:
+        from django.contrib.sessions.models import Session
+        enforce_single = str(get_setting('SECURITY_SINGLE_SESSION_ENFORCED', 'True')).lower() in ('1', 'true', 'yes')
+        if enforce_single and request.session.session_key:
+            current_key = request.session.session_key
+            for s in Session.objects.exclude(session_key=current_key):
+                try:
+                    data = s.get_decoded()
+                except Exception:
+                    continue
+                uid = str(data.get('_auth_user_id')) if data else None
+                if uid and int(uid) == user.id:
+                    s.delete()
+    except Exception:
+        # Do not block login if cleanup fails
         pass
 
 
