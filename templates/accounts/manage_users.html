@@ -95,7 +95,11 @@
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-columns-gap" aria-hidden="true"></i> Columns
                         </button>
-                        <div class="dropdown-menu p-3">
+                        <div class="dropdown-menu p-3" style="min-width: 220px;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <button type="button" id="colsSelectAll" class="btn btn-sm btn-link p-0">Select all</button>
+                                <button type="button" id="colsClearAll" class="btn btn-sm btn-link text-danger p-0">Clear</button>
+                            </div>
                             <div class="form-check mb-2">
                                 <input class="form-check-input col-toggle" type="checkbox" value="cost-center" id="colCostCenter">
                                 <label class="form-check-label" for="colCostCenter">Cost Center</label>
@@ -265,6 +269,19 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
                 apply();
             });
+        });
+        const selectAllBtn = document.getElementById('colsSelectAll');
+        const clearAllBtn = document.getElementById('colsClearAll');
+        const allKeys = ['cost-center','position','region','phone'];
+        if (selectAllBtn) selectAllBtn.addEventListener('click', () => {
+            allKeys.forEach(k => saved[k] = true);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+            apply();
+        });
+        if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
+            allKeys.forEach(k => saved[k] = false);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+            apply();
         });
         apply();
     })();
