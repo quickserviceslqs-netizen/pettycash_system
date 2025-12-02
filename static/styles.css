@@ -1127,6 +1127,65 @@ h1, h2, h3, h4, h5, h6 {
     vertical-align: middle;
 }
 
+/* Prevent clipped text and awkward wrapping inside table cells */
+.data-table td,
+.data-table th,
+table.data-table td,
+table.data-table th {
+    word-break: normal;
+    overflow-wrap: anywhere; /* allows breaking long tokens */
+}
+
+/* Badge fixes: avoid vertical text and clipping */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    line-height: 1.1;
+    writing-mode: horizontal-tb;
+}
+
+.table .badge,
+table .badge {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badge-compact {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
+/* ----------------------------------
+   Badge and Table Content Fixes
+---------------------------------- */
+/* Force badges to render horizontally and avoid vertical stacking */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    line-height: 1.1;
+    writing-mode: horizontal-tb;
+}
+
+/* Keep badges compact inside tables and prevent overflow */
+.table .badge, table .badge {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Compact badge variant for tight table cells */
+.badge-compact {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
 /* Animations */
 @keyframes fadeInUp {
     from {
