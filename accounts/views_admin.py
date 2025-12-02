@@ -85,6 +85,8 @@ def export_users(request):
     company_filter = request.GET.get('company', '')
     status_filter = request.GET.get('status', '')
     search = request.GET.get('search', '')
+    cols_param = request.GET.get('cols', '')
+    selected_cols = [c.strip() for c in cols_param.split(',') if c.strip()]
 
     users = User.objects.select_related('company', 'branch', 'department').all()
 
@@ -108,9 +110,25 @@ def export_users(request):
     response['Content-Disposition'] = 'attachment; filename="users_export.csv"'
 
     writer = csv.writer(response)
-    writer.writerow(['Username', 'Name', 'Email', 'Role', 'Company', 'Branch', 'Department', 'Active'])
+    # Base headers
+    headers = ['Username', 'Name', 'Email', 'Role', 'Company', 'Branch', 'Department']
+
+    # Optional columns map
+    optional_map = {
+        'cost-center': ('Cost Center', lambda u: getattr(getattr(u, 'cost_center', None), 'name', '') or ''),
+        'position': ('Position', lambda u: getattr(getattr(u, 'position_title', None), 'name', '') or ''),
+        'region': ('Region', lambda u: getattr(getattr(u, 'region', None), 'name', '') or ''),
+        'phone': ('Phone', lambda u: u.phone_number or ''),
+    }
+
+    for key in selected_cols:
+        if key in optional_map:
+            headers.append(optional_map[key][0])
+
+    headers.append('Active')
+    writer.writerow(headers)
     for u in users.order_by('username'):
-        writer.writerow([
+        base = [
             u.username,
             u.get_display_name(),
             u.email or '',
@@ -118,8 +136,13 @@ def export_users(request):
             u.company.name if u.company else '',
             u.branch.name if u.branch else '',
             u.department.name if u.department else '',
-            'Yes' if u.is_active else 'No',
-        ])
+        ]
+        # Append optional values in the requested order
+        for key in selected_cols:
+            if key in optional_map:
+                base.append(optional_map[key][1](u))
+        base.append('Yes' if u.is_active else 'No')
+        writer.writerow(base)
 
     return response
 

@@ -3,7 +3,7 @@
 {% block title %}Manage Users{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid mt-4 manage-users">
     <div class="row mb-4">
         <div class="col-md-6">
             <h2><i aria-hidden="true" class="bi bi-people"></i> Manage Users</h2>
@@ -88,9 +88,32 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 toolbar-wrap">
                 <div class="btn-group" role="group">
-                    <a class="btn btn-outline-secondary" href="{% url 'accounts:export_users' %}?{{ request.GET.urlencode }}">
+                    <a id="exportLink" class="btn btn-outline-secondary" href="{% url 'accounts:export_users' %}?{{ request.GET.urlencode }}">
                         <i aria-hidden="true" class="bi bi-download"></i> Export CSV
                     </a>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-columns-gap" aria-hidden="true"></i> Columns
+                        </button>
+                        <div class="dropdown-menu p-3">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input col-toggle" type="checkbox" value="cost-center" id="colCostCenter">
+                                <label class="form-check-label" for="colCostCenter">Cost Center</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input col-toggle" type="checkbox" value="position" id="colPosition">
+                                <label class="form-check-label" for="colPosition">Position</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input col-toggle" type="checkbox" value="region" id="colRegion">
+                                <label class="form-check-label" for="colRegion">Region</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input col-toggle" type="checkbox" value="phone" id="colPhone">
+                                <label class="form-check-label" for="colPhone">Phone</label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap toolbar-actions">
                     <label class="me-2 text-nowrap">Assign app:</label>
@@ -118,13 +141,17 @@
                     <thead>
                         <tr>
                             <th style="width:36px;"><input type="checkbox" id="selectAll"></th>
-                            <th>Username</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Company</th>
-                            <th>Branch</th>
-                            <th>Department</th>
+                            <th class="col-username">Username</th>
+                            <th class="col-name">Name</th>
+                            <th class="col-email">Email</th>
+                            <th class="col-role">Role</th>
+                            <th class="col-company">Company</th>
+                            <th class="col-branch">Branch</th>
+                            <th class="col-department">Department</th>
+                            <th class="col-optional col-cost-center">Cost Center</th>
+                            <th class="col-optional col-position">Position</th>
+                            <th class="col-optional col-region">Region</th>
+                            <th class="col-optional col-phone">Phone</th>
                             <th style="width: 100px;">Status</th>
                         </tr>
                     </thead>
@@ -132,18 +159,22 @@
                         {% for user in users %}
                         <tr style="cursor: pointer;" onclick="window.location='{% url 'accounts:edit_user_permissions' user.id %}';" title="Click to edit user">
                             <td><input type="checkbox" name="user_ids" value="{{ user.id }}" onclick="event.stopPropagation();"></td>
-                            <td><strong>{{ user.username }}</strong></td>
-                            <td>{{ user.get_display_name }}</td>
-                            <td>{{ user.email }}</td>
-                            <td>
+                            <td class="col-username"><strong>{{ user.username }}</strong></td>
+                            <td class="col-name">{{ user.get_display_name }}</td>
+                            <td class="col-email">{{ user.email }}</td>
+                            <td class="col-role">
                                 <span class="badge bg-secondary">{{ user.get_role_display }}</span>
                                 {% if user.is_centralized_approver %}
                                 <span class="badge bg-warning text-dark">Centralized</span>
                                 {% endif %}
                             </td>
-                            <td>{{ user.company.name|default:"—" }}</td>
-                            <td>{{ user.branch.name|default:"—" }}</td>
-                            <td>{{ user.department.name|default:"—" }}</td>
+                            <td class="col-company">{{ user.company.name|default:"—" }}</td>
+                            <td class="col-branch">{{ user.branch.name|default:"—" }}</td>
+                            <td class="col-department">{{ user.department.name|default:"—" }}</td>
+                            <td class="col-optional col-cost-center">{{ user.cost_center.name|default:"—" }}</td>
+                            <td class="col-optional col-position">{{ user.position_title.name|default:"—" }}</td>
+                            <td class="col-optional col-region">{{ user.region.name|default:"—" }}</td>
+                            <td class="col-optional col-phone">{{ user.phone_number|default:"—" }}</td>
                             <td>
                                 {% if user.is_active %}
                                 <span class="badge bg-success">Active</span>
@@ -181,6 +212,14 @@
     .toolbar-actions .btn, .toolbar-actions label { white-space: nowrap; }
     .toolbar-actions { row-gap: .5rem; }
     .toolbar-wrap { overflow: visible; }
+    /* Prevent header clipping and allow readable sizing */
+    .col-email { min-width: 220px; }
+    .col-company, .col-branch, .col-department { min-width: 140px; }
+    .col-optional { display: none; }
+    .manage-users.show-col-cost-center .col-cost-center,
+    .manage-users.show-col-position .col-position,
+    .manage-users.show-col-region .col-region,
+    .manage-users.show-col-phone .col-phone { display: table-cell; }
     @media (max-width: 992px) {
         .toolbar-actions select { min-width: 200px !important; }
     }
@@ -194,6 +233,40 @@
             const checks = document.querySelectorAll('input[type="checkbox"][name="user_ids"]');
             checks.forEach(c => c.checked = selectAll.checked);
         });
+    })();
+
+    (function(){
+        const root = document.querySelector('.manage-users');
+        const STORAGE_KEY = 'manageUsersCols';
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const apply = () => {
+            ['cost-center','position','region','phone'].forEach(key => {
+                const cls = 'show-col-' + key.replace(/_/g,'-');
+                if (saved[key]) root.classList.add(cls); else root.classList.remove(cls);
+                const checkbox = document.querySelector('.col-toggle[value="'+key+'"]');
+                if (checkbox) checkbox.checked = !!saved[key];
+            });
+            // Update Export link with selected columns
+            const selected = Object.keys(saved).filter(k => saved[k]);
+            const a = document.getElementById('exportLink');
+            if (a) {
+                const url = new URL(a.href, window.location.origin);
+                if (selected.length) {
+                    url.searchParams.set('cols', selected.join(','));
+                } else {
+                    url.searchParams.delete('cols');
+                }
+                a.href = url.toString();
+            }
+        };
+        document.querySelectorAll('.col-toggle').forEach(cb => {
+            cb.addEventListener('change', () => {
+                saved[cb.value] = cb.checked;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+                apply();
+            });
+        });
+        apply();
     })();
 </script>
 
