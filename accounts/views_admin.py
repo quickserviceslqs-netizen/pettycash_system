@@ -450,6 +450,50 @@ def bulk_assign_app(request):
     return redirect('accounts:manage_users')
 
 
+@login_required
+@permission_required('accounts.delete_user', raise_exception=True)
+def delete_user(request, user_id):
+    """Delete a user account (soft delete recommended)"""
+    
+    if request.method == 'POST':
+        user = get_object_or_404(User, id=user_id)
+        
+        # Prevent deleting yourself
+        if user.id == request.user.id:
+            messages.error(request, 'You cannot delete your own account.')
+            return redirect('accounts:manage_users')
+        
+        # Prevent deleting superusers (optional safety check)
+        if user.is_superuser and not request.user.is_superuser:
+            messages.error(request, 'Only superusers can delete other superusers.')
+            return redirect('accounts:manage_users')
+        
+        username = user.username
+        user_data = {
+            'username': user.username,
+            'email': user.email,
+            'role': user.get_role_display(),
+            'company': str(user.company) if user.company else None,
+        }
+        
+        # Audit log before deletion
+        UserAuditLog.objects.create(
+            target_user=user,
+            performed_by=request.user,
+            action='delete',
+            changes=user_data,
+            notes=f'User {username} deleted',
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        
+        # Delete the user
+        user.delete()
+        
+        messages.success(request, f'User "{username}" has been deleted successfully.')
+    
+    return redirect('accounts:manage_users')
+
+
 # ==========================================
 # Permission Groups Management
 # ==========================================
