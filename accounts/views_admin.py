@@ -14,6 +14,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.crypto import get_random_string
 from accounts.models import User, App, UserAuditLog
 from organization.models import Company, Branch, Department
+from django.contrib.sessions.models import Session
 
 
 @login_required
@@ -164,6 +165,44 @@ def audit_logs(request):
         }
     }
     return render(request, 'accounts/audit_logs.html', context)
+
+
+@login_required
+@permission_required('accounts.view_user', raise_exception=True)
+def user_sessions(request, user_id):
+    """List active sessions for a user and allow termination."""
+    target = get_object_or_404(User, id=user_id)
+    sessions = []
+    for s in Session.objects.all():
+        try:
+            data = s.get_decoded()
+        except Exception:
+            continue
+        uid = str(data.get('_auth_user_id')) if data else None
+        if uid and int(uid) == target.id:
+            sessions.append({
+                'key': s.session_key,
+                'expire_date': s.expire_date,
+                'ip': data.get('ip'),
+                'ua': (data.get('ua') or '')[:80],
+                'login_time': data.get('login_time'),
+            })
+    sessions = sorted(sessions, key=lambda x: x['expire_date'])
+    return render(request, 'accounts/user_sessions.html', {
+        'target_user': target,
+        'sessions': sessions,
+    })
+
+
+@login_required
+@permission_required('accounts.change_user', raise_exception=True)
+def terminate_session(request, user_id):
+    if request.method == 'POST':
+        key = request.POST.get('session_key')
+        if key:
+            Session.objects.filter(session_key=key).delete()
+            messages.success(request, 'Session terminated.')
+    return redirect('accounts:user_sessions', user_id=user_id)
 
 
 @login_required

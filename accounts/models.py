@@ -104,6 +104,13 @@ class User(AbstractUser):
         help_text="Applications this user has access to. Use Django permissions to control add/view/change/delete within each app."
     )
 
+    # Security tracking
+    failed_login_attempts = models.PositiveIntegerField(default=0)
+    lockout_until = models.DateTimeField(null=True, blank=True)
+    last_failed_login = models.DateTimeField(null=True, blank=True)
+    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
+    last_login_user_agent = models.TextField(blank=True)
+
     def __str__(self):
         return f"{self.username} ({self.role})"
 

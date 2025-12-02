@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Active Sessions - {{ target_user.username }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3><i class="bi bi-shield-lock" aria-hidden="true"></i> Active Sessions</h3>
+      <div class="text-muted">{{ target_user.get_display_name }} ({{ target_user.username }})</div>
+    </div>
+    <div>
+      <a class="btn btn-secondary" href="{% url 'accounts:edit_user_permissions' target_user.id %}"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back to User</a>
+    </div>
+  </div>
+
+  {% if sessions %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Session Key</th>
+          <th>Login Time</th>
+          <th>IP</th>
+          <th>User Agent</th>
+          <th>Expires</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions %}
+        <tr>
+          <td class="text-break">{{ s.key }}</td>
+          <td>{{ s.login_time|default:"—" }}</td>
+          <td>{{ s.ip|default:"—" }}</td>
+          <td class="text-truncate" style="max-width:360px;" title="{{ s.ua }}">{{ s.ua|default:"—" }}</td>
+          <td>{{ s.expire_date }}</td>
+          <td>
+            <form method="post" action="{% url 'accounts:terminate_session' target_user.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="session_key" value="{{ s.key }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-x-circle" aria-hidden="true"></i> Terminate
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle" aria-hidden="true"></i> No active sessions found for this user.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

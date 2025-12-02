@@ -1,5 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
+from .forms import LockoutAuthenticationForm
 from . import views
 from . import views_invitation
 from . import views_bulk_import
@@ -13,7 +14,8 @@ urlpatterns = [
     # Authentication
     # --------------------------
     path('login/', auth_views.LoginView.as_view(
-        template_name='registration/login.html'
+        template_name='registration/login.html',
+        authentication_form=LockoutAuthenticationForm,
     ), name='login'),
 
     # Logout using POST only (default safe)
@@ -89,6 +91,8 @@ urlpatterns = [
     path('audit-logs/', views_admin.audit_logs, name='audit_logs'),
     path('users/create/', views_admin.create_user, name='create_user'),
     path('users/<int:user_id>/edit-permissions/', views_admin.edit_user_permissions, name='edit_user_permissions'),
+    path('users/<int:user_id>/sessions/', views_admin.user_sessions, name='user_sessions'),
+    path('users/<int:user_id>/sessions/terminate/', views_admin.terminate_session, name='terminate_session'),
     path('users/<int:user_id>/reset-password/', views_admin.reset_user_password, name='reset_user_password'),
     path('users/<int:user_id>/toggle-status/', views_admin.toggle_user_status, name='toggle_user_status'),
     path('users/<int:user_id>/delete/', views_admin.delete_user, name='delete_user'),

@@ -268,6 +268,10 @@
                                     {% if user_to_edit.is_active %}Deactivate User{% else %}Activate User{% endif %}
                                 </button>
                             </form>
+
+                            <a href="{% url 'accounts:user_sessions' user_to_edit.id %}" class="btn btn-outline-secondary w-100">
+                                <i aria-hidden="true" class="bi bi-shield-lock"></i> View Active Sessions
+                            </a>
                             
                             <button type="button" class="btn btn-danger w-100" 
                                     data-bs-toggle="modal" 
