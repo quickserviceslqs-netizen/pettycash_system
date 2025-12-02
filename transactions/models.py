@@ -13,10 +13,7 @@ User = get_user_model()
 
 def generate_transaction_id():
     """Generate unique transaction ID for requisitions"""
-    from settings_manager.models import get_setting
-    prefix = get_setting('REQUISITION_NUMBER_PREFIX', default='REQ')
-    unique_id = str(uuid.uuid4())[:8].upper()  # Use first 8 chars of UUID for shorter ID
-    return f"{prefix}-{unique_id}"
+    return str(uuid.uuid4())
 
 
 class Requisition(models.Model):
@@ -24,7 +21,6 @@ class Requisition(models.Model):
         ('draft', 'Draft'),
         ('pending', 'Pending'),
         ('pending_changes', 'Pending Changes from Requester'),
-        ('pending_validation', 'Pending Validation (Treasury)'),
         ('pending_urgency_confirmation', 'Pending Urgency Confirmation'),
         ('pending_dept_approval', 'Pending Department Approval'),
         ('pending_branch_approval', 'Pending Branch Approval'),
@@ -33,7 +29,6 @@ class Requisition(models.Model):
         ('pending_treasury_validation', 'Pending Treasury Validation'),
         ('pending_cfo_approval', 'Pending CFO Approval'),
         ('paid', 'Paid'),
-        ('validated', 'Validated'),
         ('reviewed', 'Reviewed'),
         ('rejected', 'Rejected'),
     ]
@@ -86,21 +81,6 @@ class Requisition(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # SLA tracking fields
-    approval_deadline = models.DateTimeField(null=True, blank=True)
-    end_to_end_sla_deadline = models.DateTimeField(null=True, blank=True)
-    payment_sla_deadline = models.DateTimeField(null=True, blank=True)
-
-    # Validation tracking separate from approval
-    VALIDATION_STATUS_CHOICES = [
-        ('not_validated', 'Not Validated'),
-        ('pending_validation', 'Pending Validation'),
-        ('treasury_change_requested', 'Treasury Change Requested'),
-        ('validated', 'Validated'),
-    ]
-    validation_status = models.CharField(max_length=32, choices=VALIDATION_STATUS_CHOICES, default='not_validated')
-    validation_deadline = models.DateTimeField(null=True, blank=True, help_text="Deadline for treasury validation")
-
     # Multi-Tenancy: Company-aware manager for automatic filtering
     objects = RequisitionManager()
 
@@ -112,11 +92,6 @@ class Requisition(models.Model):
     
     def clean(self):
         """Validate requisition data before save"""
-        from workflow.services.resolver import (
-            is_fraud_detection_enabled, get_rapid_transaction_threshold,
-            get_rapid_transaction_window, get_require_2fa_above_amount
-        )
-        
         # Validate amount is positive (if set)
         if self.amount is not None and self.amount <= 0:
             raise ValidationError({'amount': 'Amount must be greater than zero'})
@@ -129,34 +104,6 @@ class Requisition(models.Model):
                 raise ValidationError({'company': 'HQ origin requires a company to be specified'})
             if self.origin_type == 'field' and not self.region:
                 raise ValidationError({'region': 'Field origin requires a region to be specified'})
-        
-        # Fraud detection (if enabled)
-        if is_fraud_detection_enabled() and self.status != 'draft':
-            # Check for rapid transactions
-            rapid_threshold = get_rapid_transaction_threshold()
-            rapid_window = get_rapid_transaction_window()
-            
-            if rapid_threshold > 0 and rapid_window > 0:
-                from django.utils import timezone
-                from datetime import timedelta
-                
-                # Count recent transactions by this user
-                recent_count = Requisition.objects.filter(
-                    requested_by=self.requested_by,
-                    created_at__gte=timezone.now() - timedelta(minutes=rapid_window)
-                ).count()
-                
-                if recent_count >= rapid_threshold:
-                    raise ValidationError({
-                        'amount': f'Fraud detected: {recent_count} transactions in {rapid_window} minutes exceeds threshold of {rapid_threshold}'
-                    })
-            
-            # Check 2FA requirement for large amounts
-            require_2fa_amount = get_require_2fa_above_amount()
-            if self.amount >= require_2fa_amount:
-                # This would be checked during approval, not creation
-                # But we can log it for monitoring
-                pass
     
     def save(self, *args, **kwargs):
         """Override save to run validation only on explicit full_clean calls"""
@@ -190,39 +137,6 @@ class Requisition(models.Model):
         from workflow.services.resolver import resolve_workflow
         return resolve_workflow(self)
 
-    def is_fully_approved(self) -> bool:
-        """
-        Determine whether this requisition has completed all required approvals
-        according to its applied ApprovalThreshold.roles_sequence.
-
-        This is intentionally conservative: if no applied_threshold is present
-        we return False to avoid allowing payments against un-routed requisitions.
-        """
-        if not self.applied_threshold:
-            return False
-
-        try:
-            required_roles = [r.lower() for r in (self.applied_threshold.roles_sequence or [])]
-        except Exception:
-            # Malformed roles_sequence -> treat as not approved
-            return False
-
-        from django.db.models import Q
-        trails = ApprovalTrail.objects.filter(requisition=self)
-
-        # Collect roles that performed approval/validation actions
-        approved_roles = set()
-        for t in trails:
-            if t.action in ('approved', 'validated') and t.role:
-                approved_roles.add(t.role.lower())
-
-        # Ensure every required role has an approval/validation record
-        for role in required_roles:
-            if role.lower() not in approved_roles:
-                return False
-
-        return True
-
     def can_approve(self, user):
         """
         Phase 4: Core invariant - No-self-approval enforcement.
@@ -232,9 +146,7 @@ class Requisition(models.Model):
         - Only pending/pending_urgency_confirmation requisitions can be approved
         - No self-approval (strict invariant)
         - Only next_approver can approve
-        - 2FA requirement for approvers (if enabled)
         """
-        from workflow.services.resolver import is_2fa_required_for_approvers
         import logging
         logger = logging.getLogger(__name__)
         
@@ -258,16 +170,6 @@ class Requisition(models.Model):
                 f"user {user.username} is not the next approver (expected: {self.next_approver.username if self.next_approver else 'None'})"
             )
             return False
-        
-        # 2FA requirement for approvers (if enabled)
-        if is_2fa_required_for_approvers():
-            # Check if user has 2FA enabled (assuming user has a has_2fa field or similar)
-            if not getattr(user, 'has_2fa', False):
-                logger.warning(
-                    f"Approval denied for {self.transaction_id}: "
-                    f"user {user.username} requires 2FA for approval but doesn't have it enabled"
-                )
-                return False
         
         return True
 
@@ -297,23 +199,3 @@ class ApprovalTrail(models.Model):
 
     def __str__(self):
         return f"{self.requisition} - {self.action} by {self.user}"
-
-
-class ValidationTrail(models.Model):
-    """
-    Separate audit trail for treasury validation actions to keep approval audits clean.
-    """
-    requisition = models.ForeignKey('Requisition', on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    action = models.CharField(max_length=30, choices=[
-        ('validated', 'Validated'),
-        ('validation_changes_requested', 'Validation Changes Requested'),
-        ('validation_failed', 'Validation Failed'),
-        ('validation_note', 'Validation Note')
-    ])
-    comment = models.TextField(blank=True, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    ip_address = models.GenericIPAddressField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.requisition} - validation {self.action} by {self.user}"

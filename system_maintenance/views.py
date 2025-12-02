@@ -16,8 +16,6 @@ from system_maintenance.services.restore_service import RestoreService
 from system_maintenance.services.health_check_service import HealthCheckService
 import secrets
 import string
-import platform
-import sys
 
 
 def is_admin_user(user):
@@ -477,19 +475,3 @@ def download_backup(request, backup_id):
         )
     
     raise Http404("Backup file not found")
-
-
-@login_required
-@user_passes_test(is_admin_user)
-def system_info(request):
-    """Display system and Python runtime information"""
-    info = {
-        "python_version": sys.version,
-        "implementation": platform.python_implementation(),
-        "executable": sys.executable,
-        "system": platform.system(),
-        "release": platform.release(),
-        "architecture": platform.architecture()[0],
-        "processor": platform.processor(),
-    }
-    return render(request, "system_maintenance/system_info.html", {"info": info})

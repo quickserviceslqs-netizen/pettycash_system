@@ -68,10 +68,9 @@ def transactions_home(request):
                 next_approver=user
             ).exclude(requested_by=user)
         else:
-            pending_approval_reqs = Requisition.objects.filter(
+            pending_approval_reqs = Requisition.objects.current_company().filter(
                 status__in=["pending", "pending_urgency_confirmation"],
-                next_approver=user,
-                company=user.company
+                next_approver=user
             ).exclude(requested_by=user)
         
         approval_metrics['pending_count'] = pending_approval_reqs.count()
@@ -79,13 +78,10 @@ def transactions_home(request):
         
         # Today's approvals
         today = timezone.now().date()
-        today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
-        tomorrow_start = today_start + timezone.timedelta(days=1)
         approval_metrics['approved_today'] = ApprovalTrail.objects.filter(
             user=user,
             action='approved',
-            timestamp__gte=today_start,
-            timestamp__lt=tomorrow_start
+            timestamp__date=today
         ).count()
     
     # Treasury metrics
@@ -104,13 +100,10 @@ def transactions_home(request):
         
         # Paid today
         today = timezone.now().date()
-        today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
-        tomorrow_start = today_start + timezone.timedelta(days=1)
         from treasury.models import Payment
         treasury_metrics['paid_today'] = Payment.objects.filter(
             disbursed_by=user,
-            disbursed_at__gte=today_start,
-            disbursed_at__lt=tomorrow_start,
+            disbursed_at__date=today,
             status='disbursed'
         ).count()
 
@@ -172,8 +165,6 @@ def requisition_detail(request, requisition_id):
         requisition=requisition
     ).select_related('user').order_by('timestamp')
     
-    print(f"DEBUG: approval_trail count for {requisition.transaction_id}: {approval_trail.count()}")
-    
     context = {
         "requisition": requisition,
         "can_act": can_act,
@@ -181,8 +172,6 @@ def requisition_detail(request, requisition_id):
         "payment": payment,
         "user": request.user,
         "approval_trail": approval_trail,
-        "current_time": timezone.now(),
-        "deadline_timestamp": int(requisition.change_request_deadline.timestamp()) if requisition.change_request_deadline else None,
     }
     return render(request, "transactions/requisition_detail.html", context)
 
@@ -201,180 +190,41 @@ def create_requisition(request):
     # Check if user has permission to add requisitions
     if not request.user.has_perm('transactions.add_requisition'):
         messages.error(request, "You don't have permission to create requisitions.")
-        return redirect('transactions:transactions-home')
+        return redirect('transactions-home')
     
     from .forms import RequisitionForm
-    from settings_manager.models import get_setting
 
     if request.method == "POST":
-        # Check if this is a draft save or final submission
-        is_draft = request.POST.get('is_draft') == 'true'
-        is_final_submit = request.POST.get('action') == 'submit'
-        
         form = RequisitionForm(request.POST, request.FILES)
-        form.data = form.data.copy()  # Make mutable
-        form.data['is_draft'] = is_draft
-        
-        # For drafts, we allow partial data
-        if is_draft:
-            # Check if drafts are allowed
-            allow_drafts = get_setting('ALLOW_DRAFT_REQUISITIONS', default=True)
-            if not allow_drafts:
-                messages.error(request, "Draft requisitions are not allowed.")
-                return redirect('transactions:transactions-home')
-            
-            # For drafts, make some fields not required
-            form.fields['amount'].required = False
-            form.fields['purpose'].required = False
-            form.fields['receipt'].required = False
-        
         if form.is_valid():
             requisition = form.save(commit=False)
             requisition.requested_by = request.user
             
-            if is_draft:
-                # Save as draft - don't trigger workflow
-                requisition.status = "draft"
-                requisition.save()
-                messages.success(request, f"Draft requisition {requisition.transaction_id} saved successfully.")
-                return redirect("transactions:transactions-home")
+            # Phase 3: Set initial status based on urgency
+            if requisition.is_urgent:
+                requisition.status = "pending_urgency_confirmation"
             else:
-                # Final submission - trigger workflow
-                # Phase 3: Set initial status based on urgency
-                if requisition.is_urgent:
-                    requisition.status = "pending_urgency_confirmation"
-                else:
-                    requisition.status = "pending"
-                
-                requisition.save()
+                requisition.status = "pending"
+            
+            requisition.save()
 
-                try:
-                    requisition.resolve_workflow()
-                except Exception as e:
-                    messages.error(request, f"Error creating requisition: {str(e)}")
-                    requisition.delete()
-                    return redirect("transactions:transactions-home")
+            try:
+                requisition.resolve_workflow()
+            except Exception as e:
+                messages.error(request, f"Error creating requisition: {str(e)}")
+                requisition.delete()
+                return redirect("transactions-home")
 
-                if requisition.is_urgent:
-                    messages.success(request, f"Urgent requisition {requisition.transaction_id} created. Awaiting urgency confirmation from first approver.")
-                else:
-                    messages.success(request, f"Requisition {requisition.transaction_id} created successfully.")
-                return redirect("transactions:transactions-home")
+            if requisition.is_urgent:
+                messages.success(request, f"Urgent requisition {requisition.transaction_id} created. Awaiting urgency confirmation from first approver.")
+            else:
+                messages.success(request, f"Requisition {requisition.transaction_id} created successfully.")
+            return redirect("transactions-home")
         else:
             messages.error(request, "Please correct the errors below.")
     else:
         form = RequisitionForm()
-    
-    # Get auto-save interval for JavaScript
-    auto_save_interval = get_setting('AUTO_SAVE_DRAFT_INTERVAL', default=60)
-    
-    return render(request, "transactions/create_requisition.html", {
-        "form": form,
-        "auto_save_interval": auto_save_interval
-    })
-
-
-@login_required
-def edit_draft(request, requisition_id):
-    """
-    Edit a draft requisition before submitting it.
-    """
-    # Check if user has 'transactions' app assigned
-    user_apps = get_user_apps(request.user)
-    if 'transactions' not in user_apps:
-        messages.error(request, "You don't have access to Transactions app.")
-        return redirect('dashboard')
-    
-    # Check if user has permission to add requisitions
-    if not request.user.has_perm('transactions.add_requisition'):
-        messages.error(request, "You don't have permission to create requisitions.")
-        return redirect('transactions:transactions-home')
-    
-    from .forms import RequisitionForm
-    from settings_manager.models import get_setting
-    
-    try:
-        requisition = Requisition.objects.get(transaction_id=requisition_id)
-    except Requisition.DoesNotExist:
-        messages.error(request, "Draft requisition not found.")
-        return redirect('transactions:transactions-home')
-    
-    # Check if user owns this draft
-    if requisition.requested_by != request.user:
-        messages.error(request, "You can only edit your own drafts.")
-        return redirect('transactions:transactions-home')
-    
-    # Check if it's actually a draft
-    if requisition.status != 'draft':
-        messages.error(request, "This requisition is not a draft.")
-        return redirect('transactions:transactions-home')
-    
-    if request.method == "POST":
-        # Check if this is a draft save or final submission
-        is_draft = request.POST.get('is_draft') == 'true'
-        is_final_submit = request.POST.get('action') == 'submit'
-        
-        form = RequisitionForm(request.POST, request.FILES, instance=requisition)
-        form.data = form.data.copy()  # Make mutable
-        form.data['is_draft'] = is_draft
-        
-        # For drafts, we allow partial data
-        if is_draft:
-            # Check if drafts are allowed
-            allow_drafts = get_setting('ALLOW_DRAFT_REQUISITIONS', default=True)
-            if not allow_drafts:
-                messages.error(request, "Draft requisitions are not allowed.")
-                return redirect('transactions:transactions-home')
-            
-            # For drafts, make some fields not required
-            form.fields['amount'].required = False
-            form.fields['purpose'].required = False
-            form.fields['receipt'].required = False
-        
-        if form.is_valid():
-            requisition = form.save(commit=False)
-            
-            if is_draft:
-                # Save as draft - don't trigger workflow
-                requisition.status = "draft"
-                requisition.save()
-                messages.success(request, f"Draft requisition {requisition.transaction_id} updated successfully.")
-                return redirect("my-requisitions")
-            else:
-                # Final submission - trigger workflow
-                # Phase 3: Set initial status based on urgency
-                if requisition.is_urgent:
-                    requisition.status = "pending_urgency_confirmation"
-                else:
-                    requisition.status = "pending"
-                
-                requisition.save()
-
-                try:
-                    requisition.resolve_workflow()
-                except Exception as e:
-                    messages.error(request, f"Error creating requisition: {str(e)}")
-                    requisition.delete()
-                    return redirect("transactions:transactions-home")
-
-                if requisition.is_urgent:
-                    messages.success(request, f"Urgent requisition {requisition.transaction_id} created. Awaiting urgency confirmation from first approver.")
-                else:
-                    messages.success(request, f"Requisition {requisition.transaction_id} created successfully.")
-                return redirect("transactions:transactions-home")
-        else:
-            messages.error(request, "Please correct the errors below.")
-    else:
-        form = RequisitionForm(instance=requisition)
-    
-    # Get auto-save interval for JavaScript
-    auto_save_interval = get_setting('AUTO_SAVE_DRAFT_INTERVAL', default=60)
-    
-    return render(request, "transactions/edit_draft.html", {
-        "form": form,
-        "requisition": requisition,
-        "auto_save_interval": auto_save_interval
-    })
+    return render(request, "transactions/create_requisition.html", {"form": form})
 
 
 # -----------------------------
@@ -393,7 +243,7 @@ def approve_requisition(request, requisition_id):
     # Check if user has permission to change requisitions (approve)
     if not request.user.has_perm('transactions.change_requisition'):
         messages.error(request, "You don't have permission to approve requisitions.")
-        return redirect('transactions:transactions-home')
+        return redirect('transactions-home')
     
     # Lock the row for update to prevent race conditions
     try:
@@ -402,7 +252,7 @@ def approve_requisition(request, requisition_id):
         )
     except Requisition.DoesNotExist:
         messages.error(request, "Requisition not found.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate can approve
     if not requisition.can_approve(request.user):
@@ -436,39 +286,32 @@ def approve_requisition(request, requisition_id):
         else:
             messages.success(request, f"Requisition {requisition_id} approved. Moved to next approver.")
     else:
-        # Final approval - mark managerial approvals completed and move to treasury validation
-        requisition.status = "approved"
-        requisition.validation_status = 'pending_validation'
-        # Set validation SLA deadline
-        from workflow.services.resolver import get_validation_sla_hours
-        try:
-            requisition.validation_deadline = timezone.now() + timezone.timedelta(hours=get_validation_sla_hours())
-        except Exception:
-            requisition.validation_deadline = None
+        # Final approval - mark as reviewed and create payment record for treasury
+        requisition.status = "reviewed"
         requisition.next_approver = None
         requisition.workflow_sequence = []
-        requisition.save(update_fields=["status", "validation_status", "validation_deadline", "next_approver", "workflow_sequence"])
+        requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
+        
+        # Create Payment record for treasury to execute (within same transaction)
+        payment, created = Payment.objects.get_or_create(
+            requisition=requisition,
+            defaults={
+                'amount': requisition.amount,
+                'method': 'mpesa',  # Default to M-Pesa
+                'destination': '',
+                'status': 'pending',
+                'otp_required': True,
+            }
+        )
+        
+        # If approver is treasury, redirect to dashboard to execute payment
+        if request.user.role.lower() == 'treasury':
+            messages.success(request, f"Requisition {requisition_id} validated! Please execute payment.")
+            return redirect('dashboard')  # Redirect to dashboard where pending payments are shown
+        else:
+            messages.success(request, f"Requisition {requisition_id} fully approved! Ready for payment.")
 
-        # Notify treasury team that validation is required (payment will be created after validation)
-        try:
-            treasury_users = User.objects.filter(role__iexact='treasury', is_active=True)
-            for tu in treasury_users:
-                if tu.email:
-                    send_mail(
-                        subject=f"Validation Required: Requisition {requisition.transaction_id}",
-                        message=f"Please validate requisition {requisition.transaction_id} and prepare payment.",
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[tu.email],
-                        fail_silently=True,
-                    )
-        except Exception:
-            pass
-        except Exception:
-            pass
-
-        messages.success(request, f"Requisition {requisition_id} fully approved and awaiting treasury validation.")
-
-    return redirect("transactions:transactions-home")
+    return redirect("transactions-home")
 
 
 # -----------------------------
@@ -487,7 +330,7 @@ def reject_requisition(request, requisition_id):
     # Check if user has permission to change requisitions (reject)
     if not request.user.has_perm('transactions.change_requisition'):
         messages.error(request, "You don't have permission to reject requisitions.")
-        return redirect('transactions:transactions-home')
+        return redirect('transactions-home')
     
     # Lock the row for update
     try:
@@ -496,12 +339,12 @@ def reject_requisition(request, requisition_id):
         )
     except Requisition.DoesNotExist:
         messages.error(request, "Requisition not found.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate status - can only reject pending requisitions
     if requisition.status != 'pending':
         messages.error(request, "Can only reject pending requisitions.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate can reject (uses same logic as approval)
     if not requisition.can_approve(request.user):
@@ -523,16 +366,10 @@ def reject_requisition(request, requisition_id):
     requisition.status = "rejected"
     requisition.next_approver = None
     requisition.workflow_sequence = []
-    requisition.rejected_by = request.user
-    requisition.save(update_fields=["status", "next_approver", "workflow_sequence", "rejected_by"])
-    
-    # Send rejection notification
-    from workflow.services.resolver import send_rejection_notification
-    rejection_reason = request.POST.get("comment", "No reason provided")
-    send_rejection_notification(requisition, rejection_reason)
+    requisition.save(update_fields=["status", "next_approver", "workflow_sequence"])
     
     messages.success(request, f"Requisition {requisition_id} rejected.")
-    return redirect("transactions:transactions-home")
+    return redirect("transactions-home")
 
 
 @login_required
@@ -553,7 +390,7 @@ def request_changes(request, requisition_id):
     # Check if user has permission to change requisitions
     if not request.user.has_perm('transactions.change_requisition'):
         messages.error(request, "You don't have permission to request changes.")
-        return redirect('transactions:transactions-home')
+        return redirect('transactions-home')
     
     # Lock the row for update
     try:
@@ -562,79 +399,27 @@ def request_changes(request, requisition_id):
         )
     except Requisition.DoesNotExist:
         messages.error(request, "Requisition not found.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate status - can only request changes on pending requisitions
     if requisition.status not in ['pending', 'pending_urgency_confirmation']:
         messages.error(request, "Can only request changes on pending requisitions.")
-        return redirect("transactions:transactions-home")
-    # Get change request details (used by both approvers and treasury validators)
+        return redirect("transactions-home")
+    
+    # Validate user is the next approver
+    if not requisition.can_approve(request.user):
+        messages.error(request, "You are not authorized to request changes for this requisition.")
+        return redirect("transactions-home")
+    
+    # Get change request details
     change_details = request.POST.get("change_details", "")
     if not change_details:
         messages.error(request, "Please specify what changes are needed.")
         return redirect("requisition-detail", requisition_id=requisition_id)
-
+    
     # Set deadline (48 hours from now by default)
     deadline_hours = int(request.POST.get("deadline_hours", 48))
     deadline = timezone.now() + timedelta(hours=deadline_hours)
-
-    # Treasury validation change-requests are handled separately (validators, not approvers)
-    if getattr(request.user, 'role', '').lower() == 'treasury':
-        # Allow treasury to request validation changes when requisition is awaiting validation
-        if requisition.status not in ['pending', 'pending_validation', 'pending_treasury_validation', 'approved']:
-            messages.error(request, "Can only request validation changes when requisition is awaiting validation or already approved.")
-            return redirect("transactions:transactions-home")
-        # Treasury-specific change request: create ValidationTrail and set validation_status
-        from transactions.models import ValidationTrail
-        ValidationTrail.objects.create(
-            requisition=requisition,
-            user=request.user,
-            action='validation_changes_requested',
-            comment=change_details,
-            timestamp=timezone.now(),
-        )
-
-        requisition.validation_status = 'treasury_change_requested'
-        requisition.status = 'pending_validation'
-        requisition.save(update_fields=['validation_status', 'status'])
-
-        # Notify requester (reuse existing email flow)
-        try:
-            if requisition.requested_by.email:
-                send_mail(
-                    subject=f"Action Required: Validation Changes Requested for Requisition {requisition_id}",
-                    message=f"""
-Dear {requisition.requested_by.get_full_name()},
-
-The treasury team has requested changes to your requisition {requisition_id} (Amount: {requisition.amount}).
-
-Requested by: {request.user.get_full_name()}
-Changes Required:
-{change_details}
-
-DEADLINE: {deadline.strftime('%B %d, %Y at %I:%M %p')}
-
-Please log in to your account and submit the requested changes before the deadline. This is a validation request and will not reset managerial approvals.
-
-View and respond: [Your Transactions Dashboard]
-
-Best regards,
-Petty Cash System
-                    """,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[requisition.requested_by.email],
-                    fail_silently=True,
-                )
-        except Exception:
-            pass
-
-        messages.success(request, f"Validation change request sent to {requisition.requested_by.get_full_name()}. Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p')}")
-        return redirect("transactions:transactions-home")
-
-    # Validate user is the next approver
-    if not requisition.can_approve(request.user):
-        messages.error(request, "You are not authorized to request changes for this requisition.")
-        return redirect("transactions:transactions-home")
     
     # Create audit trail
     ApprovalTrail.objects.create(
@@ -693,7 +478,7 @@ Petty Cash System
         f"Change request sent to {requisition.requested_by.get_full_name()}. "
         f"Deadline: {deadline.strftime('%B %d, %Y at %I:%M %p')}"
     )
-    return redirect("transactions:transactions-home")
+    return redirect("transactions-home")
 
 
 @login_required
@@ -716,19 +501,17 @@ def submit_changes(request, requisition_id):
         )
     except Requisition.DoesNotExist:
         messages.error(request, "Requisition not found.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate user is the requester
     if requisition.requested_by.id != request.user.id:
         messages.error(request, "You can only submit changes to your own requisitions.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate status
     if requisition.status != 'pending_changes':
-        # If this was a treasury validation change request, allow submit_changes flow
-        if requisition.validation_status != 'treasury_change_requested':
-            messages.error(request, "This requisition is not awaiting changes.")
-            return redirect("transactions:transactions-home")
+        messages.error(request, "This requisition is not awaiting changes.")
+        return redirect("transactions-home")
     
     # Check if deadline passed
     if requisition.change_request_deadline and timezone.now() > requisition.change_request_deadline:
@@ -748,7 +531,7 @@ def submit_changes(request, requisition_id):
         )
         
         messages.error(request, f"Deadline has passed. Requisition rejected. Please create a new requisition.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Get response from requester
     change_response = request.POST.get("change_response", "")
@@ -779,50 +562,6 @@ def submit_changes(request, requisition_id):
         timestamp=timezone.now(),
     )
     
-    # If this was a treasury validation change request, create a ValidationTrail and resume validation
-    if requisition.validation_status == 'treasury_change_requested':
-        from transactions.models import ValidationTrail
-        ValidationTrail.objects.create(
-            requisition=requisition,
-            user=request.user,
-            action='validation_changes_submitted',
-            comment=change_response,
-            timestamp=timezone.now(),
-        )
-
-        requisition.validation_status = 'pending_validation'
-        requisition.status = 'pending_validation'
-        requisition.save(update_fields=['validation_status', 'status', 'receipt', 'amount'])
-
-        # Notify the treasury user who requested the validation changes (if found)
-        try:
-            vt = ValidationTrail.objects.filter(requisition=requisition, action='validation_changes_requested').order_by('-timestamp').first()
-            if vt and vt.user and vt.user.email:
-                send_mail(
-                    subject=f"Changes Submitted: Requisition {requisition_id}",
-                    message=f"""
-Dear {vt.user.get_full_name()},
-
-{requisition.requested_by.get_full_name()} has submitted the changes you requested for requisition {requisition_id}.
-
-Requester's Response:
-{change_response}
-
-The requisition is now back in the treasury validation queue for review. Please log in to validate.
-
-Best regards,
-Petty Cash System
-                    """,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[vt.user.email],
-                    fail_silently=True,
-                )
-        except Exception:
-            pass
-
-        messages.success(request, f"Changes submitted successfully! Requisition returned to treasury validation queue.")
-        return redirect("transactions:transactions-home")
-
     # Return to pending and same approver
     requisition.status = "pending"
     requisition.change_requested = False
@@ -857,7 +596,7 @@ Petty Cash System
         request,
         f"Changes submitted successfully! Requisition returned to {requisition.next_approver.get_full_name()} for review."
     )
-    return redirect("transactions:transactions-home")
+    return redirect("transactions-home")
 
 
 @login_required
@@ -885,27 +624,27 @@ def revert_fast_track(request, requisition_id):
         )
     except Requisition.DoesNotExist:
         messages.error(request, "Requisition not found.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate requisition is fast-tracked
     if not requisition.is_fast_tracked:
         messages.error(request, "This requisition was not fast-tracked.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate status - can only revert pending requisitions
     if requisition.status != 'pending':
         messages.error(request, "Can only revert pending fast-tracked requisitions.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate user is the next approver (final approver in fast-track)
     if not requisition.can_approve(request.user):
         messages.error(request, "You are not authorized to revert this requisition.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Restore original workflow sequence
     if not requisition.original_workflow_sequence:
         messages.error(request, "Original workflow sequence not found.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Create audit trail for reversion
     revert_reason = request.POST.get("revert_reason", "Urgency not validated - reverting to normal approval flow")
@@ -971,7 +710,7 @@ Petty Cash System
         f"It will now go through all required approvers starting from {requisition.next_approver.get_full_name() if requisition.next_approver else 'first approver'}. "
         f"Requester has been notified via email."
     )
-    return redirect("transactions:transactions-home")
+    return redirect("transactions-home")
 
 
 # -----------------------------
@@ -1005,12 +744,12 @@ def admin_override_approval(request, requisition_id):
         )
     except Requisition.DoesNotExist:
         messages.error(request, "Requisition not found.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate status - cannot override already approved/rejected requisitions
     if requisition.status in ['reviewed', 'paid', 'rejected']:
         messages.error(request, f"Cannot override requisition with status: {requisition.status}")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Justification is REQUIRED for override
     justification = request.POST.get("justification", "").strip()
@@ -1054,7 +793,7 @@ def admin_override_approval(request, requisition_id):
         f"This action has been logged for audit."
     )
     
-    return redirect("transactions:transactions-home")
+    return redirect("transactions-home")
 
 
 # -----------------------------
@@ -1089,12 +828,12 @@ def confirm_urgency(request, requisition_id):
         )
     except Requisition.DoesNotExist:
         messages.error(request, "Requisition not found.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate status - must be pending_urgency_confirmation
     if requisition.status != 'pending_urgency_confirmation':
         messages.error(request, "This requisition is not awaiting urgency confirmation.")
-        return redirect("transactions:transactions-home")
+        return redirect("transactions-home")
     
     # Validate user is the next approver
     if not requisition.next_approver or request.user.id != requisition.next_approver.id:
@@ -1165,7 +904,7 @@ def confirm_urgency(request, requisition_id):
     else:
         messages.error(request, "Invalid action. Please confirm or deny urgency.")
     
-    return redirect("transactions:transactions-home")
+    return redirect("transactions-home")
 
 
 # -----------------------------
@@ -1218,17 +957,14 @@ def my_requisitions(request):
     # Calculate metrics for user's own requisitions
     all_my_reqs = Requisition.objects.filter(requested_by=user) if is_centralized else Requisition.objects.current_company().filter(requested_by=user)
     
-    non_draft_reqs = all_my_reqs.exclude(status='draft')
     metrics = {
         'total': all_my_reqs.count(),
-        'drafts': all_my_reqs.filter(status='draft').count(),
         'pending': all_my_reqs.filter(status__in=['pending', 'pending_urgency_confirmation', 'change_requested']).count(),
         'approved': all_my_reqs.filter(status='approved').count(),
         'reviewed': all_my_reqs.filter(status='reviewed').count(),
         'paid': all_my_reqs.filter(status='paid').count(),
         'rejected': all_my_reqs.filter(status='rejected').count(),
-        # Exclude drafts from total amount requested (drafts are not final requests)
-        'total_amount': sum(r.amount for r in non_draft_reqs),
+        'total_amount': sum(r.amount for r in all_my_reqs),
         'pending_amount': sum(r.amount for r in all_my_reqs.filter(status__in=['pending', 'pending_urgency_confirmation'])),
     }
     
@@ -1283,10 +1019,9 @@ def pending_approvals(request):
             next_approver=user
         ).exclude(requested_by=user).select_related('requested_by', 'requested_by__company', 'next_approver').prefetch_related('approvaltrail_set').order_by('-created_at')
     else:
-        requisitions = Requisition.objects.filter(
+        requisitions = Requisition.objects.current_company().filter(
             status__in=["pending", "pending_urgency_confirmation"],
-            next_approver=user,
-            company=user.company
+            next_approver=user
         ).exclude(requested_by=user).select_related('requested_by', 'next_approver').prefetch_related('approvaltrail_set').order_by('-created_at')
     
     # Apply filters
@@ -1310,7 +1045,7 @@ def pending_approvals(request):
         requisitions = requisitions.filter(
             transaction_id__icontains=search_query
         ) | requisitions.filter(
-            purpose__icontains=search_query
+            description__icontains=search_query
         ) | requisitions.filter(
             requested_by__username__icontains=search_query
         )
@@ -1322,7 +1057,7 @@ def pending_approvals(request):
     ).exclude(requested_by=user)
     
     if not is_centralized:
-        all_pending = all_pending.filter(company=user.company)
+        all_pending = all_pending.filter(requested_by__company=user.company)
     
     # Today's approvals by this user
     today = timezone.now().date()

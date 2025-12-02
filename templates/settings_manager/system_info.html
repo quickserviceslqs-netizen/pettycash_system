@@ -8,55 +8,16 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i aria-hidden="true" class="bi bi-info-circle-fill"></i> System Information</h2>
+                <h2><i class="bi bi-info-circle-fill"></i> System Information</h2>
                 <a href="{% url 'settings_manager:dashboard' %}" class="btn btn-outline-secondary">
-                    <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Settings
+                    <i class="bi bi-arrow-left"></i> Back to Settings
                 </a>
-            </div>
-            <!-- Project Information -->
-                        <div class="card mb-4">
-                            <div class="card-header bg-info text-white">
-                                <h5 class="mb-0"><i aria-hidden="true" class="bi bi-shield-lock"></i> Security Status</h5>
-                            </div>
-                            <div class="card-body">
-                                {% if secure_status %}
-                                    <span class="badge bg-success"><i aria-hidden="true" class="bi bi-shield-check"></i> Secure</span>
-                                {% else %}
-                                    <span class="badge bg-danger"><i aria-hidden="true" class="bi bi-shield-exclamation"></i> Not Secure</span>
-                                {% endif %}
-                                <small class="text-muted ms-2">Based on Django security settings</small>
-                            </div>
-                        </div>
-            <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i aria-hidden="true" class="bi bi-folder2"></i> Project</h5>
-                </div>
-                <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-sm-4">Project Name:</dt>
-                        <dd class="col-sm-8"><code>{{ project_name }}</code></dd>
-                        <dt class="col-sm-4">Server Time:</dt>
-                        <dd class="col-sm-8"><code>{{ server_time }}</code></dd>
-                        <dt class="col-sm-4">Environment:</dt>
-                        <dd class="col-sm-8"><code>{{ environment }}</code>
-                            {% if environment_error %}
-                                <span class="text-danger ms-2">({{ environment_error }})</span>
-                            {% endif %}
-                        </dd>
-                        <dt class="col-sm-4">Uptime:</dt>
-                        <dd class="col-sm-8"><code id="uptime-counter"></code>
-                            {% if uptime_error %}
-                                <span class="text-danger ms-2">({{ uptime_error }})</span>
-                            {% endif %}
-                        </dd>
-                    </dl>
-                </div>
             </div>
 
             <!-- Django Information -->
             <div class="card mb-4">
                 <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i aria-hidden="true" class="bi bi-code-square"></i> Django Framework</h5>
+                    <h5 class="mb-0"><i class="bi bi-code-square"></i> Django Framework</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -69,69 +30,17 @@
                                 <dd class="col-sm-8">
                                     {% if debug_mode %}
                                         <span class="badge bg-warning text-dark">
-                                            <i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Enabled
+                                            <i class="bi bi-exclamation-triangle"></i> Enabled
                                         </span>
                                     {% else %}
                                         <span class="badge bg-success">
-                                            <i aria-hidden="true" class="bi bi-check-circle"></i> Disabled
+                                            <i class="bi bi-check-circle"></i> Disabled
                                         </span>
                                     {% endif %}
                                 </dd>
                                 
-                                <dt class="col-sm-4">Database Engine:</dt>
+                                <dt class="col-sm-4">Database:</dt>
                                 <dd class="col-sm-8"><code>{{ database_engine }}</code></dd>
-                                <dt class="col-sm-4">Database Name:</dt>
-                                <dd class="col-sm-8"><code>{{ database_name }}</code></dd>
-                                <dt class="col-sm-4">Database Host:</dt>
-                                <dd class="col-sm-8"><code>{{ database_host }}</code></dd>
-                                <dt class="col-sm-4">Database Size:</dt>
-                                <dd class="col-sm-8"><code>{% if db_size %}{{ db_size }} bytes{% else %}N/A{% endif %}</code></dd>
-                                        <!-- Recent Migrations -->
-                                        <div class="card mb-4">
-                                            <div class="card-header bg-warning text-dark">
-                                                <h5 class="mb-0"><i aria-hidden="true" class="bi bi-arrow-repeat"></i> Recent Migrations</h5>
-                                            </div>
-                                            <div class="card-body">
-                                                {% if migrations_error %}
-                                                    <div class="alert alert-danger mb-2"><strong>Error:</strong> {{ migrations_error }}</div>
-                                                {% endif %}
-                                                <ul class="list-group">
-                                                    {% for mig in recent_migrations %}
-                                                        <li class="list-group-item">
-                                                            <strong>{{ mig.0 }}</strong>: <code>{{ mig.1 }}</code> <span class="text-muted">({{ mig.2 }})</span>
-                                                        </li>
-                                                    {% empty %}
-                                                        <li class="list-group-item">No recent migrations found.</li>
-                                                    {% endfor %}
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        <!-- Warnings and Errors -->
-                                        {% if warnings or errors %}
-                                        <div class="card mb-4">
-                                            <div class="card-header bg-danger text-white">
-                                                <h5 class="mb-0"><i aria-hidden="true" class="bi bi-exclamation-diamond"></i> Warnings & Errors</h5>
-                                            </div>
-                                            <div class="card-body">
-                                                {% if warnings %}
-                                                    <div class="mb-2"><strong>Warnings:</strong></div>
-                                                    <ul>
-                                                    {% for w in warnings %}
-                                                        <li class="text-warning">{{ w }}</li>
-                                                    {% endfor %}
-                                                    </ul>
-                                                {% endif %}
-                                                {% if errors %}
-                                                    <div class="mb-2"><strong>Errors:</strong></div>
-                                                    <ul>
-                                                    {% for e in errors %}
-                                                        <li class="text-danger">{{ e }}</li>
-                                                    {% endfor %}
-                                                    </ul>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                        {% endif %}
                             </dl>
                         </div>
                         <div class="col-md-6">
@@ -144,12 +53,9 @@
                                 
                                 <dt class="col-sm-4">Secret Key:</dt>
                                 <dd class="col-sm-8">
-                                    <span id="secret-key" class="text-muted" style="letter-spacing:2px;">
-                                        ••••••••••••••••
+                                    <span class="text-muted">
+                                        <i class="bi bi-shield-lock-fill"></i> ••••••••••••••••
                                     </span>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleSecretKey()" title="Show/Hide Secret Key">
-                                        <i aria-hidden="true" class="bi bi-eye"></i>
-                                    </button>
                                 </dd>
                             </dl>
                         </div>
@@ -160,7 +66,7 @@
             <!-- Python Information -->
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i aria-hidden="true" class="bi bi-file-code"></i> Python Runtime</h5>
+                    <h5 class="mb-0"><i class="bi bi-file-code"></i> Python Runtime</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -186,7 +92,7 @@
             <!-- System Information -->
             <div class="card mb-4">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i aria-hidden="true" class="bi bi-laptop"></i> Operating System</h5>
+                    <h5 class="mb-0"><i class="bi bi-laptop"></i> Operating System</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -215,7 +121,7 @@
             <!-- Installed Apps -->
             <div class="card mb-4">
                 <div class="card-header bg-secondary text-white">
-                    <h5 class="mb-0"><i aria-hidden="true" class="bi bi-app-indicator"></i> Installed Django Apps</h5>
+                    <h5 class="mb-0"><i class="bi bi-app-indicator"></i> Installed Django Apps</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -231,7 +137,7 @@
             <!-- Middleware -->
             <div class="card mb-4">
                 <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i aria-hidden="true" class="bi bi-layers"></i> Middleware Stack</h5>
+                    <h5 class="mb-0"><i class="bi bi-layers"></i> Middleware Stack</h5>
                 </div>
                 <div class="card-body">
                     <ol class="list-group list-group-numbered">
@@ -282,37 +188,4 @@
         </div>
     </div>
 </div>
-<script>
-function toggleSecretKey() {
-    var el = document.getElementById('secret-key');
-    if (el.textContent.includes('•')) {
-        el.textContent = "{{ secret_key }}";
-    } else {
-        el.textContent = '••••••••••••••••';
-    }
-}
-
-// Real-time uptime counter
-let uptimeRaw = "{{ uptime_seconds }}";
-let uptimeSeconds = parseInt(uptimeRaw, 10);
-function formatUptime(seconds) {
-    if (isNaN(seconds)) return 'N/A';
-    let d = Math.floor(seconds / 86400);
-    let h = Math.floor((seconds % 86400) / 3600);
-    let m = Math.floor((seconds % 3600) / 60);
-    let s = seconds % 60;
-    let parts = [];
-    if (d > 0) parts.push(d + 'd');
-    if (h > 0 || d > 0) parts.push(h + 'h');
-    if (m > 0 || h > 0 || d > 0) parts.push(m + 'm');
-    parts.push(s + 's');
-    return parts.join(' ');
-}
-function updateUptime() {
-    document.getElementById('uptime-counter').textContent = formatUptime(uptimeSeconds);
-    if (!isNaN(uptimeSeconds)) uptimeSeconds++;
-}
-updateUptime();
-setInterval(updateUptime, 1000);
-</script>
 {% endblock %}

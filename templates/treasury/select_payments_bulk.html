@@ -8,7 +8,7 @@
 <div class="container-fluid mt-4">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-money-check-alt" aria-hidden="true"></i> {{ title }}</h2>
+        <h2><i class="fas fa-money-check-alt"></i> {{ title }}</h2>
     </div>
 
     <!-- Summary Cards -->
@@ -17,7 +17,7 @@
             <div class="card border-info">
                 <div class="card-body">
                     <h5 class="card-title text-info">
-                        <i class="fas fa-list-ol" aria-hidden="true"></i> Pending Payments
+                        <i class="fas fa-list-ol"></i> Pending Payments
                     </h5>
                     <h2 class="mb-0">{{ total_count }}</h2>
                     <small class="text-muted">Approved requisitions awaiting payment</small>
@@ -28,7 +28,7 @@
             <div class="card border-warning">
                 <div class="card-body">
                     <h5 class="card-title text-warning">
-                        <i class="fas fa-coins" aria-hidden="true"></i> Total Amount
+                        <i class="fas fa-coins"></i> Total Amount
                     </h5>
                     <h2 class="mb-0">{% currency_format total_amount %}</h2>
                     <small class="text-muted">Total pending payments</small>
@@ -39,7 +39,7 @@
 
     <!-- Instructions -->
     <div class="alert alert-info">
-        <strong><i class="fas fa-info-circle" aria-hidden="true"></i> Instructions:</strong>
+        <strong><i class="fas fa-info-circle"></i> Instructions:</strong>
         <ol class="mb-0 mt-2">
             <li>Review approved requisitions below</li>
             <li>Select payments to process (one, few, or all)</li>
@@ -53,7 +53,7 @@
         <!-- Filters -->
         <div class="card mb-4">
             <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="fas fa-filter" aria-hidden="true"></i> Filter Payments</h6>
+                <h6 class="mb-0"><i class="fas fa-filter"></i> Filter Payments</h6>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -90,7 +90,7 @@
         <!-- Requisitions Table -->
         <div class="card">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-table" aria-hidden="true"></i> Approved Requisitions</h5>
+                <h5 class="mb-0"><i class="fas fa-table"></i> Approved Requisitions</h5>
                 <div>
                     <button type="button" class="btn btn-sm btn-light" onclick="selectAll()">
                         <i aria-hidden="true" class="fas fa-check-square"></i> Select All
@@ -127,7 +127,7 @@
                                 </td>
                                 <td>{{ req.approval_date|date:"Y-m-d" }}</td>
                                 <td>
-                                    <i class="fas fa-user" aria-hidden="true"></i>
+                                    <i class="fas fa-user"></i>
                                     {{ req.requested_by.get_full_name|default:req.requested_by.username }}
                                 </td>
                                 <td>
@@ -139,7 +139,7 @@
                                 <td>{{ req.purpose|default:req.description|truncatewords:10 }}</td>
                                 <td>
                                     {% if req.requested_by.phone_number %}
-                                        <i class="fas fa-mobile-alt text-success" aria-hidden="true"></i>
+                                        <i class="fas fa-mobile-alt text-success"></i>
                                         {{ req.requested_by.phone_number }}
                                     {% else %}
                                         <span class="badge bg-danger">No phone</span>
@@ -150,7 +150,7 @@
                             {% empty %}
                             <tr>
                                 <td colspan="7" class="text-center text-muted py-4">
-                                    <i class="fas fa-inbox fa-2x mb-2" aria-hidden="true"></i>
+                                    <i class="fas fa-inbox fa-2x mb-2"></i>
                                     <p>No approved requisitions awaiting payment</p>
                                 </td>
                             </tr>
@@ -177,13 +177,13 @@
                                     formaction="{% url 'treasury:generate_mpesa_bulk' %}"
                                     class="btn btn-success"
                                     onclick="return validateSelection('download Excel file')">
-                                <i class="fas fa-file-excel" aria-hidden="true"></i> Download Excel File
+                                <i class="fas fa-file-excel"></i> Download Excel File
                             </button>
                             <button type="submit" 
                                     formaction="{% url 'treasury:send_to_mpesa_api' %}"
                                     class="btn btn-primary"
                                     onclick="return validateSelection('send to M-Pesa API')">
-                                <i class="fas fa-paper-plane" aria-hidden="true"></i> Send to M-Pesa API
+                                <i class="fas fa-paper-plane"></i> Send to M-Pesa API
                             </button>
                         </div>
                     </div>

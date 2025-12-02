@@ -29,19 +29,22 @@ class IPWhitelistMiddleware:
         ]
     
     def __call__(self, request):
-        # Check if IP whitelisting is enabled (dynamic)
-        ip_whitelist_enabled = get_setting('ENABLE_IP_WHITELIST', 'false') == 'true'
-        allowed_ips = get_setting('ALLOWED_IP_ADDRESSES', '').split(',')
-
-        if ip_whitelist_enabled:
+        # Check if IP whitelisting is enabled
+        ip_whitelist_enabled = get_setting('ENABLE_IP_WHITELIST', 'false')
+        
+        if ip_whitelist_enabled == 'true':
+            # Get client IP address
             client_ip = self.get_client_ip(request)
+            
+            # Check if URL is exempt
             if not self.is_exempt_url(request.path):
-                if client_ip not in allowed_ips or not client_ip:
+                # Check if IP is whitelisted
+                if not self.is_ip_allowed(client_ip):
                     return HttpResponseForbidden(
                         f"""
                         <html>
                         <head><title>Access Denied</title></head>
-                        <body style=\"font-family: Arial; text-align: center; margin-top: 100px;\">
+                        <body style="font-family: Arial; text-align: center; margin-top: 100px;">
                             <h1>🚫 Access Denied</h1>
                             <p>Your IP address ({client_ip}) is not authorized to access this system.</p>
                             <p>Please contact your system administrator.</p>
@@ -51,6 +54,7 @@ class IPWhitelistMiddleware:
                         </html>
                         """
                     )
+        
         response = self.get_response(request)
         return response
     

@@ -39,52 +39,20 @@ class AlertService:
             related_variance=related_variance,
         )
         
-        # Wire notification settings from SystemSetting
-        from settings_manager.models import get_setting
-        # Determine notification type and setting key
-        notification_map = {
-            'fund_critical': ('FUND_CRITICAL_EMAIL_NOTIFICATIONS', 'FUND_CRITICAL_ALERT_RECIPIENTS'),
-            'fund_low': ('FUND_LOW_EMAIL_NOTIFICATIONS', 'FUND_LOW_ALERT_RECIPIENTS'),
-            'payment_failed': ('PAYMENT_EMAIL_NOTIFICATIONS', 'PAYMENT_ALERT_RECIPIENTS'),
-            'payment_timeout': ('PAYMENT_EMAIL_NOTIFICATIONS', 'PAYMENT_ALERT_RECIPIENTS'),
-            'otp_expired': ('PAYMENT_EMAIL_NOTIFICATIONS', 'PAYMENT_ALERT_RECIPIENTS'),
-            'variance_pending': ('APPROVAL_EMAIL_NOTIFICATIONS', 'APPROVAL_ALERT_RECIPIENTS'),
-            'replenishment_auto': ('PAYMENT_EMAIL_NOTIFICATIONS', 'PAYMENT_ALERT_RECIPIENTS'),
-            'approval_escalation': ('APPROVAL_ESCALATION_EMAIL_NOTIFICATIONS', 'APPROVAL_ESCALATION_ALERT_RECIPIENTS'),
-            'sla_breach': ('SLA_BREACH_EMAIL_NOTIFICATIONS', 'SLA_BREACH_ALERT_RECIPIENTS'),
-            'overdue': ('SEND_OVERDUE_ALERTS', 'OVERDUE_ALERT_RECIPIENTS'),
-            'critical_overdue': ('SEND_CRITICAL_OVERDUE_ALERTS', 'CRITICAL_OVERDUE_ALERT_RECIPIENTS'),
-            'security_alert': ('SECURITY_ALERT_EMAIL_NOTIFICATIONS', 'SECURITY_ALERT_RECIPIENTS'),
-            'fraud_alert': ('FRAUD_ALERT_EMAIL_NOTIFICATIONS', 'FRAUD_ALERT_RECIPIENTS'),
-            'system_maintenance': ('SYSTEM_MAINTENANCE_EMAIL_NOTIFICATIONS', 'SYSTEM_MAINTENANCE_ALERT_RECIPIENTS'),
-        }
-        notif_type = alert_type if alert_type in notification_map else None
-        send_email = True
-        recipients = notify_emails if notify_emails else []
-        if notif_type:
-            notif_setting_key, recipient_setting_key = notification_map[notif_type]
-            send_email = get_setting(notif_setting_key, True)
-            recipient_str = get_setting(recipient_setting_key, None)
-            if recipient_str:
-                recipients = [e.strip() for e in recipient_str.split(',') if e.strip()]
-        if send_email and recipients:
-            AlertService.send_alert_email(alert, recipients)
+        # Send email notification if emails provided
+        if notify_emails:
+            AlertService.send_alert_email(alert, notify_emails)
         
         return alert
     
     @staticmethod
     def check_fund_critical(fund):
         """
-        Check if fund balance is critical based on configured alert percentage.
+        Check if fund balance is critical (< 80% of reorder level).
         Create alert if critical and no existing unresolved alert.
         """
-        from settings_manager.models import get_setting
-        
-        # Get alert percentage from settings
-        alert_percentage = Decimal(get_setting('TREASURY_LOW_BALANCE_ALERT_PERCENTAGE', '100'))
-        threshold = fund.reorder_level * (alert_percentage / 100)
-        
-        if fund.current_balance < threshold:
+        # Use Decimal arithmetic to avoid mixing Decimal and float
+        if fund.current_balance < (fund.reorder_level * Decimal('0.8')):
             # Check for existing unresolved alert
             existing = Alert.objects.filter(
                 alert_type='fund_critical',
@@ -97,7 +65,7 @@ class AlertService:
                     alert_type='fund_critical',
                     severity='Critical',
                     title=f'Fund Balance Critical: {fund.company.name} - {fund}',
-                    message=f'Fund balance {float(fund.current_balance)} is below {alert_percentage}% of reorder level {float(fund.reorder_level)}',
+                    message=f'Fund balance {float(fund.current_balance)} is below 80% of reorder level {float(fund.reorder_level)}',
                     related_fund=fund,
                     notify_emails=['treasury@company.com', 'finance@company.com']
                 )
@@ -106,15 +74,11 @@ class AlertService:
     @staticmethod
     def check_fund_low(fund):
         """
-        Check if fund balance is low based on configured alert threshold.
+        Check if fund balance is low (< reorder level but > 80%).
         Create alert if low and no existing unresolved alert.
         """
-        from settings_manager.models import get_setting
-        
-        # Get alert threshold from settings
-        alert_threshold = Decimal(get_setting('LOW_BALANCE_ALERT_THRESHOLD', '50000'))
-        
-        if fund.current_balance < alert_threshold:
+        if (fund.current_balance < fund.reorder_level) and \
+           (fund.current_balance >= (fund.reorder_level * Decimal('0.8'))):
             # Check for existing unresolved alert
             existing = Alert.objects.filter(
                 alert_type='fund_low',
@@ -127,7 +91,7 @@ class AlertService:
                     alert_type='fund_low',
                     severity='High',
                     title=f'Fund Balance Low: {fund.company.name} - {fund}',
-                    message=f'Fund balance {float(fund.current_balance)} is below alert threshold {float(alert_threshold)}. Consider replenishment.',
+                    message=f'Fund balance {float(fund.current_balance)} is below reorder level {float(fund.reorder_level)}. Consider replenishment.',
                     related_fund=fund,
                     notify_emails=['finance-manager@company.com']
                 )

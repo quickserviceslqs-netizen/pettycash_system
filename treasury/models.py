@@ -118,17 +118,6 @@ class Payment(models.Model):
     method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, default='mpesa')
     destination = models.CharField(max_length=255, help_text="Phone number, account, or recipient name")
     description = models.TextField(blank=True, null=True, help_text="Purpose of payment")
-    # Snapshot of requisition-critical fields at payment creation time
-    snapshot_amount = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True,
-                                          help_text="Immutable copy of requisition.amount at payment creation")
-    snapshot_destination = models.CharField(max_length=255, blank=True, null=True,
-                                            help_text="Immutable copy of destination at payment creation")
-    snapshot_description = models.TextField(blank=True, null=True,
-                                            help_text="Immutable copy of description/purpose at payment creation")
-    snapshot_company = models.ForeignKey(Company, on_delete=models.SET_NULL, null=True, blank=True,
-                                         related_name='snapshot_payments')
-    snapshot_branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True,
-                                        related_name='snapshot_payments')
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     

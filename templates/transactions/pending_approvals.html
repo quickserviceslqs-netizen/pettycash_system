@@ -161,7 +161,7 @@
                                     <span class="badge bg-warning text-dark ms-1">HIGH</span>
                                 {% endif %}
                             </td>
-                            <td>{{ req.purpose|truncatewords:5 }}</td>
+                            <td>{{ req.description|truncatewords:5 }}</td>
                             <td>
                                 {% if req.status == 'pending' %}
                                     <span class="badge bg-warning">Pending</span>

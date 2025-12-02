@@ -10,9 +10,6 @@ urlpatterns = [
     path('edit/<int:setting_id>/', views.edit_setting, name='edit_setting'),
     path('activity-logs/', views.activity_logs, name='activity_logs'),
     path('system-info/', views.system_info, name='system_info'),
-    path('category/<str:category_key>/', views.category_detail, name='category_detail'),
-    # Maintenance management
-    path('maintenance/', views.maintenance_manage, name='maintenance'),
     
     # Activity Log Management (Admin)
     path('admin/activity-logs/', views_admin.view_activity_logs, name='admin_activity_logs'),

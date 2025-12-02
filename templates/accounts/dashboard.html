@@ -4,536 +4,294 @@
 {% block title %}Dashboard - Petty Cash System{% endblock %}
 
 {% block content %}
-<!-- Welcome Header -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm bg-gradient-primary text-white">
-            <div class="card-body p-4">
-                <div class="row align-items-center">
-                    <div class="col-lg-8">
-                        <h1 class="display-6 mb-2">
-                            <i aria-hidden="true" class="bi bi-house-door me-3"></i>Welcome back, {{ user.get_display_name }}!
-                        </h1>
-                        <p class="mb-0 opacity-75">
-                            <strong>Role:</strong> {{ user_role|title }}
-                            {% if is_centralized %}
-                                <span class="badge bg-light text-primary ms-3">
-                                    <i aria-hidden="true" class="bi bi-globe me-1"></i>{{ scope_label }}
-                                </span>
-                            {% else %}
-                                <span class="badge bg-secondary ms-3">
-                                    <i aria-hidden="true" class="bi bi-building me-1"></i>{{ scope_label }}
-                                </span>
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="col-lg-4 text-end">
-                        <div class="d-flex justify-content-end gap-2">
-                            <div class="text-white-50 small">
-                                <i aria-hidden="true" class="bi bi-calendar me-1"></i>{{ current_date|default:"Today" }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<div style="max-width:1200px; margin:0 auto;">
 
-<!-- No Apps Assigned Alert -->
-{% if show_no_apps_cta %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="alert alert-warning border-0 shadow-sm">
-            <div class="d-flex align-items-center">
-                <i aria-hidden="true" class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
-                <div>
-                    <h6 class="alert-heading mb-1">No Applications Assigned</h6>
-                    <p class="mb-0">You currently have no applications assigned to your account. Please contact your system administrator to get access to the required modules.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
+    <!-- Welcome Section -->
+    <section style="margin-bottom:30px; text-align:center;">
+        <h2 style="font-size:1.8rem; margin-bottom:5px;">Welcome, {{ user.get_display_name }}!</h2>
+        <p style="color:#666; margin-top:5px;">
+            <strong>Role:</strong> {{ user_role|title }} 
+            {% if is_centralized %}
+                <span style="display:inline-block; margin-left:10px; padding:4px 12px; background:#17a2b8; color:#fff; border-radius:12px; font-size:0.85rem; font-weight:bold;">
+                    🌐 {{ scope_label }}
+                </span>
+            {% else %}
+                <span style="display:inline-block; margin-left:10px; padding:4px 12px; background:#6c757d; color:#fff; border-radius:12px; font-size:0.85rem;">
+                    🏢 {{ scope_label }}
+                </span>
+            {% endif %}
+        </p>
+    </section>
 
-<!-- Application Navigation Cards -->
-{% if navigation %}
-<div class="row mb-5">
-    <div class="col-12">
-        <h3 class="mb-4">
-            <i aria-hidden="true" class="bi bi-grid-3x3-gap me-2 text-primary"></i>Available Applications
-        </h3>
-        <div class="row g-3">
-            {% for app in navigation %}
-            <div class="col-xl-3 col-lg-4 col-md-6">
-                <div class="card h-100 border-0 shadow-sm hover-lift">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            {% if app.name == 'Transactions' %}
-                                <i aria-hidden="true" class="bi bi-file-earmark-text display-4 text-primary"></i>
-                            {% elif app.name == 'Treasury' %}
-                                <i aria-hidden="true" class="bi bi-piggy-bank display-4 text-success"></i>
-                            {% elif app.name == 'Workflow' %}
-                                <i aria-hidden="true" class="bi bi-arrow-repeat display-4 text-info"></i>
-                            {% elif app.name == 'Reports' %}
-                                <i aria-hidden="true" class="bi bi-graph-up display-4 text-warning"></i>
-                            {% else %}
-                                <i aria-hidden="true" class="bi bi-app display-4 text-secondary"></i>
-                            {% endif %}
-                        </div>
-                        <h5 class="card-title mb-3">{{ app.name }}</h5>
-                        <a href="{{ app.url }}" class="btn btn-primary btn-sm px-4 py-2">
-                            <i aria-hidden="true" class="bi bi-arrow-right-circle me-2"></i>Access {{ app.name }}
-                        </a>
-                    </div>
-                </div>
+    <!-- No Apps Assigned Message -->
+    {% if show_no_apps_cta %}
+        <div style="padding:15px; background:#fff3cd; border:1px solid #ffeeba; color:#856404; border-radius:5px; text-align:center; margin-bottom:30px;">
+            You currently have no apps assigned. Please contact Admin.
+        </div>
+    {% endif %}
+
+    <!-- Dashboard Cards -->
+    {% if navigation %}
+    <section class="dashboard-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:40px;">
+        {% for app in navigation %}
+            <div class="card" style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.05); text-align:center;">
+                <h3 style="margin-bottom:10px; font-size:1.2rem;">{{ app.name }}</h3>
+                <a href="{{ app.url }}" style="display:inline-block; margin-top:10px; padding:8px 12px; background:#007bff; color:#fff; text-decoration:none; border-radius:5px; transition:0.3s;">
+                    Go to {{ app.name }}
+                </a>
+            </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- Dashboard Stats -->
+    <h3 style="margin-bottom:15px; color:#333;">
+        My Dashboard Metrics
+    </h3>
+    <section class="dashboard-stats" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:40px;">
+        <!-- Personal Metrics: My Transactions -->
+        <div class="stat-card" style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#fff3cd; text-align:center;">
+            <h4 style="margin-bottom:10px; color:#856404;">My Pending Transactions</h4>
+            <p style="font-size:1.5rem; font-weight:bold; color:#856404;">{{ my_transactions_pending }}</p>
+            <p style="font-size:0.85rem; color:#856404; margin-top:5px;">Transactions I created</p>
+        </div>
+        
+        <!-- Personal Metrics: Pending My Approval -->
+        {% if is_approver and user_role != 'treasury' %}
+        <div class="stat-card" style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#d1ecf1; text-align:center;">
+            <h4 style="margin-bottom:10px; color:#0c5460;">Pending My Approval</h4>
+            <p style="font-size:1.5rem; font-weight:bold; color:#0c5460;">{{ pending_my_approval }}</p>
+            <p style="font-size:0.85rem; color:#0c5460; margin-top:5px;">Assigned to me</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Company-Wide Metrics (For Treasury, FP&A, CEO, Centralized Approvers) -->
+    {% if show_company_metrics %}
+    <h3 style="margin-bottom:15px; color:#333; border-top:2px solid #ddd; padding-top:30px;">
+        {% if user_role == 'treasury' %}
+            Treasury Overview
+        {% else %}
+            Company Overview
+        {% endif %}
+        <span style="font-size:0.9rem; color:#666; font-weight:normal;">
+            ({{ scope_label }})
+        </span>
+    </h3>
+    <section class="dashboard-stats" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:40px;">
+        {% if user_role == 'treasury' %}
+        <div class="stat-card" style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#d4edda; text-align:center;">
+            <h4 style="margin-bottom:10px; color:#155724;">Ready for Payment</h4>
+            <p style="font-size:1.5rem; font-weight:bold; color:#155724;">{{ ready_for_payment_count }}</p>
+            <p style="font-size:0.85rem; color:#155724; margin-top:5px;">Awaiting execution</p>
+        </div>
+        {% endif %}
+        
+        <div class="stat-card" style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#f8f9fa; text-align:center;">
+            <h4 style="margin-bottom:10px;">Total Pending Transactions</h4>
+            <p style="font-size:1.2rem; font-weight:bold;">{{ total_transactions_pending }}</p>
+        </div>
+        <div class="stat-card" style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#f8f9fa; text-align:center;">
+            <h4 style="margin-bottom:10px;">Workflow Overdue</h4>
+            <p style="font-size:1.2rem; font-weight:bold;">{{ workflow_overdue }}</p>
+        </div>
+        <div class="stat-card" style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#f8f9fa; text-align:center;">
+            <h4 style="margin-bottom:10px;">Reports Pending</h4>
+            <p style="font-size:1.2rem; font-weight:bold;">{{ reports_pending }}</p>
+        </div>
+    </section>
+    
+    <!-- Company Breakdown for Centralized Treasury -->
+    {% if company_breakdown %}
+    <div style="margin-top:20px; padding:15px; background:#e7f1ff; border:1px solid #0d6efd; border-radius:8px;">
+        <h4 style="margin-bottom:15px; color:#0d6efd;">Payments Ready by Company</h4>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:15px;">
+            {% for company in company_breakdown %}
+            <div style="padding:12px; background:#fff; border-radius:5px; text-align:center;">
+                <p style="font-weight:bold; margin-bottom:5px; color:#333;">{{ company.name }}</p>
+                <p style="font-size:1.3rem; font-weight:bold; color:#0d6efd;">{{ company.ready_for_payment }}</p>
+                <p style="font-size:0.8rem; color:#666;">ready to execute</p>
             </div>
             {% endfor %}
         </div>
     </div>
-</div>
-{% endif %}
+    {% endif %}
+    {% endif %}
 
-<!-- Personal Dashboard Metrics -->
-<div class="row mb-5">
-    <div class="col-12">
-        <h3 class="mb-4">
-            <i aria-hidden="true" class="bi bi-person-circle me-2 text-primary"></i>My Dashboard
-        </h3>
-        <div class="row g-3">
-            <!-- My Pending Transactions -->
-            <div class="col-xl-3 col-lg-4 col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <i aria-hidden="true" class="bi bi-clock-history display-4 text-warning"></i>
-                        </div>
-                        <h4 class="card-title h5 mb-2">My Pending Transactions</h4>
-                        <div class="display-6 fw-bold text-warning mb-2">{{ my_transactions_pending }}</div>
-                        <small class="text-muted">Transactions I created</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pending My Approval -->
-            {% if is_approver and user_role != 'treasury' %}
-            <div class="col-xl-3 col-lg-4 col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <i aria-hidden="true" class="bi bi-check-circle display-4 text-info"></i>
-                        </div>
-                        <h4 class="card-title h5 mb-2">Pending My Approval</h4>
-                        <div class="display-6 fw-bold text-info mb-2">{{ pending_my_approval }}</div>
-                        <small class="text-muted">Assigned to me</small>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<!-- Company-Wide Metrics -->
-{% if show_company_metrics %}
-<div class="row mb-5">
-    <div class="col-12">
-        <div class="d-flex align-items-center mb-4">
-            <h3 class="mb-0 me-3">
-                <i aria-hidden="true" class="bi bi-building me-2 text-success"></i>
-                {% if user_role == 'treasury' %}Treasury Overview{% else %}Company Overview{% endif %}
-            </h3>
-            <span class="badge bg-secondary">{{ scope_label }}</span>
-        </div>
-
-        <div class="row g-3">
-            {% if user_role == 'treasury' %}
-            <!-- Ready for Payment -->
-            <div class="col-xl-3 col-lg-4 col-md-6">
-                <div class="card border-0 shadow-sm h-100 bg-success bg-opacity-10 border-success">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <i aria-hidden="true" class="bi bi-credit-card display-4 text-success"></i>
-                        </div>
-                        <h4 class="card-title h5 mb-2 text-success">Ready for Payment</h4>
-                        <div class="display-6 fw-bold text-success mb-2">{{ ready_for_payment_count }}</div>
-                        <small class="text-success">Awaiting execution</small>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Total Pending Transactions -->
-            <div class="col-xl-3 col-lg-4 col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <i aria-hidden="true" class="bi bi-hourglass-split display-4 text-primary"></i>
-                        </div>
-                        <h4 class="card-title h5 mb-2">Total Pending</h4>
-                        <div class="display-6 fw-bold text-primary mb-2">{{ total_transactions_pending }}</div>
-                        <small class="text-muted">All transactions</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Workflow Overdue -->
-            <div class="col-xl-3 col-lg-4 col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <i aria-hidden="true" class="bi bi-exclamation-triangle display-4 text-danger"></i>
-                        </div>
-                        <h4 class="card-title h5 mb-2">Workflow Overdue</h4>
-                        <div class="display-6 fw-bold text-danger mb-2">{{ workflow_overdue }}</div>
-                        <small class="text-muted">Need attention</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Reports Pending -->
-            <div class="col-xl-3 col-lg-4 col-md-6">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <i aria-hidden="true" class="bi bi-file-earmark-bar-graph display-4 text-info"></i>
-                        </div>
-                        <h4 class="card-title h5 mb-2">Reports Pending</h4>
-                        <div class="display-6 fw-bold text-info mb-2">{{ reports_pending }}</div>
-                        <small class="text-muted">Outstanding reports</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Company Breakdown for Centralized Treasury -->
-{% if company_breakdown %}
-<div class="row mb-5">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">
-                    <i aria-hidden="true" class="bi bi-diagram-3 me-2 text-primary"></i>Payments Ready by Company
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    {% for company in company_breakdown %}
-                    <div class="col-xl-3 col-lg-4 col-md-6">
-                        <div class="card h-100 border">
-                            <div class="card-body text-center">
-                                <h6 class="card-title mb-2">{{ company.name }}</h6>
-                                <div class="display-6 fw-bold text-primary mb-1">{{ company.ready_for_payment }}</div>
-                                <small class="text-muted">ready to execute</small>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Phase 4: Pending Approvals (Only for Non-Treasury Approvers) -->
+    {% if show_pending_section and user_role != 'treasury' %}
+    <section style="margin-bottom:40px;">
+        <h3 style="margin-bottom:20px;">Pending Approvals</h3>
+        {% if pending_for_user %}
+            <p>You have {{ pending_for_user|length }} requisition(s) pending your approval.</p>
+            <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                <thead>
+                    <tr style="background:#f1f1f1;">
+                        <th style="padding:10px; border:1px solid #ddd;">Transaction ID</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Requested By</th>
+                        {% if is_centralized %}
+                        <th style="padding:10px; border:1px solid #ddd;">Company</th>
+                        {% endif %}
+                        <th style="padding:10px; border:1px solid #ddd;">Amount</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in pending_for_user %}
+                    <tr>
+                        <td style="padding:10px; border:1px solid #ddd;">{{ req.transaction_id }}</td>
+                        <td style="padding:10px; border:1px solid #ddd;">{{ req.requested_by.get_display_name }}</td>
+                        {% if is_centralized %}
+                        <td style="padding:10px; border:1px solid #ddd;">
+                            <span style="padding:2px 8px; background:#6c757d; color:#fff; border-radius:3px; font-size:0.85rem;">
+                                {{ req.requested_by.company.name }}
+                            </span>
+                        </td>
+                        {% endif %}
+                        <td style="padding:10px; border:1px solid #ddd;">{{ req.amount }}</td>
+                        <td style="padding:10px; border:1px solid #ddd;">
+                            {% if req.requested_by.id != user.id %}
+                                <a href="{% url 'approve-requisition' req.transaction_id %}" style="margin-right:10px; padding:5px 10px; background:#28a745; color:#fff; text-decoration:none; border-radius:4px;">Approve</a>
+                                <a href="{% url 'reject-requisition' req.transaction_id %}" style="padding:5px 10px; background:#dc3545; color:#fff; text-decoration:none; border-radius:4px;">Reject</a>
+                            {% else %}
+                                <span style="color:#856404;">Cannot approve your own requisition</span>
+                            {% endif %}
+                        </td>
+                    </tr>
                     {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-{% endif %}
-
-<!-- Pending Approvals Section -->
-{% if show_pending_section and user_role != 'treasury' %}
-<div class="row mb-5">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i aria-hidden="true" class="bi bi-check-circle me-2 text-info"></i>Pending Approvals
-                </h5>
-                <span class="badge bg-info">{{ pending_for_user|length }}</span>
-            </div>
-            <div class="card-body p-0">
-                {% if pending_for_user %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="border-0 fw-semibold">
-                                    <i aria-hidden="true" class="bi bi-hash me-1"></i>Transaction ID
-                                </th>
-                                <th class="border-0 fw-semibold">
-                                    <i aria-hidden="true" class="bi bi-person me-1"></i>Requested By
-                                </th>
-                                {% if is_centralized %}
-                                <th class="border-0 fw-semibold">
-                                    <i aria-hidden="true" class="bi bi-building me-1"></i>Company
-                                </th>
-                                {% endif %}
-                                <th class="border-0 fw-semibold">
-                                    <i aria-hidden="true" class="bi bi-cash me-1"></i>Amount
-                                </th>
-                                <th class="border-0 fw-semibold text-center">
-                                    <i aria-hidden="true" class="bi bi-gear me-1"></i>Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for req in pending_for_user %}
-                            <tr>
-                                <td class="fw-mono">{{ req.transaction_id }}</td>
-                                <td>{{ req.requested_by.get_display_name }}</td>
-                                {% if is_centralized %}
-                                <td>
-                                    <span class="badge bg-secondary">{{ req.requested_by.company.name }}</span>
-                                </td>
-                                {% endif %}
-                                <td class="fw-bold text-success">{{ req.amount }}</td>
-                                <td class="text-center">
-                                    {% if req.requested_by.id != user.id %}
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'approve-requisition' req.transaction_id %}" class="btn btn-success">
-                                            <i aria-hidden="true" class="bi bi-check-lg"></i> Approve
-                                        </a>
-                                        <a href="{% url 'reject-requisition' req.transaction_id %}" class="btn btn-danger">
-                                            <i aria-hidden="true" class="bi bi-x-lg"></i> Reject
-                                        </a>
-                                    </div>
-                                    {% else %}
-                                    <span class="text-muted small">
-                                        <i aria-hidden="true" class="bi bi-shield-x me-1"></i>Cannot approve own
-                                    </span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <i aria-hidden="true" class="bi bi-check-circle-fill text-success display-4 mb-3"></i>
-                    <h5 class="text-muted">No Pending Approvals</h5>
-                    <p class="text-muted mb-0">All transactions have been processed.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Ready for Payment Section -->
-{% if show_payment_section %}
-<div class="row mb-5">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm border-start border-success border-4">
-            <div class="card-header bg-success bg-opacity-10 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-success">
-                    <i aria-hidden="true" class="bi bi-credit-card me-2"></i>Ready for Payment Execution
-                </h5>
-                <span class="badge bg-success">{{ ready_for_payment|length }}</span>
-            </div>
-            <div class="card-body p-0">
-                {% if ready_for_payment %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-success bg-opacity-50">
-                            <tr>
-                                <th class="border-0 fw-semibold">
-                                    <i aria-hidden="true" class="bi bi-hash me-1"></i>Transaction ID
-                                </th>
-                                <th class="border-0 fw-semibold">
-                                    <i aria-hidden="true" class="bi bi-person me-1"></i>Requested By
-                                </th>
-                                {% if is_centralized %}
-                                <th class="border-0 fw-semibold">
-                                    <i aria-hidden="true" class="bi bi-building me-1"></i>Company
-                                </th>
-                                {% endif %}
-                                <th class="border-0 fw-semibold">
-                                    <i aria-hidden="true" class="bi bi-cash me-1"></i>Amount (KES)
-                                </th>
-                                <th class="border-0 fw-semibold">
-                                    <i aria-hidden="true" class="bi bi-paperclip me-1"></i>Receipt
-                                </th>
-                                <th class="border-0 fw-semibold text-center">
-                                    <i aria-hidden="true" class="bi bi-play-circle me-1"></i>Action
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for req in ready_for_payment %}
-                            <tr>
-                                <td class="fw-mono">{{ req.transaction_id }}</td>
-                                <td>{{ req.requested_by.get_display_name }}</td>
-                                {% if is_centralized %}
-                                <td>
-                                    <span class="badge bg-secondary">{{ req.requested_by.company.name }}</span>
-                                </td>
-                                {% endif %}
-                                <td class="fw-bold text-success">{{ req.amount|floatformat:2 }}</td>
-                                <td>
-                                    {% if req.receipt %}
-                                    <a href="{{ req.receipt.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                        <i aria-hidden="true" class="bi bi-eye me-1"></i>View
-                                    </a>
-                                    {% else %}
-                                    <span class="badge bg-warning text-dark">
-                                        <i aria-hidden="true" class="bi bi-exclamation-triangle me-1"></i>Missing
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <a href="{% url 'requisition-detail' req.transaction_id %}" class="btn btn-success btn-sm">
-                                        <i aria-hidden="true" class="bi bi-play-fill me-1"></i>Execute Payment
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <i aria-hidden="true" class="bi bi-check-circle-fill text-success display-4 mb-3"></i>
-                    <h5 class="text-muted">No Payments Ready</h5>
-                    <p class="text-muted mb-0">All approved transactions have been processed.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Admin & User Management Section -->
-{% if show_admin_section %}
-<div class="row mb-5">
-    <div class="col-12">
-        <h3 class="mb-4">
-            <i aria-hidden="true" class="bi bi-shield-check me-2 text-danger"></i>Admin & User Management
-        </h3>
-
-        <!-- User Management Stats -->
-        <div class="row g-3 mb-4">
-            <div class="col-xl-4 col-lg-6">
-                <div class="card border-0 shadow-sm h-100 border-start border-primary border-4">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <i aria-hidden="true" class="bi bi-people display-4 text-primary"></i>
-                        </div>
-                        <h4 class="card-title h5 mb-2 text-primary">Total Users</h4>
-                        <div class="display-6 fw-bold text-primary mb-2">{{ total_users }}</div>
-                        <a href="{% url 'accounts:manage_users' %}" class="btn btn-primary btn-sm">
-                            <i aria-hidden="true" class="bi bi-gear me-1"></i>Manage Users
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-4 col-lg-6">
-                <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <i aria-hidden="true" class="bi bi-person-check display-4 text-success"></i>
-                        </div>
-                        <h4 class="card-title h5 mb-2 text-success">Active Users</h4>
-                        <div class="display-6 fw-bold text-success mb-2">{{ active_users }}</div>
-                        <small class="text-success">Can login to system</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-4 col-lg-6">
-                <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <i aria-hidden="true" class="bi bi-envelope-exclamation display-4 text-warning"></i>
-                        </div>
-                        <h4 class="card-title h5 mb-2 text-warning">Pending Invitations</h4>
-                        <div class="display-6 fw-bold text-warning mb-2">{{ pending_invitations }}</div>
-                        <a href="{% url 'accounts:manage_invitations' %}" class="btn btn-warning btn-sm">
-                            <i aria-hidden="true" class="bi bi-eye me-1"></i>View Invitations
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Admin Actions -->
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">
-                    <i aria-hidden="true" class="bi bi-lightning-charge me-2 text-warning"></i>Quick Admin Actions
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-xl-3 col-lg-4 col-md-6">
-                        <a href="{% url 'accounts:manage_users' %}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center py-3">
-                            <i aria-hidden="true" class="bi bi-people me-2 fs-5"></i>
-                            <span>Manage Users</span>
-                        </a>
-                    </div>
-                    <div class="col-xl-3 col-lg-4 col-md-6">
-                        <a href="{% url 'accounts:bulk_import' %}" class="btn btn-success w-100 d-flex align-items-center justify-content-center py-3">
-                            <i aria-hidden="true" class="bi bi-file-earmark-arrow-up me-2 fs-5"></i>
-                            <span>Bulk Import Users</span>
-                        </a>
-                    </div>
-                    <div class="col-xl-3 col-lg-4 col-md-6">
-                        <a href="{% url 'organization:import_organizations' %}" class="btn btn-info w-100 d-flex align-items-center justify-content-center py-3">
-                            <i aria-hidden="true" class="bi bi-building me-2 fs-5"></i>
-                            <span>Import Organizations</span>
-                        </a>
-                    </div>
-                    <div class="col-xl-3 col-lg-4 col-md-6">
-                        <a href="{% url 'accounts:manage_invitations' %}" class="btn btn-warning w-100 d-flex align-items-center justify-content-center py-3">
-                            <i aria-hidden="true" class="bi bi-envelope me-2 fs-5"></i>
-                            <span>Manage Invitations</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Users by Role Chart -->
-        {% if users_by_role %}
-        <div class="card border-0 shadow-sm mt-4">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">
-                    <i aria-hidden="true" class="bi bi-bar-chart me-2 text-info"></i>Users by Role (Top 5)
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="fw-semibold">
-                                    <i aria-hidden="true" class="bi bi-person-badge me-1"></i>Role
-                                </th>
-                                <th class="fw-semibold text-end">
-                                    <i aria-hidden="true" class="bi bi-hash me-1"></i>Count
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for role_stat in users_by_role %}
-                            <tr>
-                                <td class="fw-medium">{{ role_stat.role|title }}</td>
-                                <td class="text-end">
-                                    <span class="badge bg-primary fs-6 px-3 py-2">{{ role_stat.count }}</span>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+                </tbody>
+            </table>
+        {% else %}
+            <p>No requisitions pending your approval.</p>
         {% endif %}
-    </div>
-</div>
-{% endif %}
+    </section>
+    {% endif %}
 
+    <!-- Ready for Payment Section (Treasury Only) -->
+    {% if show_payment_section %}
+    <section style="margin-top:30px; padding:20px; border:1px solid #0d6efd; border-radius:8px; background:#e7f1ff;">
+        <h3 style="margin-bottom:20px; color:#0d6efd;">Ready for Payment Execution</h3>
+        {% if ready_for_payment %}
+            <p style="margin-bottom:15px;">You have {{ ready_for_payment|length }} requisition(s) ready for payment execution.</p>
+            <table style="width:100%; border-collapse:collapse; background:#fff;">
+                <thead style="background:#0d6efd; color:#fff;">
+                    <tr>
+                        <th style="padding:10px; border:1px solid #ddd; text-align:left;">Transaction ID</th>
+                        <th style="padding:10px; border:1px solid #ddd; text-align:left;">Requested By</th>
+                        {% if is_centralized %}
+                        <th style="padding:10px; border:1px solid #ddd; text-align:left;">Company</th>
+                        {% endif %}
+                        <th style="padding:10px; border:1px solid #ddd; text-align:left;">Amount (KES)</th>
+                        <th style="padding:10px; border:1px solid #ddd; text-align:left;">Receipt</th>
+                        <th style="padding:10px; border:1px solid #ddd; text-align:left;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in ready_for_payment %}
+                    <tr>
+                        <td style="padding:10px; border:1px solid #ddd;">{{ req.transaction_id }}</td>
+                        <td style="padding:10px; border:1px solid #ddd;">{{ req.requested_by.get_display_name }}</td>
+                        {% if is_centralized %}
+                        <td style="padding:10px; border:1px solid #ddd;">
+                            <span style="padding:2px 8px; background:#6c757d; color:#fff; border-radius:3px; font-size:0.85rem;">
+                                {{ req.requested_by.company.name }}
+                            </span>
+                        </td>
+                        {% endif %}
+                        <td style="padding:10px; border:1px solid #ddd;">{{ req.amount|floatformat:2 }}</td>
+                        <td style="padding:10px; border:1px solid #ddd;">
+                            {% if req.receipt %}
+                                <a href="{{ req.receipt.url }}" target="_blank" style="color:#0d6efd; text-decoration:none;">📎 View</a>
+                            {% else %}
+                                <span style="color:#dc3545;">⚠️ None</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding:10px; border:1px solid #ddd;">
+                            <a href="{% url 'requisition-detail' req.transaction_id %}" style="margin-right:10px; padding:5px 10px; background:#0d6efd; color:#fff; text-decoration:none; border-radius:4px; font-weight:bold;">Execute Payment</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No requisitions ready for payment.</p>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <!-- Admin/Staff User Management Section -->
+    {% if show_admin_section %}
+    <h3 style="margin-bottom:15px; color:#333; border-top:2px solid #ddd; padding-top:30px;">
+        <i class="bi bi-shield-fill-check"></i> Admin & User Management
+    </h3>
+    <section class="dashboard-stats" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:30px;">
+        <div class="stat-card" style="padding:20px; border:1px solid #0d6efd; border-radius:8px; background:#cfe2ff; text-align:center;">
+            <h4 style="margin-bottom:10px; color:#084298;">Total Users</h4>
+            <p style="font-size:1.5rem; font-weight:bold; color:#084298;">{{ total_users }}</p>
+            <a href="{% url 'accounts:manage_users' %}" style="display:inline-block; margin-top:10px; padding:6px 12px; background:#0d6efd; color:#fff; text-decoration:none; border-radius:4px; font-size:0.85rem;">
+                Manage Users
+            </a>
+        </div>
+        
+        <div class="stat-card" style="padding:20px; border:1px solid #198754; border-radius:8px; background:#d1e7dd; text-align:center;">
+            <h4 style="margin-bottom:10px; color:#0f5132;">Active Users</h4>
+            <p style="font-size:1.5rem; font-weight:bold; color:#0f5132;">{{ active_users }}</p>
+            <p style="font-size:0.85rem; color:#0f5132; margin-top:5px;">Can login</p>
+        </div>
+        
+        <div class="stat-card" style="padding:20px; border:1px solid #ffc107; border-radius:8px; background:#fff3cd; text-align:center;">
+            <h4 style="margin-bottom:10px; color:#664d03;">Pending Invitations</h4>
+            <p style="font-size:1.5rem; font-weight:bold; color:#664d03;">{{ pending_invitations }}</p>
+            <a href="{% url 'accounts:manage_invitations' %}" style="display:inline-block; margin-top:10px; padding:6px 12px; background:#ffc107; color:#000; text-decoration:none; border-radius:4px; font-size:0.85rem;">
+                View Invitations
+            </a>
+        </div>
+    </section>
+    
+    <!-- Quick Admin Actions -->
+    <div style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#f8f9fa; margin-bottom:30px;">
+        <h5 style="margin-bottom:15px;"><i class="bi bi-lightning-fill"></i> Quick Admin Actions</h5>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+            <a href="{% url 'accounts:manage_users' %}" class="btn btn-primary" style="display:block; padding:10px; background:#0d6efd; color:#fff; text-decoration:none; border-radius:5px; text-align:center;">
+                <i class="bi bi-people"></i> Manage Users
+            </a>
+            <a href="{% url 'accounts:bulk_import' %}" class="btn btn-success" style="display:block; padding:10px; background:#198754; color:#fff; text-decoration:none; border-radius:5px; text-align:center;">
+                <i class="bi bi-file-earmark-arrow-up"></i> Bulk Import Users
+            </a>
+            <a href="{% url 'organization:import_organizations' %}" class="btn btn-info" style="display:block; padding:10px; background:#0dcaf0; color:#000; text-decoration:none; border-radius:5px; text-align:center;">
+                <i class="bi bi-building"></i> Import Organizations
+            </a>
+            <a href="{% url 'accounts:manage_invitations' %}" class="btn btn-warning" style="display:block; padding:10px; background:#ffc107; color:#000; text-decoration:none; border-radius:5px; text-align:center;">
+                <i class="bi bi-envelope-fill"></i> Manage Invitations
+            </a>
+        </div>
+    </div>
+    
+    <!-- Top Users by Role -->
+    {% if users_by_role %}
+    <div style="padding:20px; border:1px solid #ddd; border-radius:8px; background:#fff; margin-bottom:30px;">
+        <h5 style="margin-bottom:15px;"><i class="bi bi-bar-chart-fill"></i> Users by Role (Top 5)</h5>
+        <table class="table table-sm" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr style="background:#f8f9fa;">
+                    <th style="padding:10px; text-align:left; border-bottom:2px solid #dee2e6;">Role</th>
+                    <th style="padding:10px; text-align:right; border-bottom:2px solid #dee2e6;">Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for role_stat in users_by_role %}
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid #dee2e6;">{{ role_stat.role|title }}</td>
+                    <td style="padding:10px; text-align:right; border-bottom:1px solid #dee2e6;">
+                        <span style="padding:3px 10px; background:#0d6efd; color:#fff; border-radius:12px; font-weight:bold;">{{ role_stat.count }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    {% endif %}
+
+</div>
 {% endblock %}

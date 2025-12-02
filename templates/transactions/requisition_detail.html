@@ -4,49 +4,33 @@
 {% block title %}Requisition Details - {{ requisition.transaction_id }}{% endblock %}
 
 {% block content %}
-
 <h2>Requisition Details</h2>
 
-<!-- Notification Area: Required Actions -->
-{% if user.id == requisition.requested_by.id and requisition.status == 'pending_changes' %}
-    <div style="padding:20px; background:#fff3cd; border-left:5px solid #ff9800; margin-bottom:20px; border-radius:5px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-        <h4 style="margin-top:0; color:#856404;">
-            <i aria-hidden="true" class="bi bi-pencil-square"></i> Action Required: Submit Changes
-        </h4>
-        <p style="margin-bottom:10px; color:#856404;">
-            Changes have been requested by <strong>{{ requisition.change_requested_by.get_full_name|default:requisition.change_requested_by.username }}</strong>.<br>
-            Please submit your changes before <strong>{{ requisition.change_request_deadline|date:"F d, Y - g:i A" }}</strong>.
-        </p>
-        <span style="font-size:0.95em; color:#856404;">
-            {% if requisition.change_request_deadline %}
-                {% if requisition.change_request_deadline > current_time %}
-                    <span id="deadline-countdown-1">{{ requisition.change_request_deadline|timeuntil }} remaining</span>
-                {% else %}
-                    <span style="color:#dc3545; font-weight:bold;">Deadline expired</span>
-                {% endif %}
-            {% endif %}
-        </span>
-    </div>
-{% elif user.id == requisition.next_approver.id and requisition.status == 'pending' %}
-    <div style="padding:20px; background:#e7f1ff; border-left:5px solid #0d6efd; margin-bottom:20px; border-radius:5px; box-shadow:0 2px 4px rgba(0,0,0,0.07);">
-        <h4 style="margin-top:0; color:#0d6efd;">
-            <i aria-hidden="true" class="bi bi-person-check"></i> Action Required: Approve or Request Changes
-        </h4>
-        <p style="margin-bottom:10px; color:#0d6efd;">
-            You are the next approver for this requisition.<br>
-            Please review and take action.
-        </p>
-    </div>
-{% elif can_execute_payment %}
-    <div style="padding:20px; background:#d1e7dd; border-left:5px solid #198754; margin-bottom:20px; border-radius:5px; box-shadow:0 2px 4px rgba(0,0,0,0.07);">
-        <h4 style="margin-top:0; color:#198754;">
-            <i aria-hidden="true" class="bi bi-cash-coin"></i> Action Required: Execute Payment
-        </h4>
-        <p style="margin-bottom:10px; color:#198754;">
-            This requisition is ready for payment execution.<br>
-            Please process the payment.
-        </p>
-    </div>
+<!-- Notification: Fast-Track Reverted (for requester) -->
+{% if user.id == requisition.requested_by.id %}
+    {% for trail in approval_trail %}
+        {% if trail.action == 'reverted_to_normal' %}
+            <div style="padding:20px; background:#fff3cd; border-left:5px solid #ffc107; margin-bottom:20px; border-radius:5px;">
+                <h4 style="margin-top:0; color:#856404;">
+                    <i aria-hidden="true" class="bi bi-exclamation-triangle-fill"></i> Fast-Track Approval Reverted
+                </h4>
+                <p style="margin-bottom:10px; color:#856404;">
+                    Your requisition was originally fast-tracked but has been <strong>reverted to normal approval flow</strong> by {{ trail.user.get_full_name|default:trail.user.username }}.
+                </p>
+                <div style="padding:12px; background:#fff; border:1px solid #ffc107; border-radius:3px; margin-top:10px;">
+                    <strong style="color:#856404;">Reason:</strong>
+                    <p style="margin:5px 0 0 0; color:#856404;">{{ trail.comment }}</p>
+                </div>
+                <p style="margin-top:12px; margin-bottom:0; color:#856404;">
+                    <strong>What this means:</strong> Your requisition will now go through all required approvers in the normal approval sequence. 
+                    Current next approver: <strong>{{ requisition.next_approver.get_full_name|default:"Pending assignment" }}</strong>
+                </p>
+                <small style="color:#6c757d; display:block; margin-top:8px;">
+                    <i aria-hidden="true" class="bi bi-clock"></i> Reverted on {{ trail.timestamp|date:"M d, Y - g:i A" }}
+                </small>
+            </div>
+        {% endif %}
+    {% endfor %}
 {% endif %}
 
 <!-- Notification: Changes Requested (for requester) -->
@@ -68,8 +52,9 @@
             <i aria-hidden="true" class="bi bi-clock-fill"></i> DEADLINE: {{ requisition.change_request_deadline|date:"F d, Y - g:i A" }}
             {% if requisition.change_request_deadline %}
                 <span style="font-size:0.9em; font-weight:normal;">
-                    ({% if requisition.change_request_deadline > current_time %}
-                        <span id="deadline-countdown-2">{{ requisition.change_request_deadline|timeuntil }} remaining</span>
+                    ({% now "U" as current_time %}
+                    {% if requisition.change_request_deadline|date:"U"|add:"0" > current_time %}
+                        {{ requisition.change_request_deadline|timeuntil }} remaining
                     {% else %}
                         EXPIRED
                     {% endif %})
@@ -78,7 +63,7 @@
         </div>
         
         <!-- Change Response Form -->
-        <form method="post" action="{% url 'transactions:submit-changes' requisition.transaction_id %}" enctype="multipart/form-data" style="margin-top:20px;">
+        <form method="post" action="{% url 'submit-changes' requisition.transaction_id %}" enctype="multipart/form-data" style="margin-top:20px;">
             {% csrf_token %}
             
             <div style="margin-bottom:15px;">
@@ -384,13 +369,13 @@
         <p style="color:#856404; margin-bottom:15px;">
             As the first approver, please confirm this request is genuinely urgent before it proceeds to fast-track approval.
         </p>
-        <form method="post" action="{% url 'transactions:confirm-urgency' requisition.transaction_id %}" style="display:inline;">
+        <form method="post" action="{% url 'confirm-urgency' requisition.transaction_id %}" style="display:inline;">
             {% csrf_token %}
             <button type="submit" style="padding:10px 15px; background:#ff9800; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">
                 ✓ Confirm Urgency & Approve
             </button>
         </form>
-        <form method="post" action="{% url 'transactions:reject-requisition' requisition.transaction_id %}" style="display:inline; margin-left:10px;">
+        <form method="post" action="{% url 'reject-requisition' requisition.transaction_id %}" style="display:inline; margin-left:10px;">
             {% csrf_token %}
             <button type="submit" style="padding:10px 15px; background:#dc3545; color:#fff; border:none; border-radius:5px; cursor:pointer;">
                 ✗ Reject (Not Urgent)
@@ -401,7 +386,7 @@
 
 <!-- Approve/Reject buttons: only visible if user can act and NOT pending urgency confirmation -->
 {% if can_act and requisition.status != 'pending_urgency_confirmation' %}
-    <form method="post" action="{% url 'transactions:approve-requisition' requisition.transaction_id %}" style="display:inline;">
+    <form method="post" action="{% url 'approve-requisition' requisition.transaction_id %}" style="display:inline;">
         {% csrf_token %}
         {% if user.role == 'treasury' %}
             <button type="submit" style="padding:10px 20px; background:#0d6efd; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">
@@ -419,7 +404,7 @@
         📝 Request Changes
     </button>
 
-    <form method="post" action="{% url 'transactions:reject-requisition' requisition.transaction_id %}" style="display:inline; margin-left:10px;">
+    <form method="post" action="{% url 'reject-requisition' requisition.transaction_id %}" style="display:inline; margin-left:10px;">
         {% csrf_token %}
         <button type="submit" style="padding:10px 15px; background:#dc3545; color:#fff; border:none; border-radius:5px; cursor:pointer;">
             Reject
@@ -443,7 +428,7 @@
             <p style="color:#856404; margin-bottom:10px;">
                 Use this only in emergency situations. This action bypasses normal approval workflow and is fully logged for audit.
             </p>
-            <form method="post" action="{% url 'transactions:admin-override' requisition.transaction_id %}" onsubmit="return confirm('Are you sure you want to override normal approval process? This action will be logged.');">
+            <form method="post" action="{% url 'admin-override' requisition.transaction_id %}" onsubmit="return confirm('Are you sure you want to override normal approval process? This action will be logged.');">
                 {% csrf_token %}
                 <textarea 
                     name="justification" 
@@ -481,11 +466,7 @@
                     {{ trail.timestamp|date:"M d, Y H:i" }}
                 </td>
                 <td style="padding:10px; border-bottom:1px solid #dee2e6;">
-                    {% if trail.user %}
-                        {{ trail.user.get_display_name }}
-                    {% else %}
-                        System
-                    {% endif %}
+                    {{ trail.user.get_display_name }}
                     {% if trail.auto_escalated %}
                         <span style="background:#ffc107; color:#000; padding:2px 6px; border-radius:3px; font-size:0.85em; margin-left:5px;">
                             ⚠ Auto-escalated
@@ -553,7 +534,7 @@
             </p>
         </div>
         
-        <form method="post" action="{% url 'transactions:revert-fast-track' requisition.transaction_id %}">
+        <form method="post" action="{% url 'revert-fast-track' requisition.transaction_id %}">
             {% csrf_token %}
             <div style="margin-bottom:20px;">
                 <label style="display:block; margin-bottom:8px; font-weight:bold; color:#495057;">
@@ -585,7 +566,7 @@
 
 <!-- Request Changes Modal -->
 <div id="requestChangesModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
-    <div style="background-color:#fff; margin:5% auto; padding:30px; border-radius:10px; width:90%; max-width:700px; max-height:90vh; overflow-y:auto; box-shadow:0 4px 6px rgba(0,0,0,0.3);">
+    <div style="background-color:#fff; margin:5% auto; padding:30px; border-radius:10px; width:90%; max-width:700px; box-shadow:0 4px 6px rgba(0,0,0,0.3);">
         <h3 style="margin-top:0; color:#ff9800;">
             <i aria-hidden="true" class="bi bi-pencil-square"></i> Request Changes from Requester
         </h3>
@@ -602,7 +583,7 @@
             </ul>
         </div>
         
-        <form method="post" action="{% url 'transactions:request-changes' requisition.transaction_id %}">
+        <form method="post" action="{% url 'request-changes' requisition.transaction_id %}">
             {% csrf_token %}
             <div style="margin-bottom:20px;">
                 <label style="display:block; margin-bottom:8px; font-weight:bold; color:#495057;">
@@ -643,37 +624,5 @@
         </form>
     </div>
 </div>
-
-{% if deadline_timestamp %}
-<script>
-    function updateCountdown() {
-        const now = Math.floor(Date.now() / 1000);
-        const remaining = {{ deadline_timestamp }} - now;
-        
-        if (remaining > 0) {
-            const days = Math.floor(remaining / 86400);
-            const hours = Math.floor((remaining % 86400) / 3600);
-            const minutes = Math.floor((remaining % 3600) / 60);
-            const seconds = remaining % 60;
-            
-            let timeStr = '';
-            if (days > 0) timeStr += days + 'd ';
-            if (hours > 0 || days > 0) timeStr += hours + 'h ';
-            timeStr += minutes + 'm ' + seconds + 's remaining';
-            
-            document.getElementById('deadline-countdown-1').textContent = timeStr;
-            const countdown2 = document.getElementById('deadline-countdown-2');
-            if (countdown2) countdown2.textContent = timeStr;
-        } else {
-            document.getElementById('deadline-countdown-1').innerHTML = '<span style="color:#dc3545; font-weight:bold;">Deadline expired</span>';
-            const countdown2 = document.getElementById('deadline-countdown-2');
-            if (countdown2) countdown2.textContent = 'EXPIRED';
-        }
-    }
-    
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-</script>
-{% endif %}
 
 {% endblock %}

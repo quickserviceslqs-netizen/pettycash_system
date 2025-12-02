@@ -64,7 +64,6 @@ urlpatterns = [
     path('invitations/<int:invitation_id>/revoke/', views_invitation.revoke_invitation, name='revoke_invitation'),
     path('invitations/<int:invitation_id>/resend/', views_invitation.resend_invitation, name='resend_invitation'),
     path('signup/<uuid:token>/', views_invitation.signup, name='signup'),
-    path('verify-email/<uuid:token>/', views_invitation.verify_email, name='verify_email'),
     
     # Bulk import
     path('bulk-import/', views_bulk_import.bulk_import, name='bulk_import'),

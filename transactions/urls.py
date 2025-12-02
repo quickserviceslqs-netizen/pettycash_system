@@ -3,7 +3,6 @@ from django.contrib.auth.decorators import login_required
 from transactions.views import (
     transactions_home,
     create_requisition,
-    edit_draft,
     approve_requisition,
     reject_requisition,
     requisition_detail,
@@ -46,9 +45,6 @@ urlpatterns = [
     
     # Create requisition - requires transactions app + add permission
     path('create/', login_required(create_requisition), name='create-requisition'),
-    
-    # Edit draft requisition
-    path('edit-draft/<str:requisition_id>/', login_required(edit_draft), name='edit-draft'),
     
     # Approve/reject - handled by view permission checks
     path('approve/<str:requisition_id>/', login_required(approve_requisition), name='approve-requisition'),

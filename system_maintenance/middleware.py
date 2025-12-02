@@ -24,24 +24,17 @@ class MaintenanceModeMiddleware:
         ]
     
     def __call__(self, request):
-        # Attach latest active maintenance session (if any) to the request so templates can show a banner
-        try:
-            latest = MaintenanceMode.objects.order_by('-activated_at').first()
-            request.maintenance = latest if latest and latest.is_active else None
-        except Exception:
-            request.maintenance = None
-
-        # Check if maintenance mode is active and enforce restrictions
+        # Check if maintenance mode is active
         if MaintenanceMode.is_maintenance_active():
             # Allow superusers and staff
             if request.user.is_authenticated and (request.user.is_superuser or request.user.is_staff):
                 response = self.get_response(request)
                 return response
-
+            
             # Check if path is allowed
             path = request.path
             is_allowed = any(path.startswith(allowed) for allowed in self.allowed_paths)
-
+            
             if not is_allowed:
                 # Show maintenance page
                 try:
@@ -55,7 +48,7 @@ class MaintenanceModeMiddleware:
                     context = {
                         'message': 'System is currently under maintenance',
                     }
-
+                
                 return render(request, 'system_maintenance/maintenance_mode_page.html', context, status=503)
         
         response = self.get_response(request)

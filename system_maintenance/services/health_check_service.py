@@ -76,34 +76,6 @@ class HealthCheckService:
             duration_seconds=duration
         )
         
-        # Send notification for critical issues
-        if self.critical_issues:
-            from workflow.services.resolver import send_system_maintenance_notification
-            subject = f"Critical System Health Issues Detected - Score: {health_score}"
-            message = f"""
-System Health Check Alert:
-
-Health Score: {health_score}/100
-Status: {overall_status.upper()}
-Critical Issues Found: {len(self.critical_issues)}
-
-Critical Issues:
-{chr(10).join(f"- {issue['check']}: {issue['message']}" for issue in self.critical_issues)}
-
-Warnings: {len(self.warnings)}
-Recommendations: {len(self.recommendations)}
-
-Please review the system health check details and take appropriate action.
-
-Check ID: {check_id}
-Performed by: {user.get_full_name() if user else 'System'}
-Duration: {duration:.2f} seconds
-
-Best regards,
-Petty Cash System Health Monitor
-"""
-            send_system_maintenance_notification(subject, message)
-        
         return health_check
     
     def _check_database_connectivity(self):

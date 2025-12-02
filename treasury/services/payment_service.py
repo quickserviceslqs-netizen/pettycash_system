@@ -34,12 +34,7 @@ class OTPService:
     """Generate and validate one-time passwords for 2FA."""
     
     OTP_LENGTH = 6
-    
-    @classmethod
-    def get_otp_validity_minutes(cls):
-        """Get OTP validity period from settings."""
-        from settings_manager.models import get_setting
-        return int(get_setting('TREASURY_OTP_EXPIRY_MINUTES', '5'))
+    OTP_VALIDITY_MINUTES = 5
     
     @staticmethod
     def generate_otp() -> str:
@@ -56,26 +51,22 @@ class OTPService:
     @staticmethod
     def send_otp_email(email: str, otp: str) -> bool:
         """Send OTP via email. Returns True if successful."""
-        from settings_manager.models import get_setting
         try:
-            subject_prefix = get_setting('EMAIL_SUBJECT_PREFIX', '[Petty Cash System]')
-            validity_minutes = OTPService.get_otp_validity_minutes()
-            subject = f"{subject_prefix} Payment Verification - One-Time Password"
+            subject = "Petty Cash Payment Verification - One-Time Password"
             message = f"""
 Your one-time password (OTP) for payment approval is:
 
     {otp}
 
-This code is valid for {validity_minutes} minutes.
+This code is valid for {OTPService.OTP_VALIDITY_MINUTES} minutes.
 If you did not request this, please ignore this email.
 
 Do not share this code with anyone.
             """
-            sender = get_setting('SYSTEM_EMAIL_FROM', settings.DEFAULT_FROM_EMAIL)
             send_mail(
                 subject,
                 message,
-                sender,
+                settings.DEFAULT_FROM_EMAIL,
                 [email],
                 fail_silently=False,
             )
@@ -86,36 +77,16 @@ Do not share this code with anyone.
     
     @staticmethod
     def is_otp_expired(payment: Payment) -> bool:
-        """Check if OTP has expired based on settings."""
+        """Check if OTP has expired (>5 minutes old)."""
         if not payment.otp_sent_timestamp:
             return True
-        validity_minutes = OTPService.get_otp_validity_minutes()
-        return (timezone.now() - payment.otp_sent_timestamp) > timedelta(minutes=validity_minutes)
+        now = timezone.now()
+        expiry = payment.otp_sent_timestamp + timedelta(minutes=OTPService.OTP_VALIDITY_MINUTES)
+        return now > expiry
 
 
 class PaymentExecutionService:
-    """Service for executing payments with proper validation and segregation of duties."""
-    
-    @staticmethod
-    def can_execute_payment(payment: Payment, executor_user) -> tuple[bool, str]:
-        """
-        Validate if executor can execute this payment.
-        Returns (can_execute, error_message)
-        """
-        # Executor cannot be the original requester
-        if hasattr(payment, 'requisition') and payment.requisition and executor_user.id == payment.requisition.requested_by_id:
-            return False, "Executor cannot be the same as the requisition requester"
-        
-        # Must be Treasury, CFO, or Admin
-        allowed_roles = ['treasury', 'cfo', 'admin']
-        if executor_user.role.lower() not in allowed_roles:
-            return False, f"Only Treasury, CFO, or Admin roles can execute payments. Your role: {executor_user.role}"
-        
-        # Check payment status
-        if payment.status not in ['pending']:
-            return False, f"Payment cannot be executed in status: {payment.status}"
-        
-        return True, ""
+    """Orchestrate atomic payment execution with all safeguards."""
     
     @staticmethod
     def assign_executor(payment: Payment):
@@ -158,8 +129,46 @@ class PaymentExecutionService:
                     f"Admin must assign executor for payment {payment.payment_id}."
                 )
                 return None, escalation_msg
-
-
+    
+    @staticmethod
+    def can_execute_payment(payment: Payment, executor_user) -> tuple[bool, str]:
+        """
+        Validate if executor can process payment.
+        Returns (can_execute, error_message)
+        """
+        # Check 1: Payment not already executed
+        if payment.status in ['success', 'reconciled']:
+            return False, "Payment already completed"
+        
+        # Check 2: Executor segregation - executor cannot be requester
+        if payment.requisition.requester == executor_user:
+            return False, "Executor cannot approve their own requisition"
+        
+        # Check 3: 2FA verification if required
+        if payment.otp_required and not payment.otp_verified:
+            return False, "OTP verification required before execution"
+        
+        # Check 4: OTP not expired
+        if payment.otp_required and OTPService.is_otp_expired(payment):
+            return False, "OTP has expired. Request new OTP."
+        
+        # Check 5: Retry limit not exceeded
+        if payment.retry_count >= payment.max_retries:
+            return False, f"Max retries ({payment.max_retries}) exceeded"
+        
+        # Check 6: Fund balance available
+        requisition = payment.requisition
+        fund = TreasuryFund.objects.filter(
+            company=requisition.company,
+            region=requisition.region,
+            branch=requisition.branch
+        ).first()
+        
+        if not fund or fund.current_balance < payment.amount:
+            return False, f"Insufficient fund balance. Available: {fund.current_balance if fund else 0}"
+        
+        return True, ""
+    
     @staticmethod
     @transaction.atomic
     def execute_payment(payment: Payment, executor_user, phone_number: str = None,
@@ -192,94 +201,6 @@ class PaymentExecutionService:
         if not can_execute:
             return False, error
         
-        # Payment settings validation
-        from workflow.services.resolver import (
-            is_payment_approval_required, is_payment_receipt_required,
-            get_payment_method_restrictions, get_payment_time_window
-        )
-        
-        # Check if payment approval is required
-        if is_payment_approval_required() and payment.status != 'approved':
-            return False, "Payment approval is required before execution"
-        
-        # Check payment time window
-        time_window = get_payment_time_window()
-        if time_window:
-            try:
-                start_time, end_time = time_window.split('-')
-                current_time = timezone.now().time()
-                start = timezone.datetime.strptime(start_time.strip(), '%H:%M').time()
-                end = timezone.datetime.strptime(end_time.strip(), '%H:%M').time()
-                
-                if not (start <= current_time <= end):
-                    return False, f"Payments can only be executed between {start_time} and {end_time}"
-            except ValueError:
-                # Invalid time format, skip validation
-                pass
-        
-        # Check payment method restrictions
-        restrictions = get_payment_method_restrictions()
-        method_key = payment.method.lower()
-        if method_key in restrictions:
-            method_restrictions = restrictions[method_key]
-            if 'min' in method_restrictions and payment.amount < method_restrictions['min']:
-                return False, f"Payment amount {payment.amount} is below minimum {method_restrictions['min']} for {payment.method}"
-            if 'max' in method_restrictions and payment.amount > method_restrictions['max']:
-                return False, f"Payment amount {payment.amount} exceeds maximum {method_restrictions['max']} for {payment.method}"
-        
-        # Check if receipt is required
-        if is_payment_receipt_required() and not hasattr(payment, 'receipt') or not payment.receipt:
-            return False, "Payment receipt is required"
-        
-        # Additional treasury settings validation
-        from settings_manager.models import get_setting
-        
-        # Check if payment method is allowed
-        allowed_methods = get_setting('PAYMENT_METHODS_ALLOWED', 'cash,bank_transfer,mobile_money')
-        allowed_methods_list = [m.strip().lower() for m in allowed_methods.split(',')]
-        if payment.method.lower() not in allowed_methods_list:
-            return False, f"Payment method '{payment.method}' is not allowed. Allowed methods: {allowed_methods}"
-        
-        # Check if OTP is required for payments
-        require_otp = get_setting('TREASURY_REQUIRE_OTP_FOR_PAYMENTS', 'false') == 'true'
-        if require_otp and not payment.otp_verified:
-            return False, "OTP verification is required for this payment"
-        
-        # Check maximum retry attempts
-        max_retries = int(get_setting('TREASURY_MAX_PAYMENT_RETRY_ATTEMPTS', '3'))
-        if payment.retry_count >= max_retries:
-            return False, f"Payment has exceeded maximum retry attempts ({max_retries})"
-
-        # Ensure associated requisition is fully approved before allowing execution
-        if hasattr(payment, 'requisition') and payment.requisition:
-            try:
-                if not payment.requisition.is_fully_approved():
-                    return False, "Associated requisition is not fully approved for payment"
-            except Exception:
-                # If the approval check fails for any reason, block execution
-                return False, "Unable to verify requisition approval status"
-
-            # Snapshot critical requisition fields into payment if not already present
-            snapshot_fields = []
-            if getattr(payment, 'snapshot_amount', None) is None:
-                payment.snapshot_amount = payment.requisition.amount
-                snapshot_fields.append('snapshot_amount')
-            if getattr(payment, 'snapshot_destination', None) in (None, ''):
-                payment.snapshot_destination = payment.destination or ''
-                snapshot_fields.append('snapshot_destination')
-            if getattr(payment, 'snapshot_description', None) in (None, ''):
-                payment.snapshot_description = payment.description or payment.requisition.purpose or ''
-                snapshot_fields.append('snapshot_description')
-            if getattr(payment, 'snapshot_company_id', None) is None and getattr(payment.requisition, 'company', None):
-                payment.snapshot_company = payment.requisition.company
-                snapshot_fields.append('snapshot_company')
-            if getattr(payment, 'snapshot_branch_id', None) is None and getattr(payment.requisition, 'branch', None):
-                payment.snapshot_branch = payment.requisition.branch
-                snapshot_fields.append('snapshot_branch')
-
-            if snapshot_fields:
-                payment.save(update_fields=snapshot_fields)
-        
         try:
             # Step 2: Get and lock fund
             fund = TreasuryFund.objects.select_for_update().get(
@@ -289,13 +210,8 @@ class PaymentExecutionService:
             )
             
             # Verify balance again (in case concurrent payment occurred)
-            allow_negative = get_setting('TREASURY_ALLOW_NEGATIVE_BALANCE', 'false') == 'true'
-            if not allow_negative and fund.current_balance < payment.amount:
+            if fund.current_balance < payment.amount:
                 return False, f"Insufficient fund balance (concurrent deduction detected)"
-            elif allow_negative and fund.current_balance + fund.get_min_balance() < payment.amount:
-                # If negative balances allowed, still prevent going below minimum balance
-                min_balance = fund.get_min_balance()
-                return False, f"Payment would exceed minimum fund balance of {min_balance}"
             
             # Step 3: Mark as executing
             payment.status = 'executing'
@@ -377,10 +293,6 @@ class PaymentExecutionService:
             payment.executor = executor_user
             payment.save(update_fields=['status', 'executor'])
             
-            # Send payment executed notification
-            from workflow.services.resolver import send_payment_notification
-            send_payment_notification(payment, 'executed')
-            
             # Step 9: Check if replenishment needed (Phase 5: Auto-trigger)
             if fund.current_balance < fund.reorder_level:
                 # Check if replenishment already pending
@@ -399,8 +311,7 @@ class PaymentExecutionService:
                         status='pending',
                         auto_triggered=True,
                     )
-                    # Send replenishment notification
-                    send_payment_notification(payment, 'replenishment_needed')
+                    # TODO: Send notification to treasury head about replenishment need
                     print(f"Auto-triggered replenishment request {replenishment.request_id} for fund {fund.fund_id}")
             
             return True, f"Payment executed successfully. Reference: {execution.gateway_reference}"
@@ -411,10 +322,6 @@ class PaymentExecutionService:
             payment.last_error = str(e)
             payment.status = 'failed'
             payment.save(update_fields=['retry_count', 'last_error', 'status'])
-            
-            # Send payment failed notification
-            from workflow.services.resolver import send_payment_notification
-            send_payment_notification(payment, 'failed')
             
             return False, f"Payment execution failed: {str(e)}"
     
@@ -498,10 +405,6 @@ class ReconciliationService:
             ledger.reconciliation_timestamp = timezone.now()
             ledger.save(update_fields=['reconciled', 'reconciled_by', 'reconciliation_timestamp'])
         
-        # Send payment reconciled notification
-        from workflow.services.resolver import send_payment_notification
-        send_payment_notification(payment, 'reconciled')
-        
         return True, "Payment reconciled successfully"
     
     @staticmethod
@@ -511,47 +414,20 @@ class ReconciliationService:
         Record payment amount variance for CFO review.
         Returns (success, message)
         """
-        from settings_manager.models import get_setting
-        
-        # Check if variance tracking is enabled
-        enable_tracking = get_setting('ENABLE_VARIANCE_TRACKING', 'true') == 'true'
-        if not enable_tracking:
-            return False, "Variance tracking is disabled"
-        
-        variance_amount = adjusted_amount - original_amount
-        if abs(variance_amount) == 0:
+        if abs(adjusted_amount - original_amount) == 0:
             return False, "No variance to record"
         
-        # Check variance tolerance percentage
-        tolerance_percent = Decimal(get_setting('VARIANCE_TOLERANCE_PERCENTAGE', '5'))
-        tolerance_amount = abs(original_amount * tolerance_percent / 100)
+        variance = VarianceAdjustment.objects.create(
+            variance_id=uuid.uuid4(),
+            payment=payment,
+            original_amount=original_amount,
+            adjusted_amount=adjusted_amount,
+            variance_amount=adjusted_amount - original_amount,
+            reason=reason,
+            status='pending',
+        )
         
-        # Auto-approve small variances
-        if abs(variance_amount) <= tolerance_amount:
-            # Create and auto-approve variance
-            variance = VarianceAdjustment.objects.create(
-                variance_id=uuid.uuid4(),
-                payment=payment,
-                original_amount=original_amount,
-                adjusted_amount=adjusted_amount,
-                variance_amount=variance_amount,
-                reason=f"{reason} (Auto-approved: within {tolerance_percent}% tolerance)",
-                status='approved',
-                approved_at=timezone.now(),
-            )
-            return True, f"Variance auto-approved: {variance_amount} (within tolerance)"
-        else:
-            # Create variance for CFO approval
-            variance = VarianceAdjustment.objects.create(
-                variance_id=uuid.uuid4(),
-                payment=payment,
-                original_amount=original_amount,
-                adjusted_amount=adjusted_amount,
-                variance_amount=variance_amount,
-                reason=reason,
-                status='pending',
-            )
-            return True, f"Variance recorded for CFO approval: {variance_amount}"
+        return True, f"Variance recorded: {variance.variance_amount}"
     
     @staticmethod
     def approve_variance(variance: VarianceAdjustment, approved_by_user) -> tuple[bool, str]:

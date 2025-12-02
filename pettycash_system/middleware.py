@@ -3,8 +3,6 @@ Multi-Tenancy Middleware
 Sets company context for each request based on authenticated user.
 """
 from django.utils.deprecation import MiddlewareMixin
-from django.http import HttpResponseRedirect
-from django.urls import reverse
 from threading import local
 
 # Thread-local storage for current company context
@@ -58,28 +56,3 @@ class CompanyMiddleware(MiddlewareMixin):
             del _thread_locals.company
         
         return response
-
-
-class HTTPSMiddleware(MiddlewareMixin):
-    """
-    Middleware to enforce HTTPS based on settings.
-    Redirects HTTP requests to HTTPS if FORCE_HTTPS is enabled.
-    """
-
-    def process_request(self, request):
-        """Redirect to HTTPS if enabled and request is not secure."""
-        from django.conf import settings
-        
-        # Skip HTTPS enforcement in development
-        if settings.DEBUG:
-            return
-            
-        from workflow.services.resolver import is_force_https_enabled
-
-        if is_force_https_enabled() and not request.is_secure():
-            # Build HTTPS URL
-            host = request.get_host()
-            https_url = f"https://{host}{request.get_full_path()}"
-
-            # Redirect to HTTPS
-            return HttpResponseRedirect(https_url)
