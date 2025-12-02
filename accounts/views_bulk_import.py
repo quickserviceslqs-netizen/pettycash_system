@@ -112,19 +112,15 @@ def download_template(request):
         branches = Branch.objects.all()[:5]
         regions = Region.objects.all()[:5]
     
-    # Add example rows
-    company_example = companies[0].name if companies else 'Quick Services LQS'
-    dept_example = departments[0].name if departments else 'Finance'
-    branch_example = branches[0].name if branches else 'Head Office'
-    region_example = regions[0].name if regions else 'East Africa'
-    
+    # Add a single example row (dummy data)
+    company_example = companies[0].name if companies else 'DemoCo'
+    dept_example = departments[0].name if departments else 'DemoDepartment'
+    branch_example = branches[0].name if branches else 'DemoBranch'
+    region_example = regions[0].name if regions else 'DemoRegion'
+
     ws.append([
-        'amos.cheloti@example.com', 'Amos', 'Cheloti', 'REQUESTER',
+        'demo.user@example.com', 'Demo', 'User', 'REQUESTER',
         company_example, region_example, branch_example, dept_example, 'treasury,workflow'
-    ])
-    ws.append([
-        'jane.doe@example.com', 'Jane', 'Doe', 'APPROVER',
-        company_example, region_example, branch_example, dept_example, 'treasury,workflow,reports'
     ])
     
     # Adjust column widths

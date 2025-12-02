@@ -36,10 +36,8 @@ def download_companies_template(request):
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
     
-    # Example rows
-    ws.append(['Quick Services LQS', 'QSLQS'])
-    ws.append(['ABC Corporation', 'ABC'])
-    ws.append(['XYZ Limited', 'XYZ'])
+    # Single example row
+    ws.append(['DemoCo', 'DEMO'])
     
     # Column widths
     ws.column_dimensions['A'].width = 30
@@ -176,16 +174,12 @@ def download_regions_template(request):
     
     writer = csv.writer(response)
     writer.writerow(['name', 'code', 'company_name'])
-    
-    # Add example rows for filtered or all companies
-    example_regions = ['East Africa', 'West Africa', 'Central Africa']
-    for i, company in enumerate(companies[:3]):
-        region_name = example_regions[i % len(example_regions)]
-        writer.writerow([f'{region_name}', f'{company.code}{region_name[:2].upper()}', company.name])
-    
-    if not companies.exists():
-        writer.writerow(['East Africa', 'EA', 'Quick Services LQS'])
-        writer.writerow(['West Africa', 'WA', 'Quick Services LQS'])
+    # Single example row
+    if companies.exists():
+        example_company = companies.first()
+        writer.writerow(['DemoRegion', f'{example_company.code}DR', example_company.name])
+    else:
+        writer.writerow(['DemoRegion', 'DR', 'DemoCo'])
     
     writer.writerow([])
     writer.writerow(['INSTRUCTIONS:'])
@@ -195,9 +189,7 @@ def download_regions_template(request):
     if company_id:
         writer.writerow([f'- FILTERED: Only showing regions for selected company'])
     writer.writerow([])
-    writer.writerow(['AVAILABLE COMPANIES:'])
-    for company in companies:
-        writer.writerow([f'  → {company.name}'])
+    writer.writerow(['AVAILABLE COMPANIES: (omitted for brevity)'])
     
     return response
 
@@ -309,21 +301,12 @@ def download_branches_template(request):
     
     writer = csv.writer(response)
     writer.writerow(['name', 'code', 'phone', 'region_name', 'company_name'])
-    
-    # Add example rows for filtered regions
-    branch_types = ['Head Office', 'Main Branch', 'Regional Office', 'City Branch']
-    for i, region in enumerate(regions[:5]):
-        branch_type = branch_types[i % len(branch_types)]
-        writer.writerow([
-            f'{region.name} {branch_type}',
-            f'{region.code}BR{i+1}',
-            '+254700000000',
-            region.name,
-            region.company.name
-        ])
-    
-    if not regions.exists():
-        writer.writerow(['Nairobi Branch', 'NBIBR', '+254700000000', 'East Africa', 'Quick Services LQS'])
+    # Single example row
+    if regions.exists():
+        r = regions.first()
+        writer.writerow(['DemoBranch', f'{r.code}DB', '+254700000000', r.name, r.company.name])
+    else:
+        writer.writerow(['DemoBranch', 'DB', '+254700000000', 'DemoRegion', 'DemoCo'])
     
     writer.writerow([])
     writer.writerow(['INSTRUCTIONS:'])
@@ -337,9 +320,7 @@ def download_branches_template(request):
     elif company_id:
         writer.writerow([f'- FILTERED: Only showing branches for selected company'])
     writer.writerow([])
-    writer.writerow(['AVAILABLE REGIONS (for this filter):'])
-    for region in regions:
-        writer.writerow([f'  → {region.name} ({region.company.name})'])
+    writer.writerow(['AVAILABLE REGIONS (omitted for brevity)'])
     
     return response
 
@@ -476,18 +457,12 @@ def download_departments_template(request):
     
     writer = csv.writer(response)
     writer.writerow(['name', 'branch_name'])
-    
-    # Add example departments for filtered branches
-    dept_names = ['Finance', 'Operations', 'IT', 'Marketing', 'HR', 'Sales', 'Admin']
-    
+    # Single example row
     if branches.exists():
-        for branch in branches[:5]:
-            # Add multiple departments per branch
-            for i in range(min(3, len(dept_names))):
-                writer.writerow([dept_names[i], branch.name])
+        b = branches.first()
+        writer.writerow(['DemoDepartment', b.name])
     else:
-        writer.writerow(['Finance', 'Nairobi Branch'])
-        writer.writerow(['Operations', 'Nairobi Branch'])
+        writer.writerow(['DemoDepartment', 'DemoBranch'])
     
     writer.writerow([])
     writer.writerow(['INSTRUCTIONS:'])
@@ -501,9 +476,7 @@ def download_departments_template(request):
     elif company_id:
         writer.writerow([f'- FILTERED: Only showing departments for selected company'])
     writer.writerow([])
-    writer.writerow(['AVAILABLE BRANCHES (for this filter):'])
-    for branch in branches:
-        writer.writerow([f'  → {branch.name} ({branch.region.name}, {branch.region.company.name})'])
+    writer.writerow(['AVAILABLE BRANCHES (omitted for brevity)'])
     
     return response
 
