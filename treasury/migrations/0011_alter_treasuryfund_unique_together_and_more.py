@@ -15,35 +15,59 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='payment',
-            name='created_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_payments', to=settings.AUTH_USER_MODEL),
-        ),
-        migrations.AddField(
-            model_name='payment',
-            name='description',
-            field=models.TextField(blank=True, help_text='Purpose of payment', null=True),
-        ),
-        migrations.AddField(
-            model_name='payment',
-            name='voucher_number',
-            field=models.CharField(blank=True, help_text='Unique voucher/document number for M-Pesa bulk payments', max_length=50, null=True, unique=True),
-        ),
-        migrations.AddField(
-            model_name='treasuryfund',
-            name='auto_replenish',
-            field=models.BooleanField(blank=True, help_text='Override auto-replenishment for this fund. If null, uses system default.', null=True),
-        ),
-        migrations.AddField(
-            model_name='treasuryfund',
-            name='department',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='treasury_funds', to='organization.department'),
-        ),
-        migrations.AddField(
-            model_name='treasuryfund',
-            name='min_balance',
-            field=models.DecimalField(blank=True, decimal_places=2, help_text='Minimum allowed balance for this fund. Overrides system default if set.', max_digits=14, null=True),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql="""
+                        ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS created_by_id integer;
+                        ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS description text;
+                        ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS voucher_number varchar(50);
+                        ALTER TABLE treasury_treasuryfund ADD COLUMN IF NOT EXISTS auto_replenish boolean;
+                        ALTER TABLE treasury_treasuryfund ADD COLUMN IF NOT EXISTS department_id integer;
+                        ALTER TABLE treasury_treasuryfund ADD COLUMN IF NOT EXISTS min_balance numeric(14,2);
+                    """,
+                    reverse_sql="""
+                        ALTER TABLE treasury_payment DROP COLUMN IF EXISTS created_by_id;
+                        ALTER TABLE treasury_payment DROP COLUMN IF EXISTS description;
+                        ALTER TABLE treasury_payment DROP COLUMN IF EXISTS voucher_number;
+                        ALTER TABLE treasury_treasuryfund DROP COLUMN IF EXISTS auto_replenish;
+                        ALTER TABLE treasury_treasuryfund DROP COLUMN IF EXISTS department_id;
+                        ALTER TABLE treasury_treasuryfund DROP COLUMN IF EXISTS min_balance;
+                    """,
+                )
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='payment',
+                    name='created_by',
+                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_payments', to=settings.AUTH_USER_MODEL),
+                ),
+                migrations.AddField(
+                    model_name='payment',
+                    name='description',
+                    field=models.TextField(blank=True, help_text='Purpose of payment', null=True),
+                ),
+                migrations.AddField(
+                    model_name='payment',
+                    name='voucher_number',
+                    field=models.CharField(blank=True, help_text='Unique voucher/document number for M-Pesa bulk payments', max_length=50, null=True, unique=True),
+                ),
+                migrations.AddField(
+                    model_name='treasuryfund',
+                    name='auto_replenish',
+                    field=models.BooleanField(blank=True, help_text='Override auto-replenishment for this fund. If null, uses system default.', null=True),
+                ),
+                migrations.AddField(
+                    model_name='treasuryfund',
+                    name='department',
+                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='treasury_funds', to='organization.department'),
+                ),
+                migrations.AddField(
+                    model_name='treasuryfund',
+                    name='min_balance',
+                    field=models.DecimalField(blank=True, decimal_places=2, help_text='Minimum allowed balance for this fund. Overrides system default if set.', max_digits=14, null=True),
+                ),
+            ],
         ),
         migrations.AlterField(
             model_name='payment',

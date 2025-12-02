@@ -22,7 +22,17 @@ def check_and_add_fields(apps, schema_editor):
         existing_columns = {row[0] for row in cursor.fetchall()}
         
         # Add created_by_id if it doesn't exist
-        # Skipped: customuser table does not exist. Django model migration will handle this if needed.
+        if 'created_by_id' not in existing_columns:
+            cursor.execute("""
+                ALTER TABLE treasury_payment 
+                ADD COLUMN created_by_id INTEGER NULL 
+                REFERENCES accounts_customuser(id) 
+                ON DELETE SET NULL;
+            """)
+            cursor.execute("""
+                CREATE INDEX treasury_payment_created_by_id_idx 
+                ON treasury_payment(created_by_id);
+            """)
         
         # Add description if it doesn't exist
         if 'description' not in existing_columns:
