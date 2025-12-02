@@ -169,6 +169,48 @@ def audit_logs(request):
 
 @login_required
 @permission_required('accounts.view_user', raise_exception=True)
+def export_audit_logs(request):
+    """Export user audit logs to CSV using same filters as audit_logs."""
+    import csv
+    logs = UserAuditLog.objects.select_related('target_user', 'performed_by').all()
+
+    target_user_id = request.GET.get('target_user')
+    performed_by_id = request.GET.get('performed_by')
+    action_filter = request.GET.get('action')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+
+    if target_user_id:
+        logs = logs.filter(target_user_id=target_user_id)
+    if performed_by_id:
+        logs = logs.filter(performed_by_id=performed_by_id)
+    if action_filter:
+        logs = logs.filter(action=action_filter)
+    if date_from:
+        logs = logs.filter(timestamp__gte=date_from)
+    if date_to:
+        logs = logs.filter(timestamp__lte=date_to)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="user_audit_logs.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Timestamp', 'Action', 'Target User', 'Performed By', 'IP', 'Notes', 'Changes'])
+    for l in logs.order_by('-timestamp'):
+        writer.writerow([
+            l.timestamp.isoformat(),
+            l.get_action_display(),
+            getattr(l.target_user, 'username', ''),
+            getattr(l.performed_by, 'username', '') if l.performed_by else 'System',
+            l.ip_address or '',
+            (l.notes or '').replace('\n', ' ').strip(),
+            l.changes,
+        ])
+
+    return response
+
+
+@login_required
+@permission_required('accounts.view_user', raise_exception=True)
 def user_sessions(request, user_id):
     """List active sessions for a user and allow termination."""
     target = get_object_or_404(User, id=user_id)
@@ -203,6 +245,40 @@ def terminate_session(request, user_id):
             Session.objects.filter(session_key=key).delete()
             messages.success(request, 'Session terminated.')
     return redirect('accounts:user_sessions', user_id=user_id)
+
+
+@login_required
+@permission_required('accounts.change_user', raise_exception=True)
+def terminate_all_sessions(request, user_id):
+    if request.method == 'POST':
+        target = get_object_or_404(User, id=user_id)
+        deleted = 0
+        for s in Session.objects.all():
+            try:
+                data = s.get_decoded()
+            except Exception:
+                continue
+            uid = str(data.get('_auth_user_id')) if data else None
+            if uid and int(uid) == target.id:
+                s.delete()
+                deleted += 1
+        if deleted:
+            messages.success(request, f'Terminated {deleted} session(s).')
+        else:
+            messages.info(request, 'No active sessions to terminate.')
+    return redirect('accounts:user_sessions', user_id=user_id)
+
+
+@login_required
+@permission_required('accounts.change_user', raise_exception=True)
+def unlock_user(request, user_id):
+    if request.method == 'POST':
+        target = get_object_or_404(User, id=user_id)
+        target.failed_login_attempts = 0
+        target.lockout_until = None
+        target.save(update_fields=['failed_login_attempts', 'lockout_until'])
+        messages.success(request, f'User {target.username} has been unlocked.')
+    return redirect('accounts:edit_user_permissions', user_id=user_id)
 
 
 @login_required

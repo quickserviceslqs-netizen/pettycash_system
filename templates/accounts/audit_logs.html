@@ -13,6 +13,9 @@
             <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
                 <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Users
             </a>
+            <a href="{% url 'accounts:export_audit_logs' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary">
+                <i aria-hidden="true" class="bi bi-download"></i> Export CSV
+            </a>
         </div>
     </div>
 

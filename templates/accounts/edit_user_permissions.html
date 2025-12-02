@@ -272,6 +272,13 @@
                             <a href="{% url 'accounts:user_sessions' user_to_edit.id %}" class="btn btn-outline-secondary w-100">
                                 <i aria-hidden="true" class="bi bi-shield-lock"></i> View Active Sessions
                             </a>
+
+                            <form method="post" action="{% url 'accounts:unlock_user' user_to_edit.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-dark w-100">
+                                    <i aria-hidden="true" class="bi bi-unlock"></i> Unlock Account
+                                </button>
+                            </form>
                             
                             <button type="button" class="btn btn-danger w-100" 
                                     data-bs-toggle="modal" 

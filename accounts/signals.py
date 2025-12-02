@@ -3,12 +3,26 @@ from django.contrib.auth.signals import user_logged_in, user_logged_out, user_lo
 from django.dispatch import receiver
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+try:
+    from settings_manager.models import get_setting
+except Exception:
+    # Fallback during early startup/migrations
+    def get_setting(key, default=None):
+        return default
 
 User = get_user_model()
 
 
-LOCKOUT_THRESHOLD = 5  # attempts
-LOCKOUT_WINDOW_MINUTES = 15
+def get_lockout_config():
+    try:
+        threshold = int(get_setting('SECURITY_LOCKOUT_THRESHOLD', 5) or 5)
+    except Exception:
+        threshold = 5
+    try:
+        window = int(get_setting('SECURITY_LOCKOUT_WINDOW_MINUTES', 15) or 15)
+    except Exception:
+        window = 15
+    return threshold, window
 
 
 @receiver(user_logged_in)
@@ -42,9 +56,9 @@ def on_user_login_failed(sender, credentials, request, **kwargs):
     now = timezone.now()
     user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
     user.last_failed_login = now
-
-    if user.failed_login_attempts >= LOCKOUT_THRESHOLD:
-        user.lockout_until = now + timedelta(minutes=LOCKOUT_WINDOW_MINUTES)
+    threshold, window = get_lockout_config()
+    if user.failed_login_attempts >= threshold:
+        user.lockout_until = now + timedelta(minutes=window)
 
     user.save(update_fields=['failed_login_attempts', 'last_failed_login', 'lockout_until'])
 

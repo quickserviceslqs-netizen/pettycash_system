@@ -89,10 +89,13 @@ urlpatterns = [
     # --------------------------
     path('manage-users/', views_admin.manage_users, name='manage_users'),
     path('audit-logs/', views_admin.audit_logs, name='audit_logs'),
+    path('audit-logs/export/', views_admin.export_audit_logs, name='export_audit_logs'),
     path('users/create/', views_admin.create_user, name='create_user'),
     path('users/<int:user_id>/edit-permissions/', views_admin.edit_user_permissions, name='edit_user_permissions'),
     path('users/<int:user_id>/sessions/', views_admin.user_sessions, name='user_sessions'),
     path('users/<int:user_id>/sessions/terminate/', views_admin.terminate_session, name='terminate_session'),
+    path('users/<int:user_id>/sessions/terminate-all/', views_admin.terminate_all_sessions, name='terminate_all_sessions'),
+    path('users/<int:user_id>/unlock/', views_admin.unlock_user, name='unlock_user'),
     path('users/<int:user_id>/reset-password/', views_admin.reset_user_password, name='reset_user_password'),
     path('users/<int:user_id>/toggle-status/', views_admin.toggle_user_status, name='toggle_user_status'),
     path('users/<int:user_id>/delete/', views_admin.delete_user, name='delete_user'),
