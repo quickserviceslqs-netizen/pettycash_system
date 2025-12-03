@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db.models import Sum, Count, Q, Avg, F, Min, Subquery, OuterRef, ExpressionWrapper, DurationField
+from django.db.models import Sum, Count, Q, Avg, F, Min, Subquery, OuterRef, ExpressionWrapper, DurationField, Exists
 from django.utils import timezone
 from datetime import timedelta
 from transactions.models import Requisition, ApprovalTrail
@@ -607,3 +607,110 @@ def stuck_approvals_report(request):
         'total': len(items),
     }
     return render(request, 'reports/stuck_approvals.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def threshold_overrides_report(request):
+    """Requisitions that exceeded or bypassed configured approval thresholds."""
+    days = int(request.GET.get('days', 90))
+    start_date = timezone.now() - timedelta(days=days)
+
+    # Subquery: requisitions with any override/skipped roles in approval trail
+    trail_overrides_qs = ApprovalTrail.objects.filter(
+        requisition_id=OuterRef('pk')
+    ).filter(
+        Q(override=True) | Q(skipped_roles__isnull=False)
+    )
+
+    # Build base filter for out-of-range amounts relative to applied threshold
+    out_of_range_q = (
+        Q(applied_threshold__isnull=False) & (
+            Q(amount__lt=F('applied_threshold__min_amount')) |
+            Q(amount__gt=F('applied_threshold__max_amount'))
+        )
+    )
+
+    qs = Requisition.objects.filter(created_at__gte=start_date).select_related(
+        'requested_by', 'branch', 'department', 'applied_threshold'
+    ).annotate(
+        has_trail_override=Exists(trail_overrides_qs)
+    ).filter(
+        out_of_range_q | Q(is_fast_tracked=True) | Q(pk__in=Subquery(
+            ApprovalTrail.objects.filter(Q(override=True) | Q(skipped_roles__isnull=False))
+            .values('requisition_id')
+        ))
+    ).order_by('-created_at')
+
+    # Categorize
+    by_category = {
+        'out_of_range': qs.filter(out_of_range_q).count(),
+        'fast_tracked': qs.filter(is_fast_tracked=True).count(),
+        'trail_override': qs.filter(has_trail_override=True).count(),
+    }
+
+    items = [
+        {
+            'transaction_id': r.transaction_id,
+            'requested_by': getattr(r.requested_by, 'username', ''),
+            'branch': getattr(r.branch, 'name', None),
+            'department': getattr(r.department, 'name', None),
+            'amount': r.amount,
+            'status': r.status,
+            'created_at': r.created_at,
+            'applied_threshold': getattr(r.applied_threshold, 'name', None),
+            'min_amount': getattr(r.applied_threshold, 'min_amount', None),
+            'max_amount': getattr(r.applied_threshold, 'max_amount', None),
+            'is_fast_tracked': r.is_fast_tracked,
+            'has_trail_override': r.has_trail_override,
+        }
+        for r in qs
+    ]
+
+    context = {
+        'days': days,
+        'items': items,
+        'total': len(items),
+        'by_category': by_category,
+    }
+    return render(request, 'reports/threshold_overrides.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def threshold_overrides_export_csv(request):
+    days = int(request.GET.get('days', 90))
+    start_date = timezone.now() - timedelta(days=days)
+    out_of_range_q = (
+        Q(applied_threshold__isnull=False) & (
+            Q(amount__lt=F('applied_threshold__min_amount')) |
+            Q(amount__gt=F('applied_threshold__max_amount'))
+        )
+    )
+    ovr_ids = ApprovalTrail.objects.filter(Q(override=True) | Q(skipped_roles__isnull=False)).values('requisition_id')
+    qs = Requisition.objects.filter(created_at__gte=start_date).select_related(
+        'requested_by', 'branch', 'department', 'applied_threshold'
+    ).filter(
+        out_of_range_q | Q(is_fast_tracked=True) | Q(pk__in=Subquery(ovr_ids))
+    ).order_by('-created_at')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="threshold_overrides_{timezone.now().date()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Transaction ID', 'Requested By', 'Branch', 'Department', 'Amount', 'Status', 'Created', 'Applied Threshold', 'Min', 'Max', 'Fast Tracked', 'Trail Override'])
+    for r in qs.iterator():
+        writer.writerow([
+            r.transaction_id,
+            getattr(r.requested_by, 'username', ''),
+            getattr(r.branch, 'name', '') if r.branch else '',
+            getattr(r.department, 'name', '') if r.department else '',
+            f"{r.amount}",
+            r.status,
+            r.created_at.strftime('%Y-%m-%d %H:%M'),
+            getattr(r.applied_threshold, 'name', ''),
+            getattr(r.applied_threshold, 'min_amount', ''),
+            getattr(r.applied_threshold, 'max_amount', ''),
+            'Yes' if r.is_fast_tracked else 'No',
+            'Yes' if ApprovalTrail.objects.filter(requisition_id=r.pk).filter(Q(override=True) | Q(skipped_roles__isnull=False)).exists() else 'No',
+        ])
+    return response

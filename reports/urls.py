@@ -24,4 +24,6 @@ urlpatterns = [
     path('user-activity/', views.user_activity_report, name='user-activity-report'),
     # Exceptions
     path('exceptions/stuck-approvals/', views.stuck_approvals_report, name='stuck-approvals-report'),
+    path('exceptions/threshold-overrides/', views.threshold_overrides_report, name='threshold-overrides-report'),
+    path('exceptions/threshold-overrides/export.csv', views.threshold_overrides_export_csv, name='threshold-overrides-export-csv'),
 ]
