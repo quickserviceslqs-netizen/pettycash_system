@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
+from accounts.permissions import require_app_access, require_permission
 from django.db.models import Sum, Count, Q, Avg, F, Min, Subquery, OuterRef, ExpressionWrapper, DurationField, Exists
 from django.utils import timezone
 from datetime import timedelta
@@ -15,12 +16,12 @@ User = get_user_model()
 
 
 def is_admin_user(user):
-    """Check if user has admin role"""
-    return user.role in ['Admin', 'Super Admin']
+    # Deprecated: replaced by app access + permission checks
+    return bool(user and user.is_authenticated)
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_reports_dashboard', app_label='reports')
 def reports_dashboard(request):
     """
     Main reports dashboard with overview metrics and quick access to detailed reports.
@@ -110,8 +111,8 @@ def reports_dashboard(request):
     return render(request, 'reports/dashboard.html', context)
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_transaction_report', app_label='reports')
 def transaction_report(request):
     """
     Detailed transaction/requisition report with filters and export capability.
@@ -185,8 +186,8 @@ def transaction_report(request):
     return render(request, 'reports/transaction_report.html', context)
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_transaction_report', app_label='reports')
 def transaction_report_export_csv(request):
     """Server-side CSV export for Transaction Report honoring filters."""
     # Filters (same as transaction_report)
@@ -233,8 +234,8 @@ def transaction_report_export_csv(request):
     return response
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_transaction_report', app_label='reports')
 def transaction_report_export_xlsx(request):
     """Server-side Excel export for Transaction Report honoring filters."""
     # Filters (same as transaction_report)
@@ -284,8 +285,8 @@ def transaction_report_export_xlsx(request):
     return response
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_treasury_report', app_label='reports')
 def treasury_report(request):
     """
     Treasury fund balances and payment activity report.
@@ -331,8 +332,8 @@ def treasury_report(request):
     return render(request, 'reports/treasury_report.html', context)
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_treasury_report', app_label='reports')
 def treasury_fund_detail(request, fund_id):
     """Drilldown: show ledger movements and executed payments for a fund."""
     days = int(request.GET.get('days', 30))
@@ -384,8 +385,8 @@ def treasury_fund_detail(request, fund_id):
     return render(request, 'reports/treasury_fund_detail.html', context)
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_treasury_report', app_label='reports')
 def treasury_fund_ledger_export_csv(request, fund_id):
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -402,8 +403,8 @@ def treasury_fund_ledger_export_csv(request, fund_id):
     return response
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_treasury_report', app_label='reports')
 def treasury_fund_ledger_export_xlsx(request, fund_id):
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -423,8 +424,8 @@ def treasury_fund_ledger_export_xlsx(request, fund_id):
     return response
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_treasury_report', app_label='reports')
 def treasury_fund_payments_export_csv(request, fund_id):
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -441,8 +442,8 @@ def treasury_fund_payments_export_csv(request, fund_id):
     return response
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_treasury_report', app_label='reports')
 def treasury_fund_payments_export_xlsx(request, fund_id):
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -462,8 +463,8 @@ def treasury_fund_payments_export_xlsx(request, fund_id):
     return response
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_approval_report', app_label='reports')
 def approval_report(request):
     """
     Approval workflow analytics: approval times, bottlenecks, approver performance.
@@ -535,8 +536,8 @@ def approval_report(request):
     return render(request, 'reports/approval_report.html', context)
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_approval_report', app_label='reports')
 def approval_logs_export_csv(request):
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -557,8 +558,8 @@ def approval_logs_export_csv(request):
     return response
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_approval_report', app_label='reports')
 def approval_logs_export_xlsx(request):
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -582,8 +583,8 @@ def approval_logs_export_xlsx(request):
     return response
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_approval_report', app_label='reports')
 def approver_perf_export_csv(request):
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -607,8 +608,8 @@ def approver_perf_export_csv(request):
     return response
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_approval_report', app_label='reports')
 def approver_perf_export_xlsx(request):
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
@@ -635,8 +636,8 @@ def approver_perf_export_xlsx(request):
     return response
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_user_activity_report', app_label='reports')
 def user_activity_report(request):
     """
     User activity report: requisition creation, approval actions, payment execution.
@@ -691,8 +692,8 @@ def user_activity_report(request):
     return render(request, 'reports/user_activity_report.html', context)
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_budget_vs_actuals_report', app_label='reports')
 def budget_vs_actuals_report(request):
     """Budget vs Actuals by Cost Center (monthly), with variance."""
     from reports.models import BudgetAllocation
@@ -773,8 +774,8 @@ def budget_vs_actuals_report(request):
     return render(request, 'reports/budget_vs_actuals.html', context)
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_budget_vs_actuals_report', app_label='reports')
 def budget_vs_actuals_export_csv(request):
     year = int(request.GET.get('year', timezone.now().year))
     request.GET._mutable = True  # safe in view scope
@@ -815,8 +816,8 @@ def budget_vs_actuals_export_csv(request):
     return resp
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_budget_vs_actuals_report', app_label='reports')
 def budget_vs_actuals_export_xlsx(request):
     year = int(request.GET.get('year', timezone.now().year))
     group = request.GET.get('group', 'cost_center')
@@ -855,8 +856,8 @@ def budget_vs_actuals_export_xlsx(request):
     return resp
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_stuck_approvals_report', app_label='reports')
 def stuck_approvals_report(request):
     """List requisitions stuck in pending statuses beyond a threshold number of days."""
     older_than = int(request.GET.get('older_than', 7))
@@ -905,8 +906,8 @@ def stuck_approvals_report(request):
     return render(request, 'reports/stuck_approvals.html', context)
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_threshold_overrides_report', app_label='reports')
 def threshold_overrides_report(request):
     """Requisitions that exceeded or bypassed configured approval thresholds."""
     days = int(request.GET.get('days', 90))
@@ -972,8 +973,8 @@ def threshold_overrides_report(request):
     return render(request, 'reports/threshold_overrides.html', context)
 
 
-@login_required
-@user_passes_test(is_admin_user)
+@require_app_access('reports')
+@require_permission('view_threshold_overrides_report', app_label='reports')
 def threshold_overrides_export_csv(request):
     days = int(request.GET.get('days', 90))
     start_date = timezone.now() - timedelta(days=days)

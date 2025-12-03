@@ -25,6 +25,18 @@ class Report(models.Model):
     def __str__(self):
         return f"{self.title} ({self.status})"
 
+    class Meta:
+        permissions = [
+            ("view_reports_dashboard", "Can view Reports dashboard"),
+            ("view_transaction_report", "Can view Transaction report and exports"),
+            ("view_treasury_report", "Can view Treasury report, drilldowns, and exports"),
+            ("view_approval_report", "Can view Approval analytics and exports"),
+            ("view_user_activity_report", "Can view User Activity report"),
+            ("view_stuck_approvals_report", "Can view Stuck Approvals exception report"),
+            ("view_threshold_overrides_report", "Can view Threshold Overrides report and exports"),
+            ("view_budget_vs_actuals_report", "Can view Budget vs Actuals report and exports"),
+        ]
+
 
 class BudgetAllocation(models.Model):
     """Allocated budget by scope (company/branch/department/cost center) and period."""
