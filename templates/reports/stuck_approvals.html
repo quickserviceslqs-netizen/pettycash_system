@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Stuck Approvals - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Stuck Approvals</h2>
+            <p class="text-muted mb-0">Requisitions pending beyond threshold</p>
+        </div>
+        <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="older_than" class="form-label">Older Than</label>
+                    <select name="older_than" id="older_than" class="form-select" onchange="this.form.submit()">
+                        <option value="3" {% if older_than == 3 %}selected{% endif %}>3 days</option>
+                        <option value="7" {% if older_than == 7 %}selected{% endif %}>7 days</option>
+                        <option value="14" {% if older_than == 14 %}selected{% endif %}>14 days</option>
+                        <option value="30" {% if older_than == 30 %}selected{% endif %}>30 days</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status Scope</label>
+                    <select name="status" id="status" class="form-select" onchange="this.form.submit()">
+                        <option value="pending_only" {% if status_filter == 'pending_only' %}selected{% endif %}>Pending only</option>
+                        <option value="all_pending" {% if status_filter == 'all_pending' %}selected{% endif %}>All pending-* statuses</option>
+                    </select>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="text-muted small">Total: <strong>{{ total }}</strong></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">By Status</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th class="text-end">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in by_status %}
+                                <tr>
+                                    <td><span class="badge bg-secondary">{{ row.status|title }}</span></td>
+                                    <td class="text-end">{{ row.count }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="2" class="text-center text-muted">No data</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Transaction</th>
+                                    <th>Requested By</th>
+                                    <th>Branch</th>
+                                    <th>Department</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th class="text-end">Age (days)</th>
+                                    <th>Next Approver</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for it in items %}
+                                <tr>
+                                    <td><code class="small">{{ it.transaction_id|slice:':8' }}...</code></td>
+                                    <td>{{ it.requested_by }}</td>
+                                    <td>{{ it.branch|default:'-' }}</td>
+                                    <td>{{ it.department|default:'-' }}</td>
+                                    <td class="text-end">${{ it.amount|floatformat:2 }}</td>
+                                    <td><span class="badge bg-warning">{{ it.status|title }}</span></td>
+                                    <td>{{ it.created_at|date:"M d, Y H:i" }}</td>
+                                    <td class="text-end fw-semibold">{{ it.age_days }}</td>
+                                    <td>{{ it.next_approver|default:'-' }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="9" class="text-center text-muted py-4">No stuck approvals found.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

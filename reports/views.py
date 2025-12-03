@@ -6,6 +6,9 @@ from datetime import timedelta
 from transactions.models import Requisition, ApprovalTrail
 from treasury.models import Payment, TreasuryFund
 from django.contrib.auth import get_user_model
+from django.http import HttpResponse
+import csv
+from openpyxl import Workbook
 
 User = get_user_model()
 
@@ -41,7 +44,7 @@ def reports_dashboard(request):
     
     # Treasury Statistics
     total_treasury_balance = TreasuryFund.objects.aggregate(Sum('current_balance'))['current_balance__sum'] or 0
-    funds_below_reorder = TreasuryFund.objects.filter(current_balance__lt=models.F('reorder_level')).count()
+    funds_below_reorder = TreasuryFund.objects.filter(current_balance__lt=F('reorder_level')).count()
     
     # Payment Statistics
     payments = Payment.objects.filter(requisition__created_at__gte=start_date)
@@ -143,6 +146,17 @@ def transaction_report(request):
     total_count = requisitions.count()
     total_amount = requisitions.aggregate(Sum('amount'))['amount__sum'] or 0
     avg_amount = requisitions.aggregate(Avg('amount'))['amount__avg'] or 0
+
+    # Pagination
+    from django.core.paginator import Paginator
+    try:
+        page_size = int(request.GET.get('page_size', 25))
+    except (TypeError, ValueError):
+        page_size = 25
+    page_size = max(5, min(page_size, 200))
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(requisitions, page_size)
+    page_obj = paginator.get_page(page_number)
     
     # Get unique branches and departments for filters
     from organization.models import Branch, Department
@@ -150,11 +164,13 @@ def transaction_report(request):
     departments = Department.objects.all().order_by('name')
     
     context = {
-        'requisitions': requisitions,
+        'requisitions': page_obj,
         'total_count': total_count,
         'total_amount': total_amount,
         'avg_amount': avg_amount,
         'days': days,
+        'page_obj': page_obj,
+        'page_size': page_size,
         'selected_status': status,
         'selected_branch': branch_id,
         'selected_department': department_id,
@@ -166,6 +182,105 @@ def transaction_report(request):
     }
     
     return render(request, 'reports/transaction_report.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def transaction_report_export_csv(request):
+    """Server-side CSV export for Transaction Report honoring filters."""
+    # Filters (same as transaction_report)
+    days = int(request.GET.get('days', 30))
+    status = request.GET.get('status', '')
+    branch_id = request.GET.get('branch', '')
+    department_id = request.GET.get('department', '')
+    min_amount = request.GET.get('min_amount', '')
+    max_amount = request.GET.get('max_amount', '')
+
+    start_date = timezone.now() - timedelta(days=days)
+    qs = Requisition.objects.filter(created_at__gte=start_date).select_related(
+        'requested_by', 'branch', 'department', 'cost_center'
+    ).order_by('-created_at')
+
+    if status:
+        qs = qs.filter(status=status)
+    if branch_id:
+        qs = qs.filter(branch_id=branch_id)
+    if department_id:
+        qs = qs.filter(department_id=department_id)
+    if min_amount:
+        qs = qs.filter(amount__gte=min_amount)
+    if max_amount:
+        qs = qs.filter(amount__lte=max_amount)
+
+    # Build CSV
+    response = HttpResponse(content_type='text/csv')
+    filename = f"transaction_report_{timezone.now().date()}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    writer = csv.writer(response)
+    writer.writerow(['Transaction ID', 'Requested By', 'Branch', 'Department', 'Amount', 'Status', 'Created', 'Purpose'])
+    for r in qs.iterator():
+        writer.writerow([
+            r.transaction_id,
+            getattr(r.requested_by, 'username', ''),
+            getattr(r.branch, 'name', '') if r.branch else '',
+            getattr(r.department, 'name', '') if r.department else '',
+            f"{r.amount}",
+            r.get_status_display(),
+            r.created_at.strftime('%Y-%m-%d %H:%M'),
+            (r.purpose or '').replace('\n', ' ').strip(),
+        ])
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def transaction_report_export_xlsx(request):
+    """Server-side Excel export for Transaction Report honoring filters."""
+    # Filters (same as transaction_report)
+    days = int(request.GET.get('days', 30))
+    status = request.GET.get('status', '')
+    branch_id = request.GET.get('branch', '')
+    department_id = request.GET.get('department', '')
+    min_amount = request.GET.get('min_amount', '')
+    max_amount = request.GET.get('max_amount', '')
+
+    start_date = timezone.now() - timedelta(days=days)
+    qs = Requisition.objects.filter(created_at__gte=start_date).select_related(
+        'requested_by', 'branch', 'department', 'cost_center'
+    ).order_by('-created_at')
+
+    if status:
+        qs = qs.filter(status=status)
+    if branch_id:
+        qs = qs.filter(branch_id=branch_id)
+    if department_id:
+        qs = qs.filter(department_id=department_id)
+    if min_amount:
+        qs = qs.filter(amount__gte=min_amount)
+    if max_amount:
+        qs = qs.filter(amount__lte=max_amount)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Transactions'
+    ws.append(['Transaction ID', 'Requested By', 'Branch', 'Department', 'Amount', 'Status', 'Created', 'Purpose'])
+    for r in qs.iterator():
+        ws.append([
+            r.transaction_id,
+            getattr(r.requested_by, 'username', ''),
+            getattr(r.branch, 'name', '') if r.branch else '',
+            getattr(r.department, 'name', '') if r.department else '',
+            float(r.amount),
+            r.get_status_display(),
+            r.created_at.strftime('%Y-%m-%d %H:%M'),
+            (r.purpose or '').replace('\n', ' ').strip(),
+        ])
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    filename = f"transaction_report_{timezone.now().date()}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
 
 
 @login_required
@@ -317,3 +432,53 @@ def user_activity_report(request):
     }
     
     return render(request, 'reports/user_activity_report.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def stuck_approvals_report(request):
+    """List requisitions stuck in pending statuses beyond a threshold number of days."""
+    older_than = int(request.GET.get('older_than', 7))
+    status_filter = request.GET.get('status', 'pending_only')  # 'pending_only' or 'all_pending_*'
+    start_cutoff = timezone.now() - timedelta(days=older_than)
+
+    qs = Requisition.objects.filter(created_at__lt=start_cutoff).select_related(
+        'requested_by', 'branch', 'department'
+    )
+    if status_filter == 'pending_only':
+        qs = qs.filter(status__startswith='pending')
+    else:
+        qs = qs.filter(status__in=[s for s, _ in Requisition.STATUS_CHOICES if s.startswith('pending')])
+
+    qs = qs.order_by('created_at')
+
+    # Aggregates by status
+    by_status = qs.values('status').annotate(count=Count('transaction_id')).order_by('-count')
+
+    # Helper to compute age in days
+    def age_days(dt):
+        return (timezone.now() - dt).days
+
+    items = [
+        {
+            'transaction_id': r.transaction_id,
+            'requested_by': getattr(r.requested_by, 'username', ''),
+            'branch': getattr(r.branch, 'name', None),
+            'department': getattr(r.department, 'name', None),
+            'amount': r.amount,
+            'status': r.status,
+            'created_at': r.created_at,
+            'age_days': age_days(r.created_at),
+            'next_approver': getattr(r.next_approver, 'username', None),
+        }
+        for r in qs
+    ]
+
+    context = {
+        'older_than': older_than,
+        'status_filter': status_filter,
+        'by_status': by_status,
+        'items': items,
+        'total': len(items),
+    }
+    return render(request, 'reports/stuck_approvals.html', context)
