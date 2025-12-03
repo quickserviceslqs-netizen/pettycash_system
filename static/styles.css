@@ -1233,3 +1233,91 @@ table .badge {
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
+
+/* ----------------------------------
+   Horizontal Table Scrolling Helpers
+---------------------------------- */
+.table-scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.table-scroll-x table {
+    min-width: 900px; /* ensure wider tables scroll */
+}
+
+/* ----------------------------------
+   Additional Color Utilities
+---------------------------------- */
+.text-purple {
+    color: #9333ea !important;
+}
+
+.bg-purple {
+    background-color: #9333ea !important;
+}
+
+.text-teal {
+    color: #14b8a6 !important;
+}
+
+.bg-teal {
+    background-color: #14b8a6 !important;
+}
+
+.text-orange {
+    color: #f97316 !important;
+}
+
+.bg-orange {
+    background-color: #f97316 !important;
+}
+
+.text-cyan {
+    color: #06b6d4 !important;
+}
+
+.bg-cyan {
+    background-color: #06b6d4 !important;
+}
+
+.text-red {
+    color: #ef4444 !important;
+}
+
+.bg-red {
+    background-color: #ef4444 !important;
+}
+
+/* Hover lift effect for cards */
+.hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Horizontal scroll for tables */
+.table-scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll-x::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-scroll-x::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-scroll-x::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.table-scroll-x::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

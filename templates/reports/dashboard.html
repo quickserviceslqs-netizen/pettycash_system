@@ -247,6 +247,111 @@
         </div>
     </div>
 
+    <!-- Phase 1: Quick Win Reports -->
+    <h4 class="mb-3 mt-4">Quick Analysis Reports</h4>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:category-spending-report' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-purple bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-pie-chart text-purple fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Category Spending</h5>
+                                <small class="text-muted">Expense breakdown</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-purple fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:payment-method-analysis' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-teal bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-credit-card text-teal fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Payment Methods</h5>
+                                <small class="text-muted">Success rates & volume</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-teal fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:regional-comparison' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-orange bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-geo-alt text-orange fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Regional Comparison</h5>
+                                <small class="text-muted">Branch performance</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-orange fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:rejection-analysis' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-red bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-x-circle text-danger fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Rejection Analysis</h5>
+                                <small class="text-muted">Patterns & reasons</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-danger fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:average-metrics' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-cyan bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-calculator text-cyan fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Average Metrics</h5>
+                                <small class="text-muted">Amounts & times</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-cyan fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
     <!-- Charts and Tables Row -->
     <div class="row g-3">
         <!-- Status Breakdown -->
@@ -386,7 +491,6 @@
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 </style>
-{% endblock %}
         </div>
     </div>
 

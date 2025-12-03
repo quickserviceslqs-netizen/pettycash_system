@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Category Spending Report - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Category Spending Report</h2>
+            <p class="text-muted mb-0">Expense breakdown by category</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'reports:category-spending-export-csv' %}?{{ request.GET.urlencode }}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+            </a>
+            <a href="{% url 'reports:category-spending-export-xlsx' %}?{{ request.GET.urlencode }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="days" class="form-label">Time Period</label>
+                    <select name="days" id="days" class="form-select">
+                        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 Days</option>
+                        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 Days</option>
+                        <option value="60" {% if days == 60 %}selected{% endif %}>Last 60 Days</option>
+                        <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 Days</option>
+                        <option value="180" {% if days == 180 %}selected{% endif %}>Last 6 Months</option>
+                        <option value="365" {% if days == 365 %}selected{% endif %}>Last Year</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="branch" class="form-label">Branch</label>
+                    <select name="branch" id="branch" class="form-select">
+                        <option value="">All Branches</option>
+                        {% for branch in branches %}
+                        <option value="{{ branch.id }}" {% if selected_branch == branch.id|stringformat:'s' %}selected{% endif %}>{{ branch.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="department" class="form-label">Department</label>
+                    <select name="department" id="department" class="form-select">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_department == dept.id|stringformat:'s' %}selected{% endif %}>{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="page_size" class="form-label">Page Size</label>
+                    <select name="page_size" id="page_size" class="form-select">
+                        {% for size in 10|make_list %}{% endfor %}
+                        {% for size in 10,25,50,100 %}
+                        <option value="{{ size }}" {% if request.GET.page_size|stringformat:'s' == size|stringformat:'s' %}selected{% endif %}>{{ size }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted mb-1 small">Total Spend</p>
+                    <h3 class="mb-0">${{ total_amount|floatformat:2 }}</h3>
+                    <small class="text-muted">{{ total_count }} requisitions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted mb-1 small">Top Category</p>
+                    <h5 class="mb-0">{{ top_category.name|default:"N/A" }}</h5>
+                    <small class="text-muted">${{ top_category.total|default:0|floatformat:2 }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted mb-1 small">Average per Requisition</p>
+                    <h4 class="mb-0">${{ avg_amount|floatformat:2 }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <p class="text-muted mb-1 small">Active Categories</p>
+                    <h4 class="mb-0">{{ category_stats|length }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Breakdown -->
+    <div class="card mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Spending by Category</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive table-scroll-x">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th class="text-end">Count</th>
+                            <th class="text-end">Total Amount</th>
+                            <th class="text-end">Average</th>
+                            <th class="text-end">% of Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cat in category_stats %}
+                        <tr>
+                            <td>
+                                <i class="bi bi-tag-fill text-primary me-2"></i>
+                                {{ cat.display_name }}
+                            </td>
+                            <td class="text-end">{{ cat.count }}</td>
+                            <td class="text-end">${{ cat.total|floatformat:2 }}</td>
+                            <td class="text-end">${{ cat.average|floatformat:2 }}</td>
+                            <td class="text-end">
+                                <span class="badge bg-primary">{{ cat.percentage|floatformat:1 }}%</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No data for selected period</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if category_stats.paginator %}
+                <nav aria-label="Category pagination">
+                    <ul class="pagination justify-content-end">
+                        {% if category_stats.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?days={{ days }}&branch={{ selected_branch }}&department={{ selected_department }}&page={{ category_stats.previous_page_number }}">Previous</a></li>
+                        {% endif %}
+                        <li class="page-item disabled"><span class="page-link">Page {{ category_stats.number }} of {{ category_stats.paginator.num_pages }}</span></li>
+                        {% if category_stats.has_next %}
+                        <li class="page-item"><a class="page-link" href="?days={{ days }}&branch={{ selected_branch }}&department={{ selected_department }}&page={{ category_stats.next_page_number }}">Next</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if by_department %}
+    <!-- Department Breakdown -->
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Category Spending by Department</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive table-scroll-x">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th>Category</th>
+                            <th class="text-end">Count</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in by_department %}
+                        <tr>
+                            <td>{{ item.department__name|default:"Unassigned" }}</td>
+                            <td>{{ item.display_name }}</td>
+                            <td class="text-end">{{ item.count }}</td>
+                            <td class="text-end">${{ item.total|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if by_department.paginator %}
+                <nav aria-label="Department pagination">
+                    <ul class="pagination justify-content-end">
+                        {% if by_department.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?days={{ days }}&branch={{ selected_branch }}&department={{ selected_department }}&dept_page={{ by_department.previous_page_number }}">Previous</a></li>
+                        {% endif %}
+                        <li class="page-item disabled"><span class="page-link">Page {{ by_department.number }} of {{ by_department.paginator.num_pages }}</span></li>
+                        {% if by_department.has_next %}
+                        <li class="page-item"><a class="page-link" href="?days={{ days }}&branch={{ selected_branch }}&department={{ selected_department }}&dept_page={{ by_department.next_page_number }}">Next</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

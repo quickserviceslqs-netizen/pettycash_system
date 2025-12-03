@@ -35,4 +35,14 @@ urlpatterns = [
     path('exceptions/stuck-approvals/', views.stuck_approvals_report, name='stuck-approvals-report'),
     path('exceptions/threshold-overrides/', views.threshold_overrides_report, name='threshold-overrides-report'),
     path('exceptions/threshold-overrides/export.csv', views.threshold_overrides_export_csv, name='threshold-overrides-export-csv'),
+    
+    # Phase 1: Quick Win Reports
+    path('category-spending/', views.category_spending_report, name='category-spending-report'),
+    path('category-spending/export/csv/', views.category_spending_export_csv, name='category-spending-export-csv'),
+    path('category-spending/export/xlsx/', views.category_spending_export_xlsx, name='category-spending-export-xlsx'),
+    path('payment-methods/', views.payment_method_analysis, name='payment-method-analysis'),
+    path('regional-comparison/', views.regional_comparison_report, name='regional-comparison'),
+    path('rejection-analysis/', views.rejection_analysis_report, name='rejection-analysis'),
+    path('average-metrics/', views.average_metrics_report, name='average-metrics'),
 ]
+

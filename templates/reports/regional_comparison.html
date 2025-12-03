@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Regional/Branch Comparison - Quick Service LQS{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Regional/Branch Comparison</h2>
+            <p class="text-muted mb-0">Performance comparison across branches</p>
+        </div>
+        <div>
+            <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Time Period</label>
+                    <select name="days" class="form-select">
+                        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 Days</option>
+                        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 Days</option>
+                        <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 Days</option>
+                        <option value="365" {% if days == 365 %}selected{% endif %}>Last Year</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Page Size</label>
+                    <select name="page_size" class="form-select">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Branch Activity -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Branch Activity & Spending</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive table-scroll-x">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th class="text-end">Requisitions</th>
+                            <th class="text-end">Total Amount</th>
+                            <th class="text-end">Average</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Pending</th>
+                            <th class="text-end">Rejected</th>
+                            <th class="text-end">Completion Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for branch in by_branch %}
+                        <tr>
+                            <td><strong>{{ branch.branch__name|default:"Unknown" }}</strong></td>
+                            <td class="text-end">{{ branch.count }}</td>
+                            <td class="text-end">KES {{ branch.total_amount|floatformat:2 }}</td>
+                            <td class="text-end">KES {{ branch.avg_amount|floatformat:2 }}</td>
+                            <td class="text-end text-success">{{ branch.paid_count }}</td>
+                            <td class="text-end text-warning">{{ branch.pending_count }}</td>
+                            <td class="text-end text-danger">{{ branch.rejected_count }}</td>
+                            <td class="text-end">
+                                <span class="badge {% if branch.completion_rate >= 80 %}bg-success{% elif branch.completion_rate >= 60 %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ branch.completion_rate|floatformat:1 }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">No branch data available for this period</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if by_branch.paginator %}
+                <nav aria-label="Branch pagination">
+                    <ul class="pagination justify-content-end">
+                        {% if by_branch.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&page={{ by_branch.previous_page_number }}">Previous</a></li>
+                        {% endif %}
+                        <li class="page-item disabled"><span class="page-link">Page {{ by_branch.number }} of {{ by_branch.paginator.num_pages }}</span></li>
+                        {% if by_branch.has_next %}
+                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&page={{ by_branch.next_page_number }}">Next</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Success by Branch -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Payment Success Rates by Branch</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive table-scroll-x">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th class="text-end">Total Payments</th>
+                            <th class="text-end">Successful</th>
+                            <th class="text-end">Failed</th>
+                            <th class="text-end">Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in branch_payments %}
+                        <tr>
+                            <td><strong>{{ item.requisition__branch__name|default:"Unknown" }}</strong></td>
+                            <td class="text-end">{{ item.total_payments }}</td>
+                            <td class="text-end text-success">{{ item.successful }}</td>
+                            <td class="text-end text-danger">{{ item.failed }}</td>
+                            <td class="text-end">
+                                <span class="badge {% if item.success_rate >= 95 %}bg-success{% elif item.success_rate >= 80 %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ item.success_rate|floatformat:1 }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No payment data available for this period</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if branch_payments.paginator %}
+                <nav aria-label="Payments pagination">
+                    <ul class="pagination justify-content-end">
+                        {% if branch_payments.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&pay_page={{ branch_payments.previous_page_number }}">Previous</a></li>
+                        {% endif %}
+                        <li class="page-item disabled"><span class="page-link">Page {{ branch_payments.number }} of {{ branch_payments.paginator.num_pages }}</span></li>
+                        {% if branch_payments.has_next %}
+                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&pay_page={{ branch_payments.next_page_number }}">Next</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Time by Branch -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Average Approval Time by Branch</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive table-scroll-x">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th class="text-end">Average Approval Time (Hours)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in branch_approval_time %}
+                        <tr>
+                            <td><strong>{{ item.branch__name|default:"Unknown" }}</strong></td>
+                            <td class="text-end">
+                                {% if item.avg_hours %}
+                                    <span class="badge {% if item.avg_hours <= 24 %}bg-success{% elif item.avg_hours <= 72 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ item.avg_hours|floatformat:1 }}h
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">No approval time data available for this period</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if branch_approval_time.paginator %}
+                <nav aria-label="Approval pagination">
+                    <ul class="pagination justify-content-end">
+                        {% if branch_approval_time.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&appr_page={{ branch_approval_time.previous_page_number }}">Previous</a></li>
+                        {% endif %}
+                        <li class="page-item disabled"><span class="page-link">Page {{ branch_approval_time.number }} of {{ branch_approval_time.paginator.num_pages }}</span></li>
+                        {% if branch_approval_time.has_next %}
+                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&appr_page={{ branch_approval_time.next_page_number }}">Next</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

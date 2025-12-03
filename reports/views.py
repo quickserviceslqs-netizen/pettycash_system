@@ -37,7 +37,7 @@ def reports_dashboard(request):
     total_amount = requisitions.aggregate(Sum('amount'))['amount__sum'] or 0
     
     # Status breakdown
-    status_breakdown = requisitions.values('status').annotate(count=Count('id')).order_by('-count')
+    status_breakdown = requisitions.values('status').annotate(count=Count('transaction_id')).order_by('-count')
     
     # Pending requisitions (not paid, reviewed, or rejected)
     pending_count = requisitions.exclude(status__in=['paid', 'reviewed', 'rejected']).count()
@@ -66,7 +66,7 @@ def reports_dashboard(request):
     )['avg_time']
     
     # Top requesters
-    top_requesters = requisitions.values('requested_by__username', 'requested_by__get_full_name').annotate(
+    top_requesters = requisitions.values('requested_by__username', 'requested_by__first_name', 'requested_by__last_name').annotate(
         total=Count('transaction_id'),
         amount=Sum('amount')
     ).order_by('-total')[:5]
@@ -478,13 +478,16 @@ def approval_report(request):
         timestamp__gte=start_date
     ).select_related('user', 'requisition').order_by('-timestamp')
     
-    # Approver performance
-    approver_stats = approval_trails.values('user__username', 'user__id').annotate(
+    # Approver performance - exclude non-approver actions like 'changes_submitted', 'paid', etc.
+    approver_actions = approval_trails.filter(
+        action__in=['approved', 'rejected', 'validated', 'reviewed', 'changes_requested', 'urgency_confirmed', 'reverted_to_normal']
+    )
+    approver_stats = approver_actions.values('user__username', 'user__id', 'user__role').annotate(
         total_actions=Count('id'),
         approvals=Count('id', filter=Q(action='approved')),
         rejections=Count('id', filter=Q(action='rejected')),
         change_requests=Count('id', filter=Q(action='changes_requested'))
-    ).order_by('-total_actions')
+    ).exclude(user__role='staff').order_by('-total_actions')
     
     # Action breakdown
     action_breakdown = approval_trails.values('action').annotate(
@@ -1011,3 +1014,493 @@ def threshold_overrides_export_csv(request):
             'Yes' if ApprovalTrail.objects.filter(requisition_id=r.pk).filter(Q(override=True) | Q(skipped_roles__isnull=False)).exists() else 'No',
         ])
     return response
+
+
+# ================================================================================
+# PHASE 1: QUICK WIN REPORTS
+# ================================================================================
+
+EXPENSE_CATEGORIES = {
+    'travel': 'Travel & Transport',
+    'supplies': 'Office Supplies',
+    'services': 'Professional Services',
+    'utilities': 'Utilities',
+    'maintenance': 'Maintenance & Repairs',
+    'communication': 'Communication',
+    'marketing': 'Marketing & Advertising',
+    'training': 'Training & Development',
+    'entertainment': 'Entertainment & Hospitality',
+    'equipment': 'Equipment & Assets',
+    'other': 'Other Expenses',
+}
+
+
+@require_app_access('reports')
+@require_permission('view_transaction_report', app_label='reports')
+def category_spending_report(request):
+    """Category spending analysis with breakdown by department/branch."""
+    days = int(request.GET.get('days', 30))
+    branch_id = request.GET.get('branch', '')
+    department_id = request.GET.get('department', '')
+    start_date = timezone.now() - timedelta(days=days)
+
+    qs = Requisition.objects.filter(created_at__gte=start_date).exclude(status='draft')
+    if branch_id:
+        qs = qs.filter(branch_id=branch_id)
+    if department_id:
+        qs = qs.filter(department_id=department_id)
+
+    # Overall stats
+    total_count = qs.count()
+    total_amount = qs.aggregate(Sum('amount'))['amount__sum'] or 0
+    avg_amount = qs.aggregate(Avg('amount'))['amount__avg'] or 0
+
+    # Pagination size
+    try:
+        page_size = int(request.GET.get('page_size', 25))
+    except (TypeError, ValueError):
+        page_size = 25
+    page_size = max(5, min(page_size, 200))
+
+    # Category breakdown (using purpose as spending category)
+    category_stats_qs = qs.values('purpose').annotate(
+        count=Count('transaction_id'),
+        total=Sum('amount'),
+        average=Avg('amount')
+    ).order_by('-total')
+    # Pagination for category stats
+    from django.core.paginator import Paginator
+    page = request.GET.get('page', 1)
+    cat_paginator = Paginator(list(category_stats_qs), page_size)
+    category_stats = cat_paginator.get_page(page)
+
+    # Add display names and percentages
+    for cat in category_stats:
+        cat['display_name'] = cat.get('purpose') or 'Unspecified'
+        cat['percentage'] = (cat['total'] / total_amount * 100) if total_amount else 0
+
+    top_category = category_stats[0] if category_stats else {}
+    if top_category:
+        top_category['name'] = top_category.get('display_name')
+
+    # Department breakdown
+    by_department_qs = qs.values('department__name', 'purpose').annotate(
+        count=Count('transaction_id'),
+        total=Sum('amount')
+    ).order_by('department__name', '-total')
+    dept_page = request.GET.get('dept_page', 1)
+    dept_paginator = Paginator(list(by_department_qs), page_size)
+    by_department = dept_paginator.get_page(dept_page)
+
+    for item in by_department:
+        item['display_name'] = item.get('purpose') or 'Unspecified'
+
+    from organization.models import Branch, Department
+    branches = Branch.objects.all().order_by('name')
+    departments = Department.objects.all().order_by('name')
+
+    context = {
+        'days': days,
+        'total_count': total_count,
+        'total_amount': total_amount,
+        'avg_amount': avg_amount,
+        'category_stats': category_stats,
+        'cat_paginator': cat_paginator,
+        'dept_paginator': dept_paginator,
+        'top_category': top_category,
+        'by_department': by_department,
+        'branches': branches,
+        'departments': departments,
+        'selected_branch': branch_id,
+        'selected_department': department_id,
+    }
+    return render(request, 'reports/category_spending.html', context)
+
+
+@require_app_access('reports')
+@require_permission('view_transaction_report', app_label='reports')
+def category_spending_export_csv(request):
+    """Export category spending to CSV."""
+    days = int(request.GET.get('days', 30))
+    branch_id = request.GET.get('branch', '')
+    department_id = request.GET.get('department', '')
+    start_date = timezone.now() - timedelta(days=days)
+
+    qs = Requisition.objects.filter(created_at__gte=start_date).exclude(status='draft')
+    if branch_id:
+        qs = qs.filter(branch_id=branch_id)
+    if department_id:
+        qs = qs.filter(department_id=department_id)
+
+    category_stats = qs.values('purpose').annotate(
+        count=Count('transaction_id'),
+        total=Sum('amount'),
+        average=Avg('amount')
+    ).order_by('-total')
+
+    total_amount = qs.aggregate(Sum('amount'))['amount__sum'] or 0
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="category_spending_{timezone.now().date()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Category', 'Count', 'Total Amount', 'Average Amount', 'Percentage'])
+    for cat in category_stats:
+        display_name = cat.get('purpose') or 'Unspecified'
+        percentage = (cat['total'] / total_amount * 100) if total_amount else 0
+        writer.writerow([display_name, cat['count'], f"{cat['total']}", f"{cat['average']}", f"{percentage:.1f}%"])
+    return response
+
+
+@require_app_access('reports')
+@require_permission('view_transaction_report', app_label='reports')
+def category_spending_export_xlsx(request):
+    """Export category spending to Excel."""
+    days = int(request.GET.get('days', 30))
+    branch_id = request.GET.get('branch', '')
+    department_id = request.GET.get('department', '')
+    start_date = timezone.now() - timedelta(days=days)
+
+    qs = Requisition.objects.filter(created_at__gte=start_date).exclude(status='draft')
+    if branch_id:
+        qs = qs.filter(branch_id=branch_id)
+    if department_id:
+        qs = qs.filter(department_id=department_id)
+
+    category_stats = qs.values('purpose').annotate(
+        count=Count('transaction_id'),
+        total=Sum('amount'),
+        average=Avg('amount')
+    ).order_by('-total')
+
+    total_amount = qs.aggregate(Sum('amount'))['amount__sum'] or 0
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Category Spending'
+    ws.append(['Category', 'Count', 'Total Amount', 'Average Amount', 'Percentage'])
+    for cat in category_stats:
+        display_name = cat.get('purpose') or 'Unspecified'
+        percentage = (cat['total'] / total_amount * 100) if total_amount else 0
+        ws.append([display_name, cat['count'], float(cat['total']), float(cat['average']), f"{percentage:.1f}%"])
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="category_spending_{timezone.now().date()}.xlsx"'
+    wb.save(response)
+    return response
+
+
+@require_app_access('reports')
+@require_permission('view_treasury_report', app_label='reports')
+def payment_method_analysis(request):
+    """Payment method performance analysis."""
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    page_size = int(request.GET.get('page_size', 25))
+    page_size = max(5, min(page_size, 200))
+
+    payments = Payment.objects.filter(created_at__gte=start_date).select_related('requisition')
+
+    # Overall stats
+    total_payments = payments.count()
+    total_amount = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+    success_count = payments.filter(status='success').count()
+    failed_count = payments.filter(status='failed').count()
+    success_rate = (success_count / total_payments * 100) if total_payments else 0
+
+    # By method
+    by_method = payments.values('method').annotate(
+        count=Count('payment_id'),
+        total_amount=Sum('amount'),
+        success_count=Count('payment_id', filter=Q(status='success')),
+        failed_count=Count('payment_id', filter=Q(status='failed')),
+        avg_amount=Avg('amount')
+    ).order_by('-total_amount')
+    # Pagination for methods
+    from django.core.paginator import Paginator
+    method_page = request.GET.get('page', 1)
+    method_paginator = Paginator(list(by_method), page_size)
+    by_method = method_paginator.get_page(method_page)
+
+    for item in by_method:
+        item['success_rate'] = (item['success_count'] / item['count'] * 100) if item['count'] else 0
+        item['method_display'] = dict(Payment.PAYMENT_METHOD_CHOICES).get(item['method'], item['method'])
+
+    # Processing time (successful payments only)
+    from django.db.models import F, ExpressionWrapper, DurationField
+    payments_with_time = Payment.objects.filter(
+        created_at__gte=start_date,
+        status='success',
+        requisition__created_at__isnull=False
+    ).annotate(
+        processing_time=ExpressionWrapper(F('created_at') - F('requisition__created_at'), output_field=DurationField())
+    )
+    avg_processing = payments_with_time.aggregate(avg=Avg('processing_time'))['avg']
+    avg_processing_hours = avg_processing.total_seconds() / 3600 if avg_processing else 0
+
+    # Failure reasons (if available)
+    failed_payments_qs = payments.filter(status='failed').values('method').annotate(count=Count('payment_id'))
+    failed_page = request.GET.get('failed_page', 1)
+    failed_paginator = Paginator(list(failed_payments_qs), page_size)
+    failed_payments = failed_paginator.get_page(failed_page)
+
+    context = {
+        'days': days,
+        'page_size': page_size,
+        'total_payments': total_payments,
+        'total_amount': total_amount,
+        'success_count': success_count,
+        'failed_count': failed_count,
+        'success_rate': success_rate,
+        'by_method': by_method,
+        'method_paginator': method_paginator,
+        'avg_processing_hours': avg_processing_hours,
+        'failed_payments': failed_payments,
+        'failed_paginator': failed_paginator,
+    }
+    return render(request, 'reports/payment_method_analysis.html', context)
+
+
+@require_app_access('reports')
+@require_permission('view_transaction_report', app_label='reports')
+def regional_comparison_report(request):
+    """Compare performance across regions/branches."""
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    page_size = int(request.GET.get('page_size', 25))
+    page_size = max(5, min(page_size, 200))
+
+    # Branch comparison
+    by_branch_qs = Requisition.objects.filter(created_at__gte=start_date).exclude(status='draft').values(
+        'branch__name', 'branch__id'
+    ).annotate(
+        count=Count('transaction_id'),
+        total_amount=Sum('amount'),
+        avg_amount=Avg('amount'),
+        paid_count=Count('transaction_id', filter=Q(status='paid')),
+        pending_count=Count('transaction_id', filter=Q(status__startswith='pending')),
+        rejected_count=Count('transaction_id', filter=Q(status='rejected'))
+    ).order_by('-total_amount')
+    from django.core.paginator import Paginator
+    branch_page = request.GET.get('page', 1)
+    branch_paginator = Paginator(list(by_branch_qs), page_size)
+    by_branch = branch_paginator.get_page(branch_page)
+
+    for item in by_branch:
+        item['completion_rate'] = (item['paid_count'] / item['count'] * 100) if item['count'] else 0
+
+    # Payment success by branch
+    branch_payments_qs = Payment.objects.filter(created_at__gte=start_date).values(
+        'requisition__branch__name'
+    ).annotate(
+        total_payments=Count('payment_id'),
+        successful=Count('payment_id', filter=Q(status='success')),
+        failed=Count('payment_id', filter=Q(status='failed'))
+    ).order_by('-total_payments')
+    pay_page = request.GET.get('pay_page', 1)
+    pay_paginator = Paginator(list(branch_payments_qs), page_size)
+    branch_payments = pay_paginator.get_page(pay_page)
+
+    for item in branch_payments:
+        item['success_rate'] = (item['successful'] / item['total_payments'] * 100) if item['total_payments'] else 0
+
+    # Approval time by branch
+    from django.db.models import F, ExpressionWrapper, DurationField, Min
+    branch_approval_time_qs = Requisition.objects.filter(
+        created_at__gte=start_date,
+        status='paid'
+    ).values('branch__name').annotate(
+        first_approval=Min('approvaltrail__timestamp')
+    ).annotate(
+        avg_time=Avg(ExpressionWrapper(F('approvaltrail__timestamp') - F('created_at'), output_field=DurationField()))
+    )
+    appr_page = request.GET.get('appr_page', 1)
+    appr_paginator = Paginator(list(branch_approval_time_qs), page_size)
+    branch_approval_time = appr_paginator.get_page(appr_page)
+
+    for item in branch_approval_time:
+        if item['avg_time']:
+            item['avg_hours'] = item['avg_time'].total_seconds() / 3600
+
+    context = {
+        'days': days,
+        'page_size': page_size,
+        'by_branch': by_branch,
+        'branch_payments': branch_payments,
+        'branch_approval_time': branch_approval_time,
+        'branch_paginator': branch_paginator,
+        'pay_paginator': pay_paginator,
+        'appr_paginator': appr_paginator,
+    }
+    return render(request, 'reports/regional_comparison.html', context)
+
+
+@require_app_access('reports')
+@require_permission('view_approval_report', app_label='reports')
+def rejection_analysis_report(request):
+    """Analyze rejection patterns and reasons."""
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    page_size = int(request.GET.get('page_size', 25))
+    page_size = max(5, min(page_size, 200))
+
+    # Rejected requisitions
+    rejected = Requisition.objects.filter(created_at__gte=start_date, status='rejected').select_related(
+        'requested_by', 'branch', 'department'
+    )
+
+    total_rejected = rejected.count()
+    total_requisitions = Requisition.objects.filter(created_at__gte=start_date).exclude(status='draft').count()
+    rejection_rate = (total_rejected / total_requisitions * 100) if total_requisitions else 0
+
+    # Rejection trails
+    rejection_trails = ApprovalTrail.objects.filter(
+        requisition__created_at__gte=start_date,
+        action='rejected'
+    ).select_related('user', 'requisition')
+
+    # By category (using purpose field available on Requisition)
+    by_category_qs = rejected.values('purpose').annotate(
+        count=Count('transaction_id'),
+        total_amount=Sum('amount')
+    ).order_by('-count')
+    from django.core.paginator import Paginator
+    page = request.GET.get('page', 1)
+    cat_paginator = Paginator(list(by_category_qs), page_size)
+    by_category = cat_paginator.get_page(page)
+
+    for cat in by_category:
+        cat['display_name'] = cat.get('purpose') or 'Unspecified'
+
+    # By department
+    by_department_qs = rejected.values('department__name').annotate(
+        count=Count('transaction_id')
+    ).order_by('-count')
+    dept_page = request.GET.get('dept_page', 1)
+    dept_paginator = Paginator(list(by_department_qs), page_size)
+    by_department = dept_paginator.get_page(dept_page)
+
+    # By rejector
+    by_rejector_qs = rejection_trails.values('user__username', 'user__role').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    rej_page = request.GET.get('rej_page', 1)
+    rej_paginator = Paginator(list(by_rejector_qs), page_size)
+    by_rejector = rej_paginator.get_page(rej_page)
+
+    # Top rejection reasons (from comments)
+    rejection_reasons = rejection_trails.exclude(comment__isnull=True).exclude(comment='').values(
+        'comment'
+    )[:10]
+
+    context = {
+        'days': days,
+        'page_size': page_size,
+        'total_rejected': total_rejected,
+        'rejection_rate': rejection_rate,
+        'by_category': by_category,
+        'by_department': by_department,
+        'by_rejector': by_rejector,
+        'rejection_reasons': rejection_reasons,
+        'cat_paginator': cat_paginator,
+        'dept_paginator': dept_paginator,
+        'rej_paginator': rej_paginator,
+    }
+    return render(request, 'reports/rejection_analysis.html', context)
+
+
+@require_app_access('reports')
+@require_permission('view_transaction_report', app_label='reports')
+def average_metrics_report(request):
+    """Average requisition metrics across different dimensions."""
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    page_size = int(request.GET.get('page_size', 25))
+    page_size = max(5, min(page_size, 200))
+
+    qs = Requisition.objects.filter(created_at__gte=start_date).exclude(status='draft')
+
+    # Overall averages
+    overall = qs.aggregate(
+        avg_amount=Avg('amount'),
+        total_count=Count('transaction_id'),
+        total_amount=Sum('amount')
+    )
+
+    # By department
+    by_department_qs = qs.values('department__name').annotate(
+        avg_amount=Avg('amount'),
+        count=Count('transaction_id'),
+        total=Sum('amount')
+    ).order_by('-total')
+    from django.core.paginator import Paginator
+    dept_page = request.GET.get('dept_page', 1)
+    dept_paginator = Paginator(list(by_department_qs), page_size)
+    by_department = dept_paginator.get_page(dept_page)
+
+    # By branch
+    by_branch_qs = qs.values('branch__name').annotate(
+        avg_amount=Avg('amount'),
+        count=Count('transaction_id'),
+        total=Sum('amount')
+    ).order_by('-total')
+    branch_page = request.GET.get('branch_page', 1)
+    branch_paginator = Paginator(list(by_branch_qs), page_size)
+    by_branch = branch_paginator.get_page(branch_page)
+
+    # By user (top requesters)
+    by_user_qs = qs.values('requested_by__username', 'requested_by__department__name').annotate(
+        avg_amount=Avg('amount'),
+        count=Count('transaction_id'),
+        total=Sum('amount')
+    ).order_by('-count')
+    user_page = request.GET.get('user_page', 1)
+    user_paginator = Paginator(list(by_user_qs), page_size)
+    by_user = user_paginator.get_page(user_page)
+
+    # Approval time metrics
+    from django.db.models import F, ExpressionWrapper, DurationField, Min
+    paid_reqs = qs.filter(status='paid')
+    
+    first_approval_subq = ApprovalTrail.objects.filter(
+        requisition_id=OuterRef('pk'),
+        action='approved'
+    ).order_by('timestamp').values('timestamp')[:1]
+
+    reqs_with_approval = paid_reqs.annotate(
+        first_approval_at=Subquery(first_approval_subq)
+    ).filter(first_approval_at__isnull=False).annotate(
+        approval_time=ExpressionWrapper(F('first_approval_at') - F('created_at'), output_field=DurationField())
+    )
+
+    avg_approval_time = reqs_with_approval.aggregate(avg=Avg('approval_time'))['avg']
+    avg_approval_hours = avg_approval_time.total_seconds() / 3600 if avg_approval_time else 0
+
+    # Payment time (from creation to payment)
+    payment_subq = Payment.objects.filter(
+        requisition_id=OuterRef('pk'),
+        status='success'
+    ).order_by('created_at').values('created_at')[:1]
+
+    reqs_with_payment = paid_reqs.annotate(
+        payment_at=Subquery(payment_subq)
+    ).filter(payment_at__isnull=False).annotate(
+        payment_time=ExpressionWrapper(F('payment_at') - F('created_at'), output_field=DurationField())
+    )
+
+    avg_payment_time = reqs_with_payment.aggregate(avg=Avg('payment_time'))['avg']
+    avg_payment_hours = avg_payment_time.total_seconds() / 3600 if avg_payment_time else 0
+
+    context = {
+        'days': days,
+        'page_size': page_size,
+        'overall': overall,
+        'by_department': by_department,
+        'by_branch': by_branch,
+        'by_user': by_user,
+        'avg_approval_hours': avg_approval_hours,
+        'avg_payment_hours': avg_payment_hours,
+        'dept_paginator': dept_paginator,
+        'branch_paginator': branch_paginator,
+        'user_paginator': user_paginator,
+    }
+    return render(request, 'reports/average_metrics.html', context)
