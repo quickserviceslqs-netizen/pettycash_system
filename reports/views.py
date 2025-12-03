@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db.models import Sum, Count, Q, Avg, F
+from django.db.models import Sum, Count, Q, Avg, F, Min, Subquery, OuterRef, ExpressionWrapper, DurationField
 from django.utils import timezone
 from datetime import timedelta
 from transactions.models import Requisition, ApprovalTrail
@@ -358,8 +358,30 @@ def approval_report(request):
         count=Count('id')
     ).order_by('-count')
     
-    # Recent approvals
-    recent_approvals = approval_trails[:20]
+    # SLA: average time to first approval (hours)
+    first_approved_subq = ApprovalTrail.objects.filter(
+        requisition_id=OuterRef('pk'), action='approved'
+    ).order_by().values('requisition_id').annotate(first_at=Min('timestamp')).values('first_at')[:1]
+    req_with_first = Requisition.objects.filter(created_at__gte=start_date).annotate(
+        first_approved_at=Subquery(first_approved_subq)
+    ).filter(first_approved_at__isnull=False).annotate(
+        time_to_first=ExpressionWrapper(F('first_approved_at') - F('created_at'), output_field=DurationField())
+    )
+    avg_time_to_first = req_with_first.aggregate(avg=Avg('time_to_first'))['avg']
+    avg_time_to_first_hours = None
+    if avg_time_to_first:
+        avg_time_to_first_hours = round(avg_time_to_first.total_seconds() / 3600, 2)
+
+    # Pagination for approval logs
+    from django.core.paginator import Paginator
+    try:
+        page_size = int(request.GET.get('page_size', 25))
+    except (TypeError, ValueError):
+        page_size = 25
+    page_size = max(5, min(page_size, 200))
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(approval_trails, page_size)
+    approval_logs_page = paginator.get_page(page_number)
     
     # Average approval time (time from creation to first approval)
     requisitions_with_approvals = Requisition.objects.filter(
@@ -368,14 +390,117 @@ def approval_report(request):
     ).select_related('requested_by')
     
     context = {
-        'approval_logs': recent_approvals,
+        'approval_logs': approval_logs_page,
         'approver_stats': approver_stats,
         'action_breakdown': action_breakdown,
         'days': days,
         'total_logs': approval_trails.count(),
+        'page_obj': approval_logs_page,
+        'page_size': page_size,
+        'avg_time_to_first_hours': avg_time_to_first_hours,
     }
     
     return render(request, 'reports/approval_report.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def approval_logs_export_csv(request):
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    qs = ApprovalTrail.objects.filter(timestamp__gte=start_date).select_related('user', 'requisition').order_by('-timestamp')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="approval_logs_{timezone.now().date()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Timestamp', 'User', 'Action', 'Requisition', 'Comment'])
+    for a in qs.iterator():
+        writer.writerow([
+            a.timestamp.strftime('%Y-%m-%d %H:%M'),
+            getattr(a.user, 'username', ''),
+            a.action,
+            a.requisition_id,
+            (a.comment or '').replace('\n', ' ').strip(),
+        ])
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def approval_logs_export_xlsx(request):
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    qs = ApprovalTrail.objects.filter(timestamp__gte=start_date).select_related('user', 'requisition').order_by('-timestamp')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Approval Logs'
+    ws.append(['Timestamp', 'User', 'Action', 'Requisition', 'Comment'])
+    for a in qs.iterator():
+        ws.append([
+            a.timestamp.strftime('%Y-%m-%d %H:%M'),
+            getattr(a.user, 'username', ''),
+            a.action,
+            a.requisition_id,
+            (a.comment or '').replace('\n', ' ').strip(),
+        ])
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="approval_logs_{timezone.now().date()}.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def approver_perf_export_csv(request):
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    approval_trails = ApprovalTrail.objects.filter(timestamp__gte=start_date)
+    approver_stats = approval_trails.values('user__username', 'user__id').annotate(
+        total_actions=Count('id'),
+        approvals=Count('id', filter=Q(action='approved')),
+        rejections=Count('id', filter=Q(action='rejected')),
+        change_requests=Count('id', filter=Q(action='changes_requested'))
+    ).order_by('-total_actions')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="approver_performance_{timezone.now().date()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['User', 'User ID', 'Total Actions', 'Approvals', 'Rejections', 'Change Requests', 'Approval Rate %'])
+    for s in approver_stats:
+        rate = round((s['approvals'] / s['total_actions'] * 100.0), 2) if s['total_actions'] else 0
+        writer.writerow([
+            s['user__username'], s['user__id'], s['total_actions'], s['approvals'], s['rejections'], s['change_requests'], rate
+        ])
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def approver_perf_export_xlsx(request):
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    approval_trails = ApprovalTrail.objects.filter(timestamp__gte=start_date)
+    approver_stats = approval_trails.values('user__username', 'user__id').annotate(
+        total_actions=Count('id'),
+        approvals=Count('id', filter=Q(action='approved')),
+        rejections=Count('id', filter=Q(action='rejected')),
+        change_requests=Count('id', filter=Q(action='changes_requested'))
+    ).order_by('-total_actions')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Approver Performance'
+    ws.append(['User', 'User ID', 'Total Actions', 'Approvals', 'Rejections', 'Change Requests', 'Approval Rate %'])
+    for s in approver_stats:
+        rate = round((s['approvals'] / s['total_actions'] * 100.0), 2) if s['total_actions'] else 0
+        ws.append([
+            s['user__username'], s['user__id'], s['total_actions'], s['approvals'], s['rejections'], s['change_requests'], rate
+        ])
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="approver_performance_{timezone.now().date()}.xlsx"'
+    wb.save(response)
+    return response
 
 
 @login_required
