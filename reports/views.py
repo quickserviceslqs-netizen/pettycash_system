@@ -4,7 +4,7 @@ from django.db.models import Sum, Count, Q, Avg, F, Min, Subquery, OuterRef, Exp
 from django.utils import timezone
 from datetime import timedelta
 from transactions.models import Requisition, ApprovalTrail
-from treasury.models import Payment, TreasuryFund
+from treasury.models import Payment, TreasuryFund, LedgerEntry, PaymentExecution
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 import csv
@@ -328,6 +328,137 @@ def treasury_report(request):
     }
     
     return render(request, 'reports/treasury_report.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def treasury_fund_detail(request, fund_id):
+    """Drilldown: show ledger movements and executed payments for a fund."""
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+
+    fund = TreasuryFund.objects.select_related('company', 'region', 'branch', 'department').get(fund_id=fund_id)
+
+    # Ledger entries for this fund in date range
+    ledger_qs = LedgerEntry.objects.filter(treasury_fund=fund, created_at__gte=start_date).select_related('payment_execution').order_by('-created_at')
+
+    # Payments associated via payment execution -> ledger entry
+    payments_qs = Payment.objects.filter(execution__ledger_entries__treasury_fund=fund, created_at__gte=start_date).select_related('requisition', 'executor', 'created_by').distinct().order_by('-created_at')
+
+    # Pagination for ledger
+    from django.core.paginator import Paginator
+    try:
+        ledger_page_size = int(request.GET.get('ledger_page_size', 25))
+    except (TypeError, ValueError):
+        ledger_page_size = 25
+    ledger_page_size = max(5, min(ledger_page_size, 200))
+    ledger_page = request.GET.get('ledger_page', 1)
+    ledger_paginator = Paginator(ledger_qs, ledger_page_size)
+    ledger_page_obj = ledger_paginator.get_page(ledger_page)
+
+    # Pagination for payments
+    try:
+        pay_page_size = int(request.GET.get('pay_page_size', 25))
+    except (TypeError, ValueError):
+        pay_page_size = 25
+    pay_page_size = max(5, min(pay_page_size, 200))
+    pay_page = request.GET.get('pay_page', 1)
+    pay_paginator = Paginator(payments_qs, pay_page_size)
+    pay_page_obj = pay_paginator.get_page(pay_page)
+
+    # Totals
+    debits = ledger_qs.filter(entry_type='debit').aggregate(total=Sum('amount'))['total'] or 0
+    credits = ledger_qs.filter(entry_type='credit').aggregate(total=Sum('amount'))['total'] or 0
+
+    context = {
+        'fund': fund,
+        'days': days,
+        'ledger_page_obj': ledger_page_obj,
+        'ledger_page_size': ledger_page_size,
+        'pay_page_obj': pay_page_obj,
+        'pay_page_size': pay_page_size,
+        'debits': debits,
+        'credits': credits,
+    }
+    return render(request, 'reports/treasury_fund_detail.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def treasury_fund_ledger_export_csv(request, fund_id):
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    fund = TreasuryFund.objects.get(fund_id=fund_id)
+    qs = LedgerEntry.objects.filter(treasury_fund=fund, created_at__gte=start_date).select_related('payment_execution').order_by('-created_at')
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="fund_ledger_{fund_id}_{timezone.now().date()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Timestamp', 'Type', 'Amount', 'Description', 'Payment Ref'])
+    for e in qs.iterator():
+        writer.writerow([
+            e.created_at.strftime('%Y-%m-%d %H:%M'), e.entry_type, f"{e.amount}", (e.description or '').replace('\n', ' ').strip(), getattr(e.payment_execution, 'gateway_reference', '')
+        ])
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def treasury_fund_ledger_export_xlsx(request, fund_id):
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    fund = TreasuryFund.objects.get(fund_id=fund_id)
+    qs = LedgerEntry.objects.filter(treasury_fund=fund, created_at__gte=start_date).select_related('payment_execution').order_by('-created_at')
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Fund Ledger'
+    ws.append(['Timestamp', 'Type', 'Amount', 'Description', 'Payment Ref'])
+    for e in qs.iterator():
+        ws.append([
+            e.created_at.strftime('%Y-%m-%d %H:%M'), e.entry_type, float(e.amount), (e.description or '').replace('\n', ' ').strip(), getattr(e.payment_execution, 'gateway_reference', ''),
+        ])
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="fund_ledger_{fund_id}_{timezone.now().date()}.xlsx"'
+    wb.save(response)
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def treasury_fund_payments_export_csv(request, fund_id):
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    fund = TreasuryFund.objects.get(fund_id=fund_id)
+    qs = Payment.objects.filter(execution__ledger_entries__treasury_fund=fund, created_at__gte=start_date).select_related('requisition', 'executor', 'created_by').distinct().order_by('-created_at')
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="fund_payments_{fund_id}_{timezone.now().date()}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Created', 'Payment ID', 'Amount', 'Method', 'Status', 'Destination', 'Requisition', 'Executor'])
+    for p in qs.iterator():
+        writer.writerow([
+            p.created_at.strftime('%Y-%m-%d %H:%M'), p.payment_id, f"{p.amount}", p.method, p.status, (p.destination or ''), getattr(p.requisition, 'transaction_id', ''), getattr(p.executor, 'username', ''),
+        ])
+    return response
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def treasury_fund_payments_export_xlsx(request, fund_id):
+    days = int(request.GET.get('days', 30))
+    start_date = timezone.now() - timedelta(days=days)
+    fund = TreasuryFund.objects.get(fund_id=fund_id)
+    qs = Payment.objects.filter(execution__ledger_entries__treasury_fund=fund, created_at__gte=start_date).select_related('requisition', 'executor', 'created_by').distinct().order_by('-created_at')
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Fund Payments'
+    ws.append(['Created', 'Payment ID', 'Amount', 'Method', 'Status', 'Destination', 'Requisition', 'Executor'])
+    for p in qs.iterator():
+        ws.append([
+            p.created_at.strftime('%Y-%m-%d %H:%M'), str(p.payment_id), float(p.amount), p.method, p.status, (p.destination or ''), getattr(p.requisition, 'transaction_id', ''), getattr(p.executor, 'username', ''),
+        ])
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="fund_payments_{fund_id}_{timezone.now().date()}.xlsx"'
+    wb.save(response)
+    return response
 
 
 @login_required
