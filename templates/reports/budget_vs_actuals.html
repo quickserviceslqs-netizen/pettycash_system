@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Budget vs Actuals - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Budget vs Actuals</h2>
+            <p class="text-muted mb-0">Monthly variance by scope</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
+                <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+            <a class="btn btn-success" href="{% url 'reports:budget-vs-actuals-export-csv' %}?year={{ year }}&group={{ group }}">
+                <i aria-hidden="true" class="bi bi-download"></i> Export CSV
+            </a>
+            <a class="btn btn-success" href="{% url 'reports:budget-vs-actuals-export-xlsx' %}?year={{ year }}&group={{ group }}">
+                <i aria-hidden="true" class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label for="year" class="form-label">Year</label>
+                    <input type="number" class="form-control" id="year" name="year" value="{{ year }}" min="2000" max="2100">
+                </div>
+                <div class="col-md-3">
+                    <label for="group" class="form-label">Group By</label>
+                    <select name="group" id="group" class="form-select">
+                        <option value="cost_center" {% if group == 'cost_center' %}selected{% endif %}>Cost Center</option>
+                        <option value="department" {% if group == 'department' %}selected{% endif %}>Department</option>
+                        <option value="branch" {% if group == 'branch' %}selected{% endif %}>Branch</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary mt-4"><i aria-hidden="true" class="bi bi-funnel"></i> Apply</button>
+                    <a href="{% url 'reports:budget-vs-actuals' %}" class="btn btn-outline-secondary mt-4"><i aria-hidden="true" class="bi bi-x-circle"></i> Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">Monthly Variance</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Scope</th>
+                            <th>Month</th>
+                            <th class="text-end">Actual</th>
+                            <th class="text-end">Budget</th>
+                            <th class="text-end">Variance</th>
+                            <th class="text-end">Variance %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in rows %}
+                        <tr>
+                            <td>{{ r.scope_name }}</td>
+                            <td>{% if r.month %}{{ r.month|date:"M Y" }}{% else %}-{% endif %}</td>
+                            <td class="text-end">${{ r.actual|floatformat:2 }}</td>
+                            <td class="text-end">${{ r.budget|floatformat:2 }}</td>
+                            <td class="text-end {% if r.variance > 0 %}text-danger{% elif r.variance < 0 %}text-success{% endif %}"> 
+                                {% if r.variance > 0 %}+{% endif %}${{ r.variance|floatformat:2 }}
+                            </td>
+                            <td class="text-end">{% if r.variance_pct %}{{ r.variance_pct|floatformat:2 }}%{% else %}-{% endif %}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted py-4">No data for the selected period.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

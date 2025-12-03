@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Sum, Count, Q, Avg, F, Min, Subquery, OuterRef, ExpressionWrapper, DurationField, Exists
 from django.utils import timezone
 from datetime import timedelta
+from django.db.models.functions import TruncMonth
 from transactions.models import Requisition, ApprovalTrail
 from treasury.models import Payment, TreasuryFund, LedgerEntry, PaymentExecution
 from django.contrib.auth import get_user_model
@@ -688,6 +689,170 @@ def user_activity_report(request):
     }
     
     return render(request, 'reports/user_activity_report.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def budget_vs_actuals_report(request):
+    """Budget vs Actuals by Cost Center (monthly), with variance."""
+    from reports.models import BudgetAllocation
+    from organization.models import CostCenter, Department, Branch
+
+    try:
+        year = int(request.GET.get('year', timezone.now().year))
+    except (TypeError, ValueError):
+        year = timezone.now().year
+    group = request.GET.get('group', 'cost_center')  # cost_center | department | branch
+
+    # Actuals (sum of amounts) in the given year by month and scope
+    reqs = Requisition.objects.filter(created_at__year=year).select_related('cost_center', 'department', 'branch')
+
+    if group == 'department':
+        actuals = reqs.annotate(month=TruncMonth('created_at')).values('month', 'department_id', 'department__name').annotate(actual=Sum('amount')).order_by('month', 'department__name')
+    elif group == 'branch':
+        actuals = reqs.annotate(month=TruncMonth('created_at')).values('month', 'branch_id', 'branch__name').annotate(actual=Sum('amount')).order_by('month', 'branch__name')
+    else:
+        actuals = reqs.annotate(month=TruncMonth('created_at')).values('month', 'cost_center_id', 'cost_center__name', 'department__name', 'branch__name').annotate(actual=Sum('amount')).order_by('month', 'cost_center__name')
+
+    # Collect keys for budget lookup
+    months = set()
+    rows = []
+    for a in actuals:
+        month_num = a['month'].month if a['month'] else None
+        months.add(month_num)
+        rows.append(a)
+
+    # Fetch budgets for the same scope
+    budgets_qs = BudgetAllocation.objects.filter(year=year)
+    budget_map = {}
+    for b in budgets_qs.iterator():
+        key = (
+            'branch', b.branch_id
+        ) if group == 'branch' else (
+            ('department', b.department_id) if group == 'department' else ('cost_center', b.cost_center_id)
+        )
+        month_key = b.month or 0
+        budget_map.setdefault((key[0], key[1], month_key), 0)
+        budget_map[(key[0], key[1], month_key)] += float(b.amount)
+
+    # Build result with variance
+    data = []
+    for r in rows:
+        if group == 'branch':
+            scope_key = ('branch', r.get('branch_id'))
+            scope_name = r.get('branch__name') or '-'
+        elif group == 'department':
+            scope_key = ('department', r.get('department_id'))
+            scope_name = r.get('department__name') or '-'
+        else:
+            scope_key = ('cost_center', r.get('cost_center_id'))
+            scope_name = r.get('cost_center__name') or '-'
+
+        month_num = r['month'].month if r['month'] else 0
+        budget = budget_map.get((scope_key[0], scope_key[1], month_num), budget_map.get((scope_key[0], scope_key[1], 0), 0))
+        actual = float(r['actual'] or 0)
+        variance = actual - budget
+        variance_pct = (variance / budget * 100.0) if budget else None
+        data.append({
+            'scope_name': scope_name,
+            'month': r['month'],
+            'actual': actual,
+            'budget': budget,
+            'variance': variance,
+            'variance_pct': variance_pct,
+        })
+
+    # Sort by scope then month
+    data.sort(key=lambda x: (x['scope_name'] or '', x['month']))
+
+    context = {
+        'year': year,
+        'group': group,
+        'rows': data,
+    }
+    return render(request, 'reports/budget_vs_actuals.html', context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def budget_vs_actuals_export_csv(request):
+    year = int(request.GET.get('year', timezone.now().year))
+    request.GET._mutable = True  # safe in view scope
+    request.GET['group'] = request.GET.get('group', 'cost_center')
+    response = budget_vs_actuals_report(request)
+    # Re-run logic more directly for CSV to avoid template
+    group = request.GET['group']
+    from reports.models import BudgetAllocation
+    reqs = Requisition.objects.filter(created_at__year=year).select_related('cost_center', 'department', 'branch')
+    if group == 'department':
+        actuals = reqs.annotate(month=TruncMonth('created_at')).values('month', 'department_id', 'department__name').annotate(actual=Sum('amount'))
+    elif group == 'branch':
+        actuals = reqs.annotate(month=TruncMonth('created_at')).values('month', 'branch_id', 'branch__name').annotate(actual=Sum('amount'))
+    else:
+        actuals = reqs.annotate(month=TruncMonth('created_at')).values('month', 'cost_center_id', 'cost_center__name').annotate(actual=Sum('amount'))
+    budgets_qs = BudgetAllocation.objects.filter(year=year)
+    budget_map = {}
+    for b in budgets_qs.iterator():
+        key = ('branch', b.branch_id) if group == 'branch' else (('department', b.department_id) if group == 'department' else ('cost_center', b.cost_center_id))
+        month_key = b.month or 0
+        budget_map.setdefault((key[0], key[1], month_key), 0)
+        budget_map[(key[0], key[1], month_key)] += float(b.amount)
+    # Build CSV
+    resp = HttpResponse(content_type='text/csv')
+    resp['Content-Disposition'] = f'attachment; filename="budget_vs_actuals_{year}.csv"'
+    writer = csv.writer(resp)
+    writer.writerow(['Scope', 'Month', 'Actual', 'Budget', 'Variance', 'Variance %'])
+    for r in actuals:
+        scope_name = r.get('branch__name') or r.get('department__name') or r.get('cost_center__name') or '-'
+        month_num = r['month'].month if r['month'] else 0
+        budget = budget_map.get(('branch', r.get('branch_id'), month_num), 0) if group == 'branch' else (
+            budget_map.get(('department', r.get('department_id'), month_num), 0) if group == 'department' else budget_map.get(('cost_center', r.get('cost_center_id'), month_num), 0)
+        )
+        actual = float(r['actual'] or 0)
+        variance = actual - budget
+        variance_pct = round((variance / budget * 100.0), 2) if budget else None
+        writer.writerow([scope_name, month_num, actual, budget, variance, variance_pct if variance_pct is not None else ''])
+    return resp
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def budget_vs_actuals_export_xlsx(request):
+    year = int(request.GET.get('year', timezone.now().year))
+    group = request.GET.get('group', 'cost_center')
+    from reports.models import BudgetAllocation
+    reqs = Requisition.objects.filter(created_at__year=year).select_related('cost_center', 'department', 'branch')
+    if group == 'department':
+        actuals = reqs.annotate(month=TruncMonth('created_at')).values('month', 'department_id', 'department__name').annotate(actual=Sum('amount'))
+    elif group == 'branch':
+        actuals = reqs.annotate(month=TruncMonth('created_at')).values('month', 'branch_id', 'branch__name').annotate(actual=Sum('amount'))
+    else:
+        actuals = reqs.annotate(month=TruncMonth('created_at')).values('month', 'cost_center_id', 'cost_center__name').annotate(actual=Sum('amount'))
+    budgets_qs = BudgetAllocation.objects.filter(year=year)
+    budget_map = {}
+    for b in budgets_qs.iterator():
+        key = ('branch', b.branch_id) if group == 'branch' else (('department', b.department_id) if group == 'department' else ('cost_center', b.cost_center_id))
+        month_key = b.month or 0
+        budget_map.setdefault((key[0], key[1], month_key), 0)
+        budget_map[(key[0], key[1], month_key)] += float(b.amount)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Budget vs Actuals'
+    ws.append(['Scope', 'Month', 'Actual', 'Budget', 'Variance', 'Variance %'])
+    for r in actuals:
+        scope_name = r.get('branch__name') or r.get('department__name') or r.get('cost_center__name') or '-'
+        month_num = r['month'].month if r['month'] else 0
+        budget = budget_map.get(('branch', r.get('branch_id'), month_num), 0) if group == 'branch' else (
+            budget_map.get(('department', r.get('department_id'), month_num), 0) if group == 'department' else budget_map.get(('cost_center', r.get('cost_center_id'), month_num), 0)
+        )
+        actual = float(r['actual'] or 0)
+        variance = actual - budget
+        variance_pct = round((variance / budget * 100.0), 2) if budget else None
+        ws.append([scope_name, month_num, actual, budget, variance, variance_pct if variance_pct is not None else ''])
+    resp = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = f'attachment; filename="budget_vs_actuals_{year}.xlsx"'
+    wb.save(resp)
+    return resp
 
 
 @login_required

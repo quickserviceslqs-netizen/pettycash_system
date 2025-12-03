@@ -27,6 +27,10 @@ urlpatterns = [
     path('approvals/export/approvers.csv', views.approver_perf_export_csv, name='approver-perf-export-csv'),
     path('approvals/export/approvers.xlsx', views.approver_perf_export_xlsx, name='approver-perf-export-xlsx'),
     path('user-activity/', views.user_activity_report, name='user-activity-report'),
+    # Budget vs Actuals
+    path('budget-vs-actuals/', views.budget_vs_actuals_report, name='budget-vs-actuals'),
+    path('budget-vs-actuals/export.csv', views.budget_vs_actuals_export_csv, name='budget-vs-actuals-export-csv'),
+    path('budget-vs-actuals/export.xlsx', views.budget_vs_actuals_export_xlsx, name='budget-vs-actuals-export-xlsx'),
     # Exceptions
     path('exceptions/stuck-approvals/', views.stuck_approvals_report, name='stuck-approvals-report'),
     path('exceptions/threshold-overrides/', views.threshold_overrides_report, name='threshold-overrides-report'),
