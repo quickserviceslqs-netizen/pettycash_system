@@ -52,13 +52,22 @@ def settings_dashboard(request):
             Q(description__icontains=search_query)
         )
     
+    # Paginate when filtering/searching
+    paginated_settings = None
+    if category_filter or search_query:
+        page_size = request.GET.get('page_size', 25)
+        paginator = Paginator(settings, page_size)
+        page_number = request.GET.get('page', 1)
+        paginated_settings = paginator.get_page(page_number)
+    
     context = {
         'settings_by_category': settings_by_category,
-        'all_settings': settings,
+        'all_settings': paginated_settings if paginated_settings else settings,
         'categories': categories,
         'selected_category': category_filter,
         'search_query': search_query,
         'total_settings': SystemSetting.objects.filter(is_active=True).count(),
+        'is_paginated': bool(paginated_settings),
     }
     
     return render(request, 'settings_manager/dashboard.html', context)

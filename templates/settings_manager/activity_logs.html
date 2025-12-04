@@ -259,22 +259,22 @@
                         {{ logs.start_index }}-{{ logs.end_index }} of {{ logs.paginator.count }}
                     </div>
                     <div class="btn-group" role="group">
-                        <a href="?page=1&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}" 
+                        <a href="?page=1&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}{% if not logs.has_previous %}#{% endif %}" 
                            class="btn btn-sm btn-outline-secondary {% if not logs.has_previous %}disabled{% endif %}" 
                            title="First page">
                             <i class="bi bi-chevron-double-left"></i>
                         </a>
-                        <a href="?page={{ logs.previous_page_number }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}" 
+                        <a href="{% if logs.has_previous %}?page={{ logs.previous_page_number }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}{% else %}#{% endif %}" 
                            class="btn btn-sm btn-outline-secondary {% if not logs.has_previous %}disabled{% endif %}" 
                            title="Previous page">
                             <i class="bi bi-chevron-left"></i>
                         </a>
-                        <a href="?page={{ logs.next_page_number }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}" 
+                        <a href="{% if logs.has_next %}?page={{ logs.next_page_number }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}{% else %}#{% endif %}" 
                            class="btn btn-sm btn-outline-secondary {% if not logs.has_next %}disabled{% endif %}" 
                            title="Next page">
                             <i class="bi bi-chevron-right"></i>
                         </a>
-                        <a href="?page={{ logs.paginator.num_pages }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}" 
+                        <a href="{% if logs.has_next %}?page={{ logs.paginator.num_pages }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}{% else %}#{% endif %}" 
                            class="btn btn-sm btn-outline-secondary {% if not logs.has_next %}disabled{% endif %}" 
                            title="Last page">
                             <i class="bi bi-chevron-double-right"></i>
