@@ -176,42 +176,34 @@
                 </table>
             </div>
             <!-- Pagination Controls -->
-            <nav aria-label="Transactions pagination" class="d-flex justify-content-end align-items-center p-3">
-                <form id="txPagerForm" method="get" class="mb-0">
-                    <input type="hidden" name="days" value="{{ days }}">
-                    <input type="hidden" name="status" value="{{ selected_status }}">
-                    <input type="hidden" name="branch" value="{{ selected_branch }}">
-                    <input type="hidden" name="department" value="{{ selected_department }}">
-                    <input type="hidden" name="min_amount" value="{{ min_amount }}">
-                    <input type="hidden" name="max_amount" value="{{ max_amount }}">
-                    <input type="hidden" name="page" id="txPageInput" value="{{ page_obj.number }}">
-                    <ul class="pagination pagination-sm mb-0 align-items-center">
-                        <li class="page-item mx-2">
-                            <select name="page_size" id="tx_page_size" class="form-select form-select-sm" onchange="document.getElementById('txPageInput').value=1; this.form.submit();">
-                                <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
-                                <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
-                                <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
-                                <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
-                            </select>
-                        </li>
-                        {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <button type="submit" class="page-link" onclick="document.getElementById('txPageInput').value={{ page_obj.previous_page_number }};">Prev</button>
-                        </li>
-                        {% else %}
-                        <li class="page-item disabled"><span class="page-link">Prev</span></li>
-                        {% endif %}
-                        {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <button type="submit" class="page-link" onclick="document.getElementById('txPageInput').value={{ page_obj.next_page_number }};">Next</button>
-                        </li>
-                        {% else %}
-                        <li class="page-item disabled"><span class="page-link">Next</span></li>
-                        {% endif %}
-                        <li class="page-item disabled ms-3"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
-                    </ul>
-                </form>
-            </nav>
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 small">Rows per page:</label>
+                    <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}&page_size=' + this.value">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                    </select>
+                    <span class="text-muted small">{{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+                </div>
+                <div class="btn-group" role="group">
+                    {% if page_obj.has_previous %}
+                    <a href="?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}&page_size={{ page_size }}&page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                    <a href="?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}&page_size={{ page_size }}&page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                    <a href="?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}&page_size={{ page_size }}&page={{ page_obj.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <a href="?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}&page_size={{ page_size }}&page={{ page_obj.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>

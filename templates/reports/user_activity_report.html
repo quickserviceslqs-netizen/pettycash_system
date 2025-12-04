@@ -66,6 +66,36 @@
                     </tbody>
                 </table>
             </div>
+            {% if user_requisition_stats.paginator %}
+            <div class="d-flex align-items-center justify-content-between mt-3 px-3 pb-3">
+                <div>
+                    <label for="req_page_size" class="form-label mb-0 me-2 d-inline">Rows per page:</label>
+                    <select id="req_page_size" class="form-select d-inline" style="width: auto;" onchange="window.location.href='?page_size=' + this.value;">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <span class="text-muted small">{{ user_requisition_stats.start_index }}-{{ user_requisition_stats.end_index }} of {{ user_requisition_stats.paginator.count }}</span>
+                <div class="btn-group" role="group">
+                    {% if user_requisition_stats.has_previous %}
+                    <a href="?page_size={{ page_size }}&req_page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                    <a href="?page_size={{ page_size }}&req_page={{ user_requisition_stats.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
+                    {% endif %}
+                    {% if user_requisition_stats.has_next %}
+                    <a href="?page_size={{ page_size }}&req_page={{ user_requisition_stats.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <a href="?page_size={{ page_size }}&req_page={{ user_requisition_stats.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -111,6 +141,36 @@
                     </tbody>
                 </table>
             </div>
+            {% if user_approval_stats.paginator %}
+            <div class="d-flex align-items-center justify-content-between mt-3 px-3 pb-3">
+                <div>
+                    <label for="appr_page_size" class="form-label mb-0 me-2 d-inline">Rows per page:</label>
+                    <select id="appr_page_size" class="form-select d-inline" style="width: auto;" onchange="window.location.href='?page_size=' + this.value;">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <span class="text-muted small">{{ user_approval_stats.start_index }}-{{ user_approval_stats.end_index }} of {{ user_approval_stats.paginator.count }}</span>
+                <div class="btn-group" role="group">
+                    {% if user_approval_stats.has_previous %}
+                    <a href="?page_size={{ page_size }}&appr_page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                    <a href="?page_size={{ page_size }}&appr_page={{ user_approval_stats.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
+                    {% endif %}
+                    {% if user_approval_stats.has_next %}
+                    <a href="?page_size={{ page_size }}&appr_page={{ user_approval_stats.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <a href="?page_size={{ page_size }}&appr_page={{ user_approval_stats.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -160,6 +220,36 @@
                     </tbody>
                 </table>
             </div>
+            {% if user_payment_stats.paginator %}
+            <div class="d-flex align-items-center justify-content-between mt-3 px-3 pb-3">
+                <div>
+                    <label for="pay_page_size" class="form-label mb-0 me-2 d-inline">Rows per page:</label>
+                    <select id="pay_page_size" class="form-select d-inline" style="width: auto;" onchange="window.location.href='?page_size=' + this.value;">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <span class="text-muted small">{{ user_payment_stats.start_index }}-{{ user_payment_stats.end_index }} of {{ user_payment_stats.paginator.count }}</span>
+                <div class="btn-group" role="group">
+                    {% if user_payment_stats.has_previous %}
+                    <a href="?page_size={{ page_size }}&pay_page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                    <a href="?page_size={{ page_size }}&pay_page={{ user_payment_stats.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
+                    {% endif %}
+                    {% if user_payment_stats.has_next %}
+                    <a href="?page_size={{ page_size }}&pay_page={{ user_payment_stats.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <a href="?page_size={{ page_size }}&pay_page={{ user_payment_stats.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

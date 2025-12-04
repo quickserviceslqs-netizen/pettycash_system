@@ -9,6 +9,7 @@ from transactions.models import Requisition, ApprovalTrail
 from treasury.models import Payment, TreasuryFund, LedgerEntry, PaymentExecution
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
+from django.core.paginator import Paginator
 import csv
 from openpyxl import Workbook
 
@@ -292,7 +293,7 @@ def treasury_report(request):
     Treasury fund balances and payment activity report.
     """
     # Get all treasury funds with annotations
-    funds = TreasuryFund.objects.select_related('company', 'region', 'branch').annotate(
+    funds_qs = TreasuryFund.objects.select_related('company', 'region', 'branch').annotate(
         needs_replenishment=Q(current_balance__lt=F('reorder_level'))
     ).order_by('company', 'region', 'branch')
     
@@ -317,11 +318,18 @@ def treasury_report(request):
     ).order_by('-count')
     
     # Overall statistics
-    total_balance = funds.aggregate(Sum('current_balance'))['current_balance__sum'] or 0
-    funds_needing_replenishment = funds.filter(current_balance__lt=F('reorder_level')).count()
+    total_balance = funds_qs.aggregate(Sum('current_balance'))['current_balance__sum'] or 0
+    funds_needing_replenishment = funds_qs.filter(current_balance__lt=F('reorder_level')).count()
+    
+    # Pagination
+    page_size = max(5, min(200, int(request.GET.get('page_size', 25))))
+    paginator = Paginator(funds_qs, page_size)
+    page_number = request.GET.get('page', 1)
+    funds = paginator.get_page(page_number)
     
     context = {
         'funds': funds,
+        'page_size': page_size,
         'total_balance': total_balance,
         'funds_needing_replenishment': funds_needing_replenishment,
         'payment_stats': payment_stats,
@@ -676,7 +684,7 @@ def user_activity_report(request):
     ).order_by('-total_approvals')
     
     # User payment execution activity
-    user_payment_stats = User.objects.filter(
+    user_payment_stats_qs = User.objects.filter(
         executed_payments__requisition__created_at__gte=start_date
     ).annotate(
         total_payments=Count('executed_payments'),
@@ -685,10 +693,23 @@ def user_activity_report(request):
         total_amount_paid=Sum('executed_payments__amount', filter=Q(executed_payments__status='success'))
     ).filter(total_payments__gt=0).order_by('-total_payments')
     
+    # Pagination
+    page_size = max(5, min(200, int(request.GET.get('page_size', 25))))
+    
+    req_paginator = Paginator(user_requisition_stats, page_size)
+    req_page = req_paginator.get_page(request.GET.get('req_page', 1))
+    
+    appr_paginator = Paginator(user_approval_stats, page_size)
+    appr_page = appr_paginator.get_page(request.GET.get('appr_page', 1))
+    
+    pay_paginator = Paginator(user_payment_stats_qs, page_size)
+    pay_page = pay_paginator.get_page(request.GET.get('pay_page', 1))
+    
     context = {
-        'user_requisition_stats': user_requisition_stats,
-        'user_approval_stats': user_approval_stats,
-        'user_payment_stats': user_payment_stats,
+        'user_requisition_stats': req_page,
+        'user_approval_stats': appr_page,
+        'user_payment_stats': pay_page,
+        'page_size': page_size,
         'days': days,
     }
     
@@ -769,10 +790,17 @@ def budget_vs_actuals_report(request):
     # Sort by scope then month
     data.sort(key=lambda x: (x['scope_name'] or '', x['month']))
 
+    # Pagination
+    page_size = max(5, min(200, int(request.GET.get('page_size', 25))))
+    paginator = Paginator(data, page_size)
+    page_number = request.GET.get('page', 1)
+    rows = paginator.get_page(page_number)
+
     context = {
         'year': year,
         'group': group,
-        'rows': data,
+        'rows': rows,
+        'page_size': page_size,
     }
     return render(request, 'reports/budget_vs_actuals.html', context)
 
@@ -884,7 +912,7 @@ def stuck_approvals_report(request):
     def age_days(dt):
         return (timezone.now() - dt).days
 
-    items = [
+    items_data = [
         {
             'transaction_id': r.transaction_id,
             'requested_by': getattr(r.requested_by, 'username', ''),
@@ -899,12 +927,19 @@ def stuck_approvals_report(request):
         for r in qs
     ]
 
+    # Pagination
+    page_size = max(5, min(200, int(request.GET.get('page_size', 25))))
+    paginator = Paginator(items_data, page_size)
+    page_number = request.GET.get('page', 1)
+    items = paginator.get_page(page_number)
+
     context = {
         'older_than': older_than,
         'status_filter': status_filter,
         'by_status': by_status,
         'items': items,
-        'total': len(items),
+        'page_size': page_size,
+        'total': len(items_data),
     }
     return render(request, 'reports/stuck_approvals.html', context)
 
@@ -949,7 +984,7 @@ def threshold_overrides_report(request):
         'trail_override': qs.filter(has_trail_override=True).count(),
     }
 
-    items = [
+    items_data = [
         {
             'transaction_id': r.transaction_id,
             'requested_by': getattr(r.requested_by, 'username', ''),
@@ -967,10 +1002,17 @@ def threshold_overrides_report(request):
         for r in qs
     ]
 
+    # Pagination
+    page_size = max(5, min(200, int(request.GET.get('page_size', 25))))
+    paginator = Paginator(items_data, page_size)
+    page_number = request.GET.get('page', 1)
+    items = paginator.get_page(page_number)
+
     context = {
         'days': days,
         'items': items,
-        'total': len(items),
+        'page_size': page_size,
+        'total': len(items_data),
         'by_category': by_category,
     }
     return render(request, 'reports/threshold_overrides.html', context)

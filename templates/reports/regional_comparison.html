@@ -30,15 +30,6 @@
                         <option value="365" {% if days == 365 %}selected{% endif %}>Last Year</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Page Size</label>
-                    <select name="page_size" class="form-select">
-                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
-                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
-                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
-                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
-                    </select>
-                </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
                 </div>
@@ -90,17 +81,34 @@
                     </tbody>
                 </table>
                 {% if by_branch.paginator %}
-                <nav aria-label="Branch pagination">
-                    <ul class="pagination justify-content-end">
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="form-label mb-0 small">Rows per page:</label>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?days={{ days }}&page_size=' + this.value">
+                            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                        </select>
+                        <span class="text-muted small">{{ by_branch.start_index }}-{{ by_branch.end_index }} of {{ by_branch.paginator.count }}</span>
+                    </div>
+                    <div class="btn-group" role="group">
                         {% if by_branch.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&page={{ by_branch.previous_page_number }}">Previous</a></li>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&page={{ by_branch.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
                         {% endif %}
-                        <li class="page-item disabled"><span class="page-link">Page {{ by_branch.number }} of {{ by_branch.paginator.num_pages }}</span></li>
                         {% if by_branch.has_next %}
-                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&page={{ by_branch.next_page_number }}">Next</a></li>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&page={{ by_branch.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&page={{ by_branch.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
                         {% endif %}
-                    </ul>
-                </nav>
+                    </div>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -144,17 +152,34 @@
                     </tbody>
                 </table>
                 {% if branch_payments.paginator %}
-                <nav aria-label="Payments pagination">
-                    <ul class="pagination justify-content-end">
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="form-label mb-0 small">Rows per page:</label>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?days={{ days }}&page_size=' + this.value + '&pay_page=1'">
+                            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                        </select>
+                        <span class="text-muted small">{{ branch_payments.start_index }}-{{ branch_payments.end_index }} of {{ branch_payments.paginator.count }}</span>
+                    </div>
+                    <div class="btn-group" role="group">
                         {% if branch_payments.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&pay_page={{ branch_payments.previous_page_number }}">Previous</a></li>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&pay_page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&pay_page={{ branch_payments.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
                         {% endif %}
-                        <li class="page-item disabled"><span class="page-link">Page {{ branch_payments.number }} of {{ branch_payments.paginator.num_pages }}</span></li>
                         {% if branch_payments.has_next %}
-                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&pay_page={{ branch_payments.next_page_number }}">Next</a></li>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&pay_page={{ branch_payments.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&pay_page={{ branch_payments.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
                         {% endif %}
-                    </ul>
-                </nav>
+                    </div>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -196,17 +221,34 @@
                     </tbody>
                 </table>
                 {% if branch_approval_time.paginator %}
-                <nav aria-label="Approval pagination">
-                    <ul class="pagination justify-content-end">
+                <div class="d-flex align-items-center justify-content-between mt-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="form-label mb-0 small">Rows per page:</label>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?days={{ days }}&page_size=' + this.value + '&appr_page=1'">
+                            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                        </select>
+                        <span class="text-muted small">{{ branch_approval_time.start_index }}-{{ branch_approval_time.end_index }} of {{ branch_approval_time.paginator.count }}</span>
+                    </div>
+                    <div class="btn-group" role="group">
                         {% if branch_approval_time.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&appr_page={{ branch_approval_time.previous_page_number }}">Previous</a></li>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&appr_page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&appr_page={{ branch_approval_time.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
                         {% endif %}
-                        <li class="page-item disabled"><span class="page-link">Page {{ branch_approval_time.number }} of {{ branch_approval_time.paginator.num_pages }}</span></li>
                         {% if branch_approval_time.has_next %}
-                        <li class="page-item"><a class="page-link" href="?days={{ days }}&page_size={{ page_size }}&appr_page={{ branch_approval_time.next_page_number }}">Next</a></li>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&appr_page={{ branch_approval_time.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                        <a href="?days={{ days }}&page_size={{ page_size }}&appr_page={{ branch_approval_time.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
                         {% endif %}
-                    </ul>
-                </nav>
+                    </div>
+                </div>
                 {% endif %}
             </div>
         </div>
