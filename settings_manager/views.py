@@ -39,8 +39,8 @@ def settings_dashboard(request):
             # Store actual count
             category_counts[category_key] = all_settings.count()
             
-            # Get page_size for this specific category, default to 25
-            page_size = int(request.GET.get(f'page_size_{category_key}', 25))
+            # Get page_size for this specific category, default to 10
+            page_size = int(request.GET.get(f'page_size_{category_key}', 10))
             category_page_sizes[category_key] = page_size
             
             # Get pagination for this category
