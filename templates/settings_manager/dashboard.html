@@ -347,20 +347,20 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive" style="overflow-x: auto;">
-                            <table class="table table-hover" style="min-width: 1000px;">
+                            <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th style="width: 25%; white-space: nowrap;">Setting</th>
-                                        <th style="width: 35%; white-space: nowrap;">Description</th>
-                                        <th style="width: 20%; white-space: nowrap;">Current Value</th>
-                                        <th style="width: 10%; white-space: nowrap;">Status</th>
-                                        <th style="width: 10%; white-space: nowrap;">Actions</th>
+                                        <th style="white-space: nowrap;">Setting</th>
+                                        <th style="white-space: nowrap;">Description</th>
+                                        <th style="white-space: nowrap;">Current Value</th>
+                                        <th style="white-space: nowrap;">Status</th>
+                                        <th style="white-space: nowrap;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for setting in all_settings %}
                                         <tr>
-                                            <td>
+                                            <td style="white-space: nowrap;">
                                                 <strong>{{ setting.display_name }}</strong>
                                                 <br>
                                                 <small class="text-muted">{{ setting.key }}</small>
@@ -470,20 +470,20 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive" style="overflow-x: auto;">
-                                <table class="table table-hover" style="min-width: 1000px;">
+                                <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th style="width: 25%; white-space: nowrap;">Setting</th>
-                                            <th style="width: 35%; white-space: nowrap;">Description</th>
-                                            <th style="width: 20%; white-space: nowrap;">Current Value</th>
-                                            <th style="width: 10%; white-space: nowrap;">Status</th>
-                                            <th style="width: 10%; white-space: nowrap;">Actions</th>
+                                            <th style="white-space: nowrap;">Setting</th>
+                                            <th style="white-space: nowrap;">Description</th>
+                                            <th style="white-space: nowrap;">Current Value</th>
+                                            <th style="white-space: nowrap;">Status</th>
+                                            <th style="white-space: nowrap;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for setting in paginated_settings %}
                                             <tr>
-                                                <td>
+                                                <td style="white-space: nowrap;">
                                                     <strong>{{ setting.display_name }}</strong>
                                                     <br>
                                                     <small class="text-muted">{{ setting.key }}</small>
