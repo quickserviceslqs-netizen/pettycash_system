@@ -421,10 +421,10 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
                                     <select class="form-select form-select-sm" style="width: auto; font-size: 0.9rem;" onchange="window.location.href='?page=1&page_size=' + this.value{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}'">
-                                        <option value="10" {% if page_size == '10' %}selected{% endif %}>10</option>
-                                        <option value="25" {% if page_size == '25' %}selected{% endif %}>25</option>
-                                        <option value="50" {% if page_size == '50' %}selected{% endif %}>50</option>
-                                        <option value="100" {% if page_size == '100' %}selected{% endif %}>100</option>
+                                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
                                     </select>
                                 </div>
                                 <div class="text-muted" style="font-size: 0.9rem;">

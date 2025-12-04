@@ -77,7 +77,7 @@ def settings_dashboard(request):
             )
         
         # Paginate the filtered results
-        page_size = request.GET.get('page_size', 25)
+        page_size = int(request.GET.get('page_size', 25))
         paginator = Paginator(settings, page_size)
         page_number = request.GET.get('page', 1)
         all_settings = paginator.get_page(page_number)
