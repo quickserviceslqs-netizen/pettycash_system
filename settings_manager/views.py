@@ -30,11 +30,15 @@ def settings_dashboard(request):
     categories = SystemSetting.CATEGORY_CHOICES
     settings_by_category = {}
     category_pagination = {}  # Store pagination info per category
+    category_counts = {}  # Store actual counts per category
     page_size = request.GET.get('page_size', 25)
     
     for category_key, category_name in categories:
         all_settings = SystemSetting.objects.filter(category=category_key, is_active=True)
         if all_settings.exists():
+            # Store actual count
+            category_counts[category_key] = all_settings.count()
+            
             # Get pagination for this category
             category_page = request.GET.get(f'page_{category_key}', 1)
             paginator = Paginator(all_settings, page_size)
@@ -74,6 +78,7 @@ def settings_dashboard(request):
     context = {
         'settings_by_category': settings_by_category,
         'category_pagination': category_pagination,
+        'category_counts': category_counts,
         'all_settings': paginated_settings if paginated_settings else settings,
         'categories': categories,
         'selected_category': category_filter,
