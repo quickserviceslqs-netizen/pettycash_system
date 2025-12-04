@@ -278,10 +278,6 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <form method="get" class="row g-3 align-items-end" id="filterForm">
-                        <!-- Add page_size hidden field to preserve selection when filtering -->
-                        {% if page_size %}
-                            <input type="hidden" name="page_size" value="{{ page_size }}">
-                        {% endif %}
                         <div class="col-md-4">
                             <label for="category" class="form-label">
                                 <i class="bi bi-funnel"></i> Filter by Category
@@ -289,7 +285,7 @@
                             <select name="category" 
                                     id="category" 
                                     class="form-select"
-                                    onchange="document.getElementById('filterForm').submit();">
+                                    onchange="this.form.submit();">
                                 <option value="">All Categories</option>
                                 {% for cat_key, cat_name in categories %}
                                     <option value="{{ cat_key }}" {% if selected_category == cat_key %}selected{% endif %}>
@@ -620,6 +616,23 @@ window.addEventListener('load', function() {
         window.scrollTo(0, parseInt(scrollPosition));
         sessionStorage.removeItem('scrollPosition');
     }
+});
+
+// Preserve page_size when changing category filter
+document.getElementById('filterForm')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const params = new URLSearchParams(window.location.search);
+    
+    // Get current page_size from URL if it exists
+    const currentPageSize = params.get('page_size');
+    if (currentPageSize) {
+        formData.set('page_size', currentPageSize);
+    }
+    
+    // Build URL with form data
+    const newParams = new URLSearchParams(formData);
+    window.location.href = `?${newParams.toString()}`;
 });
 
 function updateCategoryPageSize(categoryKey, pageSize) {
