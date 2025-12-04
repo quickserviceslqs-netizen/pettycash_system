@@ -1,6 +1,9 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from transactions.models import Requisition
+from django.utils import timezone
+from datetime import timedelta
+from settings_manager.models import get_setting
 
 @receiver(post_save, sender=Requisition)
 def auto_resolve_workflow(sender, instance, created, **kwargs):
@@ -15,3 +18,28 @@ def auto_resolve_workflow(sender, instance, created, **kwargs):
             # Auto-resolution may fail during test data setup (missing thresholds/users).
             # Swallow exceptions here so tests can create Requisition records without full runtime data.
             return
+
+@receiver(post_save, sender=Requisition)
+def check_auto_rejection(sender, instance, created, **kwargs):
+    """
+    Check if requisition should be auto-rejected based on pending time.
+    Uses AUTO_REJECT_PENDING_AFTER_HOURS setting.
+    """
+    # Only check pending requisitions
+    if instance.status != 'pending':
+        return
+    
+    # Get auto-reject hours setting (0 = disabled)
+    auto_reject_hours = get_setting('AUTO_REJECT_PENDING_AFTER_HOURS', 0)
+    if auto_reject_hours <= 0:
+        return
+    
+    # Check if requisition has been pending too long
+    if instance.created_at:
+        time_pending = timezone.now() - instance.created_at
+        threshold = timedelta(hours=auto_reject_hours)
+        
+        if time_pending > threshold:
+            instance.status = 'rejected'
+            instance.rejection_reason = f'Auto-rejected after {auto_reject_hours} hours pending'
+            instance.save(update_fields=['status', 'rejection_reason'])
