@@ -78,13 +78,14 @@ def settings_dashboard(request):
             )
         
         # Paginate the filtered results
-        page_size = int(request.GET.get('page_size', 25))
+        page_size = int(request.GET.get('page_size', 10))
         paginator = Paginator(settings, page_size)
         page_number = request.GET.get('page', 1)
         all_settings = paginator.get_page(page_number)
     else:
         # OVERVIEW MODE: Get all active settings as queryset for regrouping
         all_settings = SystemSetting.objects.filter(is_active=True)
+        page_size = 10  # Default for overview mode (not used but needed for template)
     
     context = {
         'settings_by_category': settings_by_category,
@@ -97,7 +98,7 @@ def settings_dashboard(request):
         'search_query': search_query,
         'total_settings': SystemSetting.objects.filter(is_active=True).count(),
         'is_paginated': is_filtered,
-        'page_size': page_size if is_filtered else 25,
+        'page_size': page_size,
     }
     
     return render(request, 'settings_manager/dashboard.html', context)
