@@ -51,7 +51,8 @@ def settings_dashboard(request):
             except:
                 paginated = paginator.get_page(1)
             
-            settings_by_category[category_name] = list(paginated)
+            # Don't convert to list - keep as paginated page object
+            settings_by_category[category_name] = paginated
             category_pagination[category_key] = paginated
     
     # Get filter and search
