@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.db.models import Q, Count
+from django.db.models import Count
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.core.paginator import Paginator
@@ -26,79 +26,42 @@ def settings_dashboard(request):
     log_activity(request.user, 'view', content_type='Settings Dashboard', 
                  description='Viewed settings dashboard', request=request)
     
-    # Get all settings grouped by category
+    # Get category filter from URL if provided
+    category_filter = request.GET.get('category')
+    
+    # Get all settings grouped by category - NO PAGINATION
     categories = SystemSetting.CATEGORY_CHOICES
     settings_by_category = {}
-    category_pagination = {}  # Store pagination info per category
-    category_counts = {}  # Store actual counts per category
-    category_page_sizes = {}  # Store page_size per category
+    category_counts = {}
     
-    for category_key, category_name in categories:
-        all_settings = SystemSetting.objects.filter(category=category_key, is_active=True)
-        if all_settings.exists():
-            # Store actual count
-            category_counts[category_key] = all_settings.count()
-            
-            # Get page_size for this specific category, default to 10
-            page_size = int(request.GET.get(f'page_size_{category_key}', 10))
-            category_page_sizes[category_key] = page_size
-            
-            # Get pagination for this category
-            category_page = request.GET.get(f'page_{category_key}', 1)
-            paginator = Paginator(all_settings, page_size)
-            try:
-                paginated = paginator.get_page(category_page)
-            except:
-                paginated = paginator.get_page(1)
-            
-            # Don't convert to list - keep as paginated page object
-            settings_by_category[category_name] = paginated
-            category_pagination[category_key] = paginated
-    
-    # Get filter and search
-    category_filter = request.GET.get('category')
-    search_query = request.GET.get('search', '').strip()
-    
-    # Determine if we're in filtered/search mode
-    is_filtered = bool(category_filter or search_query)
-    
-    if is_filtered:
-        # FILTERED MODE: Get filtered queryset and paginate it
-        if category_filter:
-            settings = SystemSetting.objects.filter(category=category_filter, is_active=True)
-        else:
-            settings = SystemSetting.objects.filter(is_active=True)
-        
-        # Apply search filter if provided
-        if search_query:
-            settings = settings.filter(
-                Q(display_name__icontains=search_query) |
-                Q(key__icontains=search_query) |
-                Q(description__icontains=search_query)
-            )
-        
-        # Paginate the filtered results
-        page_size = int(request.GET.get('page_size', 10))
-        paginator = Paginator(settings, page_size)
-        page_number = request.GET.get('page', 1)
-        all_settings = paginator.get_page(page_number)
+    if category_filter:
+        # Show only the filtered category
+        for category_key, category_name in categories:
+            if category_key == category_filter:
+                all_settings = SystemSetting.objects.filter(category=category_key, is_active=True).order_by('display_name')
+                if all_settings.exists():
+                    category_counts[category_key] = all_settings.count()
+                    # Store all settings without pagination
+                    settings_by_category[category_name] = all_settings
     else:
-        # OVERVIEW MODE: Get all active settings as queryset for regrouping
-        all_settings = SystemSetting.objects.filter(is_active=True)
-        page_size = 10  # Default for overview mode (not used but needed for template)
+        # Show all categories
+        for category_key, category_name in categories:
+            all_settings = SystemSetting.objects.filter(category=category_key, is_active=True).order_by('display_name')
+            if all_settings.exists():
+                category_counts[category_key] = all_settings.count()
+                # Store all settings without pagination
+                settings_by_category[category_name] = all_settings
+    
+    # Get all active settings
+    all_settings = SystemSetting.objects.filter(is_active=True)
     
     context = {
         'settings_by_category': settings_by_category,
-        'category_pagination': category_pagination,
         'category_counts': category_counts,
-        'category_page_sizes': category_page_sizes,
         'all_settings': all_settings,
         'categories': categories,
         'selected_category': category_filter,
-        'search_query': search_query,
         'total_settings': SystemSetting.objects.filter(is_active=True).count(),
-        'is_paginated': is_filtered,
-        'page_size': page_size,
     }
     
     return render(request, 'settings_manager/dashboard.html', context)

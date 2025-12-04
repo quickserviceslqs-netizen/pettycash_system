@@ -116,7 +116,7 @@
                 </div>
             </div>
 
-            <!-- Category Cards (if no filter selected) -->
+            <!-- Category Cards (only show when no filter) -->
             {% if not selected_category %}
             <div class="card mb-4">
                 <div class="card-header bg-light">
@@ -127,7 +127,7 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <div class="card category-card email" onclick="window.location='?category=email'">
+                            <div class="card category-card email" onclick="filterByCategory('email', 'Email Configuration')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-envelope-fill fs-2 text-primary me-3"></i>
@@ -140,7 +140,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card approval" onclick="window.location='?category=approval'">
+                            <div class="card category-card approval" onclick="filterByCategory('approval', 'Approval Workflow')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-check-circle-fill fs-2 text-success me-3"></i>
@@ -153,7 +153,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card payment" onclick="window.location='?category=payment'">
+                            <div class="card category-card payment" onclick="filterByCategory('payment', 'Payment Settings')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-currency-dollar fs-2 text-warning me-3"></i>
@@ -166,7 +166,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card security" onclick="window.location='?category=security'">
+                            <div class="card category-card security" onclick="filterByCategory('security', 'Security & Auth')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-shield-lock-fill fs-2 text-danger me-3"></i>
@@ -179,7 +179,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card notifications" onclick="window.location='?category=notifications'">
+                            <div class="card category-card notifications" onclick="filterByCategory('notifications', 'Notifications')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-bell-fill fs-2 text-info me-3"></i>
@@ -192,7 +192,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card general" onclick="window.location='?category=general'">
+                            <div class="card category-card general" onclick="filterByCategory('general', 'General Settings')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-gear-fill fs-2 text-secondary me-3"></i>
@@ -205,7 +205,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card reporting" onclick="window.location='?category=reporting'">
+                            <div class="card category-card reporting" onclick="filterByCategory('reporting', 'Reports & Analytics')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-graph-up fs-2 text-purple me-3" style="color: #6f42c1;"></i>
@@ -218,7 +218,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card requisition" onclick="window.location='?category=requisition'">
+                            <div class="card category-card requisition" onclick="filterByCategory('requisition', 'Requisition Mgmt')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-file-text-fill fs-2 me-3" style="color: #fd7e14;"></i>
@@ -231,7 +231,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card treasury" onclick="window.location='?category=treasury'">
+                            <div class="card category-card treasury" onclick="filterByCategory('treasury', 'Treasury Operations')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-piggy-bank-fill fs-2 me-3" style="color: #20c997;"></i>
@@ -244,7 +244,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card workflow" onclick="window.location='?category=workflow'">
+                            <div class="card category-card workflow" onclick="filterByCategory('workflow', 'Workflow Automation')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-diagram-3-fill fs-2 me-3" style="color: #d63384;"></i>
@@ -257,7 +257,7 @@
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card organization" onclick="window.location='?category=organization'">
+                            <div class="card category-card organization" onclick="filterByCategory('organization', 'Users & Organization')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-people-fill fs-2 text-primary me-3"></i>
@@ -274,75 +274,42 @@
             </div>
             {% endif %}
 
-            <!-- Filter & Search Bar -->
+            <!-- Settings Display: Per-Category without Pagination -->
+            {% if selected_category %}
+                <div class="mb-3">
+                    <a href="{% url 'settings_manager:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to All Categories
+                    </a>
+                </div>
+            {% endif %}
+            
+            <!-- Search/Filter Bar -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <form method="get" class="row g-3 align-items-end" id="filterForm">
-                        <div class="col-md-4">
-                            <label for="category" class="form-label">
-                                <i class="bi bi-funnel"></i> Filter by Category
-                            </label>
-                            <select name="category" 
-                                    id="category" 
-                                    class="form-select"
-                                    onchange="changeCategoryFilter(this.value);">
-                                <option value="">All Categories</option>
-                                {% for cat_key, cat_name in categories %}
-                                    <option value="{{ cat_key }}" {% if selected_category == cat_key %}selected{% endif %}>
-                                        {{ cat_name }} ({{ category_counts|get_item:cat_key|default:"0" }})
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="search" class="form-label">
-                                <i class="bi bi-search"></i> Search Settings
-                            </label>
-                            <input type="text" 
-                                   name="search" 
-                                   id="search" 
-                                   class="form-control" 
-                                   placeholder="Search by name, key, or description..."
-                                   value="{{ search_query }}"
-                                   autocomplete="off">
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-search"></i> Search
-                            </button>
-                            {% if search_query or selected_category %}
-                                <a href="{% url 'settings_manager:dashboard' %}" 
-                                   class="btn btn-outline-secondary w-100 mt-2">
-                                    <i class="bi bi-x-circle"></i> Reset
-                                </a>
-                            {% endif %}
-                        </div>
+                    <form method="get" class="d-flex gap-2" id="searchForm">
+                        <input type="text" 
+                               id="filterInput" 
+                               class="form-control" 
+                               placeholder="Filter by setting name, key, or description..."
+                               autocomplete="off">
+                        <button type="button" class="btn btn-primary" onclick="applyFilter()">
+                            <i class="bi bi-search"></i> Filter
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearFilter()">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </button>
                     </form>
-                    {% if search_query %}
-                        <div class="mt-3">
-                            <span class="badge bg-info">
-                                <i class="bi bi-info-circle"></i> Found {{ all_settings.count }} result{{ all_settings.count|pluralize }} for "{{ search_query }}"
-                            </span>
-                        </div>
-                    {% endif %}
                 </div>
             </div>
-
-            <!-- Settings Display: Overview (grouped) or Filtered (flat list) -->
             
-            {% if is_paginated %}
-                <!-- FILTERED/SEARCH VIEW: Flat list with pagination -->
+            <!-- Settings by Category -->
+            {% for category_name, settings_list in settings_by_category.items %}
+                {% with cat_key=category_name|lower %}
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-search"></i>
-                            {% if selected_category %}
-                                {{ selected_category|title }} Settings ({{ all_settings.paginator.count }} total)
-                            {% elif search_query %}
-                                Search Results for "{{ search_query }}" ({{ all_settings.paginator.count }} total)
-                            {% else %}
-                                Filtered Settings ({{ all_settings.paginator.count }} total)
-                            {% endif %}
+                        <h5 class="mb-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <i class="bi bi-{% if cat_key == 'email' %}envelope{% elif cat_key == 'approval' %}check-circle{% elif cat_key == 'payment' %}currency-dollar{% elif cat_key == 'security' %}shield-lock{% elif cat_key == 'notifications' %}bell{% elif cat_key == 'reporting' %}graph-up{% elif cat_key == 'requisition' %}file-text{% elif cat_key == 'treasury' %}piggy-bank{% elif cat_key == 'workflow' %}diagram-3{% elif cat_key == 'organization' %}people{% else %}gear{% endif %}"></i>
+                            {{ category_name|title }} ({{ settings_list|length }} settings)
                         </h5>
                     </div>
                     <div class="card-body">
@@ -358,7 +325,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for setting in all_settings %}
+                                    {% for setting in settings_list %}
                                         <tr>
                                             <td style="white-space: nowrap;">
                                                 <strong>{{ setting.display_name }}</strong>
@@ -410,195 +377,24 @@
                                                 {% endif %}
                                             </td>
                                         </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-3">
+                                                No settings in this category
+                                            </td>
+                                        </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-                        
-                        <!-- Pagination Controls for Filtered View -->
-                        {% if all_settings.paginator %}
-                            <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
-                                    <select class="form-select form-select-sm" style="width: auto; font-size: 0.9rem;" onchange="window.location.href='?page=1&page_size=' + this.value{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}'">
-                                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
-                                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
-                                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
-                                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
-                                    </select>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.9rem;">
-                                    {{ all_settings.start_index }}-{{ all_settings.end_index }} of {{ all_settings.paginator.count }}
-                                </div>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="?page=1&page_size={{ page_size }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}" 
-                                       class="btn btn-outline-secondary {% if not all_settings.has_previous %}disabled{% endif %}" 
-                                       title="First page">
-                                        <i class="bi bi-chevron-double-left"></i>
-                                    </a>
-                                    <a href="{% if all_settings.has_previous %}?page={{ all_settings.previous_page_number }}&page_size={{ page_size }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% else %}#{% endif %}" 
-                                       class="btn btn-outline-secondary {% if not all_settings.has_previous %}disabled{% endif %}" 
-                                       title="Previous page">
-                                        <i class="bi bi-chevron-left"></i>
-                                    </a>
-                                    <a href="{% if all_settings.has_next %}?page={{ all_settings.next_page_number }}&page_size={{ page_size }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% else %}#{% endif %}" 
-                                       class="btn btn-outline-secondary {% if not all_settings.has_next %}disabled{% endif %}" 
-                                       title="Next page">
-                                        <i class="bi bi-chevron-right"></i>
-                                    </a>
-                                    <a href="{% if all_settings.has_next %}?page={{ all_settings.paginator.num_pages }}&page_size={{ page_size }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% else %}#{% endif %}" 
-                                       class="btn btn-outline-secondary {% if not all_settings.has_next %}disabled{% endif %}" 
-                                       title="Last page">
-                                        <i class="bi bi-chevron-double-right"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        {% endif %}
                     </div>
                 </div>
-            
-            {% else %}
-                <!-- OVERVIEW VIEW: Grouped by category with per-category pagination -->
-                {% for category_name, paginated_settings in settings_by_category.items %}
-                    {% with cat_key=category_name|lower %}
-                    <div class="card mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                <i class="bi bi-{% if cat_key == 'email' %}envelope{% elif cat_key == 'approval' %}check-circle{% elif cat_key == 'payment' %}currency-dollar{% elif cat_key == 'security' %}shield-lock{% elif cat_key == 'notifications' %}bell{% elif cat_key == 'reporting' %}graph-up{% elif cat_key == 'requisition' %}file-text{% elif cat_key == 'treasury' %}piggy-bank{% elif cat_key == 'workflow' %}diagram-3{% elif cat_key == 'organization' %}people{% else %}gear{% endif %}"></i>
-                                {{ category_name|title }}
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive" style="overflow-x: auto;">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th style="white-space: nowrap;">Setting</th>
-                                            <th style="white-space: nowrap;">Description</th>
-                                            <th style="white-space: nowrap;">Current Value</th>
-                                            <th style="white-space: nowrap;">Status</th>
-                                            <th style="white-space: nowrap;">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for setting in paginated_settings %}
-                                            <tr>
-                                                <td style="white-space: nowrap;">
-                                                    <strong>{{ setting.display_name }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">{{ setting.key }}</small>
-                                                    {% if setting.requires_restart %}
-                                                        <br>
-                                                        <span class="badge bg-warning text-dark">
-                                                            <i class="bi bi-exclamation-triangle"></i> Restart Required
-                                                        </span>
-                                                    {% endif %}
-                                                </td>
-                                                <td style="white-space: nowrap;">
-                                                    <small>{{ setting.description }}</small>
-                                                </td>
-                                                <td style="white-space: nowrap;">
-                                                    {% if setting.is_sensitive %}
-                                                        <span class="text-muted">
-                                                            <i class="bi bi-eye-slash"></i> ••••••••
-                                                        </span>
-                                                    {% else %}
-                                                        <code>{{ setting.value|truncatewords:5 }}</code>
-                                                    {% endif %}
-                                                    {% if setting.value != setting.default_value %}
-                                                        <br>
-                                                        <small class="text-info">
-                                                            <i class="bi bi-info-circle"></i> Modified from default
-                                                        </small>
-                                                    {% endif %}
-                                                </td>
-                                                <td style="white-space: nowrap;">
-                                                    {% if setting.is_active %}
-                                                        <span class="badge bg-success">Active</span>
-                                                    {% else %}
-                                                        <span class="badge bg-secondary">Inactive</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td style="white-space: nowrap;">
-                                                    {% if setting.editable_by_admin %}
-                                                        <a href="{% url 'settings_manager:edit_setting' setting.id %}" 
-                                                           class="btn btn-sm btn-outline-primary" 
-                                                           title="Edit Setting">
-                                                            <i class="bi bi-pencil"></i>
-                                                        </a>
-                                                    {% else %}
-                                                        <button class="btn btn-sm btn-outline-secondary" disabled title="Not editable">
-                                                            <i class="bi bi-lock"></i>
-                                                        </button>
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                        {% empty %}
-                                            <tr>
-                                                <td colspan="5" class="text-center text-muted py-3">
-                                                    No settings in this category
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                            <!-- Per-Category Pagination in Overview Mode -->
-                            {% with pag=paginated_settings %}
-                            {% if pag.paginator %}
-                                <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3 flex-wrap gap-2">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
-                                        <select class="form-select form-select-sm category-page-size" 
-                                                style="width: auto; font-size: 0.9rem;" 
-                                                data-category="{{ cat_key }}"
-                                                onchange="updateCategoryPageSize('{{ cat_key }}', this.value)">
-                                            <option value="10" {% if pag.paginator.per_page == 10 %}selected{% endif %}>10</option>
-                                            <option value="25" {% if pag.paginator.per_page == 25 %}selected{% endif %}>25</option>
-                                            <option value="50" {% if pag.paginator.per_page == 50 %}selected{% endif %}>50</option>
-                                            <option value="100" {% if pag.paginator.per_page == 100 %}selected{% endif %}>100</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="text-muted" style="font-size: 0.9rem;">
-                                        {{ pag.start_index }}-{{ pag.end_index }} of {{ pag.paginator.count }}
-                                    </div>
-                                    
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="?page_{{ cat_key }}=1&page_size_{{ cat_key }}={{ pag.paginator.per_page }}" 
-                                           class="btn btn-outline-secondary {% if not pag.has_previous %}disabled{% endif %}" 
-                                           title="First page">
-                                            <i class="bi bi-chevron-double-left"></i>
-                                        </a>
-                                        <a href="{% if pag.has_previous %}?page_{{ cat_key }}={{ pag.previous_page_number }}&page_size_{{ cat_key }}={{ pag.paginator.per_page }}{% else %}#{% endif %}" 
-                                           class="btn btn-outline-secondary {% if not pag.has_previous %}disabled{% endif %}" 
-                                           title="Previous page">
-                                            <i class="bi bi-chevron-left"></i>
-                                        </a>
-                                        <a href="{% if pag.has_next %}?page_{{ cat_key }}={{ pag.next_page_number }}&page_size_{{ cat_key }}={{ pag.paginator.per_page }}{% else %}#{% endif %}" 
-                                           class="btn btn-outline-secondary {% if not pag.has_next %}disabled{% endif %}" 
-                                           title="Next page">
-                                            <i class="bi bi-chevron-right"></i>
-                                        </a>
-                                        <a href="{% if pag.has_next %}?page_{{ cat_key }}={{ pag.paginator.num_pages }}&page_size_{{ cat_key }}={{ pag.paginator.per_page }}{% else %}#{% endif %}" 
-                                           class="btn btn-outline-secondary {% if not pag.has_next %}disabled{% endif %}" 
-                                           title="Last page">
-                                            <i class="bi bi-chevron-double-right"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            {% endif %}
-                            {% endwith %}
-                        </div>
-                    </div>
-                    {% endwith %}
-                {% empty %}
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> No settings found. Run the seed command to create default settings.
-                    </div>
-                {% endfor %}
-            {% endif %}
+                {% endwith %}
+            {% empty %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No settings found. Run the seed command to create default settings.
+                </div>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -618,35 +414,61 @@ window.addEventListener('load', function() {
     }
 });
 
-// Change category filter while preserving page_size
-function changeCategoryFilter(category) {
-    const params = new URLSearchParams(window.location.search);
+// Client-side filtering
+function applyFilter() {
+    const filterText = document.getElementById('filterInput').value.toLowerCase();
+    const rows = document.querySelectorAll('tbody tr');
+    let visibleCount = 0;
     
-    // Get current page_size from URL
-    const currentPageSize = params.get('page_size');
-    
-    // Build new URL
-    const newParams = new URLSearchParams();
-    if (category) {
-        newParams.set('category', category);
-    }
-    if (currentPageSize) {
-        newParams.set('page_size', currentPageSize);
+    if (!filterText) {
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+        return;
     }
     
-    window.location.href = newParams.toString() ? `?${newParams.toString()}` : '?';
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(filterText)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Show empty message if no results
+    rows.forEach(row => {
+        if (row.innerHTML.includes('No settings in this category') && visibleCount === 0) {
+            row.style.display = '';
+        }
+    });
 }
 
-function updateCategoryPageSize(categoryKey, pageSize) {
-    // Get current URL parameters
-    const params = new URLSearchParams(window.location.search);
-    
-    // Update the page_size for this category and reset to page 1
-    params.set(`page_size_${categoryKey}`, pageSize);
-    params.set(`page_${categoryKey}`, 1);
-    
-    // Navigate to the updated URL
-    window.location.href = `?${params.toString()}`;
+function clearFilter() {
+    document.getElementById('filterInput').value = '';
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        row.style.display = '';
+    });
+}
+
+// Allow Enter key to trigger filter
+document.addEventListener('DOMContentLoaded', function() {
+    const filterInput = document.getElementById('filterInput');
+    if (filterInput) {
+        filterInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyFilter();
+            }
+        });
+    }
+});
+
+// Filter by category - populate the filter input and apply
+function filterByCategory(categoryKey, categoryName) {
+    window.location.href = '?category=' + categoryKey;
 }
 </script>
 {% endblock %}
