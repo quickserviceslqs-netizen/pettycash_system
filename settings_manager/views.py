@@ -41,16 +41,16 @@ def settings_dashboard(request):
                 all_settings = SystemSetting.objects.filter(category=category_key, is_active=True).order_by('display_name')
                 if all_settings.exists():
                     category_counts[category_key] = all_settings.count()
-                    # Store all settings without pagination
-                    settings_by_category[category_name] = all_settings
+                    # Store with tuple (key, name, settings) for template access
+                    settings_by_category[(category_key, category_name)] = all_settings
     else:
         # Show all categories
         for category_key, category_name in categories:
             all_settings = SystemSetting.objects.filter(category=category_key, is_active=True).order_by('display_name')
             if all_settings.exists():
                 category_counts[category_key] = all_settings.count()
-                # Store all settings without pagination
-                settings_by_category[category_name] = all_settings
+                # Store with tuple (key, name, settings) for template access
+                settings_by_category[(category_key, category_name)] = all_settings
     
     # Get all active settings
     all_settings = SystemSetting.objects.filter(is_active=True)

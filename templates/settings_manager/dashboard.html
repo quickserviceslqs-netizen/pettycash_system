@@ -303,13 +303,13 @@
             </div>
             
             <!-- Settings by Category -->
-            {% for category_name, settings_list in settings_by_category.items %}
-                {% with cat_key=category_name|lower %}
+            {% for cat_info, settings_list in settings_by_category.items %}
+                {% with cat_key=cat_info.0 cat_name=cat_info.1 %}
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             <i class="bi bi-{% if cat_key == 'email' %}envelope{% elif cat_key == 'approval' %}check-circle{% elif cat_key == 'payment' %}currency-dollar{% elif cat_key == 'security' %}shield-lock{% elif cat_key == 'notifications' %}bell{% elif cat_key == 'reporting' %}graph-up{% elif cat_key == 'requisition' %}file-text{% elif cat_key == 'treasury' %}piggy-bank{% elif cat_key == 'workflow' %}diagram-3{% elif cat_key == 'organization' %}people{% else %}gear{% endif %}"></i>
-                            {{ category_name|title }} ({{ settings_list|length }} settings)
+                            {{ cat_name|title }} ({{ settings_list|length }} settings)
                         </h5>
                     </div>
                     <div class="card-body">
