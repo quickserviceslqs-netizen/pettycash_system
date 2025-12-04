@@ -371,10 +371,10 @@
                                                     </span>
                                                 {% endif %}
                                             </td>
-                                            <td>
+                                            <td style="white-space: nowrap;">
                                                 <small>{{ setting.description }}</small>
                                             </td>
-                                            <td>
+                                            <td style="white-space: nowrap;">
                                                 {% if setting.is_sensitive %}
                                                     <span class="text-muted">
                                                         <i class="bi bi-eye-slash"></i> ••••••••
@@ -389,14 +389,14 @@
                                                     </small>
                                                 {% endif %}
                                             </td>
-                                            <td>
+                                            <td style="white-space: nowrap;">
                                                 {% if setting.is_active %}
                                                     <span class="badge bg-success">Active</span>
                                                 {% else %}
                                                     <span class="badge bg-secondary">Inactive</span>
                                                 {% endif %}
                                             </td>
-                                            <td>
+                                            <td style="white-space: nowrap;">
                                                 {% if setting.editable_by_admin %}
                                                     <a href="{% url 'settings_manager:edit_setting' setting.id %}" 
                                                        class="btn btn-sm btn-outline-primary" 
@@ -494,10 +494,10 @@
                                                         </span>
                                                     {% endif %}
                                                 </td>
-                                                <td>
+                                                <td style="white-space: nowrap;">
                                                     <small>{{ setting.description }}</small>
                                                 </td>
-                                                <td>
+                                                <td style="white-space: nowrap;">
                                                     {% if setting.is_sensitive %}
                                                         <span class="text-muted">
                                                             <i class="bi bi-eye-slash"></i> ••••••••
@@ -512,14 +512,14 @@
                                                         </small>
                                                     {% endif %}
                                                 </td>
-                                                <td>
+                                                <td style="white-space: nowrap;">
                                                     {% if setting.is_active %}
                                                         <span class="badge bg-success">Active</span>
                                                     {% else %}
                                                         <span class="badge bg-secondary">Inactive</span>
                                                     {% endif %}
                                                 </td>
-                                                <td>
+                                                <td style="white-space: nowrap;">
                                                     {% if setting.editable_by_admin %}
                                                         <a href="{% url 'settings_manager:edit_setting' setting.id %}" 
                                                            class="btn btn-sm btn-outline-primary" 
