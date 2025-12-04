@@ -278,6 +278,12 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <form method="get" class="row g-3 align-items-end" id="filterForm">
+                        <!-- Preserve all pagination parameters -->
+                        {% for key, value in request.GET.items %}
+                            {% if key != 'category' and key != 'search' %}
+                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                            {% endif %}
+                        {% endfor %}
                         <div class="col-md-4">
                             <label for="category" class="form-label">
                                 <i class="bi bi-funnel"></i> Filter by Category
