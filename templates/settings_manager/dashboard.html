@@ -277,7 +277,7 @@
             <!-- Filter & Search Bar -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <form method="get" class="row g-3 align-items-end">
+                    <form method="get" class="row g-3 align-items-end" id="filterForm">
                         <div class="col-md-4">
                             <label for="category" class="form-label">
                                 <i class="bi bi-funnel"></i> Filter by Category
@@ -285,7 +285,7 @@
                             <select name="category" 
                                     id="category" 
                                     class="form-select"
-                                    onchange="this.form.submit()">
+                                    onchange="document.getElementById('filterForm').submit();">
                                 <option value="">All Categories</option>
                                 {% for cat_key, cat_name in categories %}
                                     <option value="{{ cat_key }}" {% if selected_category == cat_key %}selected{% endif %}>
