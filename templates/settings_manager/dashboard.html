@@ -346,15 +346,15 @@
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
+                        <div class="table-responsive" style="overflow-x: auto;">
+                            <table class="table table-hover" style="min-width: 1000px;">
                                 <thead>
                                     <tr>
-                                        <th style="width: 25%;">Setting</th>
-                                        <th style="width: 35%;">Description</th>
-                                        <th style="width: 20%;">Current Value</th>
-                                        <th style="width: 10%;">Status</th>
-                                        <th style="width: 10%;">Actions</th>
+                                        <th style="width: 25%; white-space: nowrap;">Setting</th>
+                                        <th style="width: 35%; white-space: nowrap;">Description</th>
+                                        <th style="width: 20%; white-space: nowrap;">Current Value</th>
+                                        <th style="width: 10%; white-space: nowrap;">Status</th>
+                                        <th style="width: 10%; white-space: nowrap;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -463,21 +463,21 @@
                     {% with cat_key=category_name|lower %}
                     <div class="card mb-4">
                         <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0">
+                            <h5 class="mb-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                 <i class="bi bi-{% if cat_key == 'email' %}envelope{% elif cat_key == 'approval' %}check-circle{% elif cat_key == 'payment' %}currency-dollar{% elif cat_key == 'security' %}shield-lock{% elif cat_key == 'notifications' %}bell{% elif cat_key == 'reporting' %}graph-up{% elif cat_key == 'requisition' %}file-text{% elif cat_key == 'treasury' %}piggy-bank{% elif cat_key == 'workflow' %}diagram-3{% elif cat_key == 'organization' %}people{% else %}gear{% endif %}"></i>
                                 {{ category_name|title }}
                             </h5>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
+                            <div class="table-responsive" style="overflow-x: auto;">
+                                <table class="table table-hover" style="min-width: 1000px;">
                                     <thead>
                                         <tr>
-                                            <th style="width: 25%;">Setting</th>
-                                            <th style="width: 35%;">Description</th>
-                                            <th style="width: 20%;">Current Value</th>
-                                            <th style="width: 10%;">Status</th>
-                                            <th style="width: 10%;">Actions</th>
+                                            <th style="width: 25%; white-space: nowrap;">Setting</th>
+                                            <th style="width: 35%; white-space: nowrap;">Description</th>
+                                            <th style="width: 20%; white-space: nowrap;">Current Value</th>
+                                            <th style="width: 10%; white-space: nowrap;">Status</th>
+                                            <th style="width: 10%; white-space: nowrap;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -547,7 +547,7 @@
                             <!-- Per-Category Pagination in Overview Mode -->
                             {% with pag=paginated_settings %}
                             {% if pag.paginator %}
-                                <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
+                                <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3 flex-wrap gap-2">
                                     <div class="d-flex align-items-center gap-2">
                                         <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
                                         <select class="form-select form-select-sm category-page-size" 
@@ -560,9 +560,25 @@
                                             <option value="100" {% if pag.paginator.per_page == 100 %}selected{% endif %}>100</option>
                                         </select>
                                     </div>
+                                    
                                     <div class="text-muted" style="font-size: 0.9rem;">
-                                        {{ pag.start_index }}-{{ pag.end_index }} of {{ pag.paginator.count }}
+                                        Page <strong>{{ pag.number }}</strong> of <strong>{{ pag.paginator.num_pages }}</strong> ({{ pag.start_index }}-{{ pag.end_index }} of {{ pag.paginator.count }})
                                     </div>
+                                    
+                                    {% if pag.paginator.num_pages > 1 %}
+                                    <div class="d-flex align-items-center gap-1">
+                                        <input type="range" 
+                                               class="form-range" 
+                                               style="width: 100px; margin: 0; cursor: pointer;"
+                                               min="1" 
+                                               max="{{ pag.paginator.num_pages }}" 
+                                               value="{{ pag.number }}"
+                                               onchange="goToPage('{{ cat_key }}', this.value, {{ pag.paginator.per_page }})"
+                                               title="Navigate to page">
+                                        <small class="text-muted">{{ pag.number }}/{{ pag.paginator.num_pages }}</small>
+                                    </div>
+                                    {% endif %}
+                                    
                                     <div class="btn-group btn-group-sm" role="group">
                                         <a href="?page_{{ cat_key }}=1&page_size_{{ cat_key }}={{ pag.paginator.per_page }}" 
                                            class="btn btn-outline-secondary {% if not pag.has_previous %}disabled{% endif %}" 
@@ -609,6 +625,17 @@ function updateCategoryPageSize(categoryKey, pageSize) {
     // Update the page_size for this category and reset to page 1
     params.set(`page_size_${categoryKey}`, pageSize);
     params.set(`page_${categoryKey}`, 1);
+    
+    // Navigate to the updated URL
+    window.location.href = `?${params.toString()}`;
+}
+
+function goToPage(categoryKey, pageNumber, pageSize) {
+    // Get current URL parameters
+    const params = new URLSearchParams(window.location.search);
+    
+    // Update the page for this category
+    params.set(`page_${categoryKey}`, pageNumber);
     
     // Navigate to the updated URL
     window.location.href = `?${params.toString()}`;
