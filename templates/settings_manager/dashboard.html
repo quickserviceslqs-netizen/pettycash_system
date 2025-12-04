@@ -550,7 +550,10 @@
                                 <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
                                     <div class="d-flex align-items-center gap-2">
                                         <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
-                                        <select class="form-select form-select-sm" style="width: auto; font-size: 0.9rem;" onchange="window.location.href='?page_{{ cat_key }}=1&page_size_{{ cat_key }}=' + this.value">
+                                        <select class="form-select form-select-sm category-page-size" 
+                                                style="width: auto; font-size: 0.9rem;" 
+                                                data-category="{{ cat_key }}"
+                                                onchange="updateCategoryPageSize('{{ cat_key }}', this.value)">
                                             <option value="10" {% if pag.paginator.per_page == 10 %}selected{% endif %}>10</option>
                                             <option value="25" {% if pag.paginator.per_page == 25 %}selected{% endif %}>25</option>
                                             <option value="50" {% if pag.paginator.per_page == 50 %}selected{% endif %}>50</option>
@@ -597,4 +600,18 @@
         </div>
     </div>
 </div>
+
+<script>
+function updateCategoryPageSize(categoryKey, pageSize) {
+    // Get current URL parameters
+    const params = new URLSearchParams(window.location.search);
+    
+    // Update the page_size for this category and reset to page 1
+    params.set(`page_size_${categoryKey}`, pageSize);
+    params.set(`page_${categoryKey}`, 1);
+    
+    // Navigate to the updated URL
+    window.location.href = `?${params.toString()}`;
+}
+</script>
 {% endblock %}
