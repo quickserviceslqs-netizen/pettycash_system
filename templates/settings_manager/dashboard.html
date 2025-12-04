@@ -544,14 +544,38 @@
                             {% if pag %}
                                 <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
                                     <div class="d-flex align-items-center gap-2">
-                                        <span class="text-muted" style="font-size: 0.9rem;">Showing {{ pag.start_index }}-{{ pag.end_index }} of {{ pag.paginator.count }}</span>
+                                        <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
+                                        <select class="form-select form-select-sm" style="width: auto; font-size: 0.9rem;" onchange="window.location.href='?page_{{ cat_key }}=1&page_size=' + this.value">
+                                            <option value="10" {% if page_size == '10' %}selected{% endif %}>10</option>
+                                            <option value="25" {% if page_size == '25' %}selected{% endif %}>25</option>
+                                            <option value="50" {% if page_size == '50' %}selected{% endif %}>50</option>
+                                            <option value="100" {% if page_size == '100' %}selected{% endif %}>100</option>
+                                        </select>
                                     </div>
-                                    <div>
-                                        {% if pag.paginator.count > page_size|default:25 %}
-                                            <a href="?category={{ cat_key }}" class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-arrows-angle-expand"></i> View All {{ pag.paginator.count }} Settings
-                                            </a>
-                                        {% endif %}
+                                    <div class="text-muted" style="font-size: 0.9rem;">
+                                        {{ pag.start_index }}-{{ pag.end_index }} of {{ pag.paginator.count }}
+                                    </div>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="?page_{{ cat_key }}=1&page_size={{ page_size }}" 
+                                           class="btn btn-outline-secondary {% if not pag.has_previous %}disabled{% endif %}" 
+                                           title="First page">
+                                            <i class="bi bi-chevron-double-left"></i>
+                                        </a>
+                                        <a href="{% if pag.has_previous %}?page_{{ cat_key }}={{ pag.previous_page_number }}&page_size={{ page_size }}{% else %}#{% endif %}" 
+                                           class="btn btn-outline-secondary {% if not pag.has_previous %}disabled{% endif %}" 
+                                           title="Previous page">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                        <a href="{% if pag.has_next %}?page_{{ cat_key }}={{ pag.next_page_number }}&page_size={{ page_size }}{% else %}#{% endif %}" 
+                                           class="btn btn-outline-secondary {% if not pag.has_next %}disabled{% endif %}" 
+                                           title="Next page">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                        <a href="{% if pag.has_next %}?page_{{ cat_key }}={{ pag.paginator.num_pages }}&page_size={{ page_size }}{% else %}#{% endif %}" 
+                                           class="btn btn-outline-secondary {% if not pag.has_next %}disabled{% endif %}" 
+                                           title="Last page">
+                                            <i class="bi bi-chevron-double-right"></i>
+                                        </a>
                                     </div>
                                 </div>
                             {% endif %}
