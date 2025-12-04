@@ -29,11 +29,22 @@ def settings_dashboard(request):
     # Get all settings grouped by category
     categories = SystemSetting.CATEGORY_CHOICES
     settings_by_category = {}
+    category_pagination = {}  # Store pagination info per category
+    page_size = request.GET.get('page_size', 25)
     
     for category_key, category_name in categories:
-        settings = SystemSetting.objects.filter(category=category_key, is_active=True)
-        if settings.exists():
-            settings_by_category[category_name] = settings
+        all_settings = SystemSetting.objects.filter(category=category_key, is_active=True)
+        if all_settings.exists():
+            # Get pagination for this category
+            category_page = request.GET.get(f'page_{category_key}', 1)
+            paginator = Paginator(all_settings, page_size)
+            try:
+                paginated = paginator.get_page(category_page)
+            except:
+                paginated = paginator.get_page(1)
+            
+            settings_by_category[category_name] = list(paginated)
+            category_pagination[category_key] = paginated
     
     # Get filter and search
     category_filter = request.GET.get('category')
@@ -62,12 +73,14 @@ def settings_dashboard(request):
     
     context = {
         'settings_by_category': settings_by_category,
+        'category_pagination': category_pagination,
         'all_settings': paginated_settings if paginated_settings else settings,
         'categories': categories,
         'selected_category': category_filter,
         'search_query': search_query,
         'total_settings': SystemSetting.objects.filter(is_active=True).count(),
         'is_paginated': bool(paginated_settings),
+        'page_size': page_size,
     }
     
     return render(request, 'settings_manager/dashboard.html', context)
