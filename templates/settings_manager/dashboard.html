@@ -565,20 +565,6 @@
                                         Page <strong>{{ pag.number }}</strong> of <strong>{{ pag.paginator.num_pages }}</strong> ({{ pag.start_index }}-{{ pag.end_index }} of {{ pag.paginator.count }})
                                     </div>
                                     
-                                    {% if pag.paginator.num_pages > 1 %}
-                                    <div class="d-flex align-items-center gap-1">
-                                        <input type="range" 
-                                               class="form-range" 
-                                               style="width: 100px; margin: 0; cursor: pointer;"
-                                               min="1" 
-                                               max="{{ pag.paginator.num_pages }}" 
-                                               value="{{ pag.number }}"
-                                               onchange="goToPage('{{ cat_key }}', this.value, {{ pag.paginator.per_page }})"
-                                               title="Navigate to page">
-                                        <small class="text-muted">{{ pag.number }}/{{ pag.paginator.num_pages }}</small>
-                                    </div>
-                                    {% endif %}
-                                    
                                     <div class="btn-group btn-group-sm" role="group">
                                         <a href="?page_{{ cat_key }}=1&page_size_{{ cat_key }}={{ pag.paginator.per_page }}" 
                                            class="btn btn-outline-secondary {% if not pag.has_previous %}disabled{% endif %}" 
@@ -625,17 +611,6 @@ function updateCategoryPageSize(categoryKey, pageSize) {
     // Update the page_size for this category and reset to page 1
     params.set(`page_size_${categoryKey}`, pageSize);
     params.set(`page_${categoryKey}`, 1);
-    
-    // Navigate to the updated URL
-    window.location.href = `?${params.toString()}`;
-}
-
-function goToPage(categoryKey, pageNumber, pageSize) {
-    // Get current URL parameters
-    const params = new URLSearchParams(window.location.search);
-    
-    // Update the page for this category
-    params.set(`page_${categoryKey}`, pageNumber);
     
     // Navigate to the updated URL
     window.location.href = `?${params.toString()}`;
