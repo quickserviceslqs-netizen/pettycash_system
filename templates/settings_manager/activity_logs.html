@@ -242,6 +242,46 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Compact Pagination -->
+                {% if logs.paginator.num_pages > 1 %}
+                <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted">Rows per page:</span>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?page=1&page_size=' + this.value + '&{{ request.GET.urlencode|slice:'9:' }}'">
+                            <option value="10" {% if request.GET.page_size == '10' %}selected{% endif %}>10</option>
+                            <option value="25" {% if request.GET.page_size == '25' or not request.GET.page_size %}selected{% endif %}>25</option>
+                            <option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50</option>
+                            <option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100</option>
+                        </select>
+                    </div>
+                    <div class="text-muted">
+                        {{ logs.start_index }}-{{ logs.end_index }} of {{ logs.paginator.count }}
+                    </div>
+                    <div class="btn-group" role="group">
+                        <a href="?page=1&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}" 
+                           class="btn btn-sm btn-outline-secondary {% if not logs.has_previous %}disabled{% endif %}" 
+                           title="First page">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                        <a href="?page={{ logs.previous_page_number }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}" 
+                           class="btn btn-sm btn-outline-secondary {% if not logs.has_previous %}disabled{% endif %}" 
+                           title="Previous page">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                        <a href="?page={{ logs.next_page_number }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}" 
+                           class="btn btn-sm btn-outline-secondary {% if not logs.has_next %}disabled{% endif %}" 
+                           title="Next page">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                        <a href="?page={{ logs.paginator.num_pages }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}" 
+                           class="btn btn-sm btn-outline-secondary {% if not logs.has_next %}disabled{% endif %}" 
+                           title="Last page">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
             {% else %}
                 <div class="text-center py-5">
                     <i aria-hidden="true" class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>

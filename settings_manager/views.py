@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
+from django.core.paginator import Paginator
 from datetime import timedelta
 import csv
 
@@ -153,8 +154,11 @@ def activity_logs(request):
         start_date = timezone.now() - timedelta(days=days_filter)
         logs = logs.filter(timestamp__gte=start_date)
     
-    # Paginate (last 100)
-    logs = logs[:100]
+    # Paginate
+    page_size = request.GET.get('page_size', 25)
+    paginator = Paginator(logs, page_size)
+    page_number = request.GET.get('page', 1)
+    logs = paginator.get_page(page_number)
     
     # Get statistics
     stats = ActivityLog.objects.filter(
@@ -390,6 +394,12 @@ def manage_users(request):
     elif status_filter == 'inactive':
         users = users.filter(is_active=False)
     
+    # Paginate
+    page_size = request.GET.get('page_size', 25)
+    paginator = Paginator(users, page_size)
+    page_number = request.GET.get('page', 1)
+    users = paginator.get_page(page_number)
+    
     context = {
         'users': users,
         'search_query': search_query,
@@ -527,6 +537,12 @@ def manage_departments(request):
     if branch_filter:
         departments = departments.filter(branch_id=branch_filter)
     
+    # Paginate
+    page_size = request.GET.get('page_size', 25)
+    paginator = Paginator(departments, page_size)
+    page_number = request.GET.get('page', 1)
+    departments = paginator.get_page(page_number)
+    
     context = {
         'departments': departments,
         'branches': Branch.objects.all().select_related('region'),
@@ -630,6 +646,12 @@ def delete_department(request, department_id):
 def manage_regions(request):
     """Region management interface"""
     regions = Region.objects.all().select_related('company').order_by('name')
+    
+    # Paginate
+    page_size = request.GET.get('page_size', 25)
+    paginator = Paginator(regions, page_size)
+    page_number = request.GET.get('page', 1)
+    regions = paginator.get_page(page_number)
     
     context = {
         'regions': regions,
