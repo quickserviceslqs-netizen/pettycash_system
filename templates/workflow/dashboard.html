@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Workflow Dashboard{% endblock %}
 
@@ -142,8 +143,8 @@
                                         <span class="badge bg-info">{{ threshold.get_origin_type_display }}</span>
                                     </td>
                                     <td>
-                                        <small class="text-muted">Min:</small> ${{ threshold.min_amount|floatformat:2 }}<br>
-                                        <small class="text-muted">Max:</small> ${{ threshold.max_amount|floatformat:2 }}
+                                        <small class="text-muted">Min:</small> {{ threshold.min_amount|currency }}<br>
+                                        <small class="text-muted">Max:</small> {{ threshold.max_amount|currency }}
                                     </td>
                                     <td>
                                         <ol class="mb-0 ps-3">

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Manage Requisitions{% endblock %}
 
@@ -141,7 +142,7 @@
                                         <small>{{ req.requested_by.get_full_name }}</small><br>
                                         <small class="text-muted">{{ req.requested_by.role }}</small>
                                     </td>
-                                    <td><strong>${{ req.amount|floatformat:2 }}</strong></td>
+                                    <td><strong>{{ req.amount|currency }}</strong></td>
                                     <td><small>{{ req.purpose|truncatewords:8 }}</small></td>
                                     <td>
                                         {% if req.applied_threshold %}

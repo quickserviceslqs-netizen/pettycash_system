@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Create Variance Adjustment{% endblock %}
 
@@ -26,7 +27,7 @@
                                 {% for fund in funds %}
                                     <option value="{{ fund.fund_id }}" 
                                             data-balance="{{ fund.current_balance }}">
-                                        {{ fund }} - Current: ${{ fund.current_balance|floatformat:2 }}
+                                        {{ fund }} - Current: {{ fund.current_balance|currency }}
                                     </option>
                                 {% endfor %}
                             </select>

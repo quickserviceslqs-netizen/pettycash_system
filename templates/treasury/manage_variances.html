@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Manage Variance Adjustments{% endblock %}
 
@@ -67,11 +68,11 @@
                                 <tr>
                                     <td><small>{{ variance.created_at|date:"M d, Y" }}</small></td>
                                     <td><small>{{ variance.treasury_fund|truncatechars:30 }}</small></td>
-                                    <td>${{ variance.original_amount|floatformat:2 }}</td>
-                                    <td>${{ variance.adjusted_amount|floatformat:2 }}</td>
+                                    <td>{{ variance.original_amount|currency }}</td>
+                                    <td>{{ variance.adjusted_amount|currency }}</td>
                                     <td>
                                         <strong class="{% if variance.variance_amount < 0 %}text-danger{% else %}text-success{% endif %}">
-                                            {% if variance.variance_amount > 0 %}+{% endif %}${{ variance.variance_amount|floatformat:2 }}
+                                            {% if variance.variance_amount > 0 %}+{% endif %}{{ variance.variance_amount|currency }}
                                         </strong>
                                     </td>
                                     <td><small>{{ variance.reason|truncatechars:40 }}</small></td>

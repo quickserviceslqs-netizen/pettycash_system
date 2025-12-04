@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Manage Treasury Funds{% endblock %}
 
@@ -18,7 +19,7 @@
             <div class="card bg-success text-white">
                 <div class="card-body">
                     <h5 class="card-title">Total Balance</h5>
-                    <h3>${{ total_balance|floatformat:2 }}</h3>
+                    <h3>{{ total_balance|currency }}</h3>
                 </div>
             </div>
         </div>
@@ -128,10 +129,10 @@
                                     </td>
                                     <td>
                                         <strong class="{% if fund.check_reorder_needed %}text-danger{% else %}text-success{% endif %}">
-                                            ${{ fund.current_balance|floatformat:2 }}
+                                            {{ fund.current_balance|currency }}
                                         </strong>
                                     </td>
-                                    <td>${{ fund.reorder_level|floatformat:2 }}</td>
+                                    <td>{{ fund.reorder_level|currency }}</td>
                                     <td>
                                         {% if fund.check_reorder_needed %}
                                             <span class="badge bg-danger">⚠️ Low Balance</span>

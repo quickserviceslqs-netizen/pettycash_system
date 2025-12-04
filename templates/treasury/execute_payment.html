@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Execute Payment{% endblock %}
 
@@ -25,7 +26,7 @@
                         <dd class="col-sm-9"><code>{{ payment.payment_id }}</code></dd>
                         
                         <dt class="col-sm-3">Amount:</dt>
-                        <dd class="col-sm-9"><strong class="text-danger">${{ payment.amount|floatformat:2 }}</strong></dd>
+                        <dd class="col-sm-9"><strong class="text-danger">{{ payment.amount|currency }}</strong></dd>
                         
                         <dt class="col-sm-3">Method:</dt>
                         <dd class="col-sm-9"><span class="badge bg-secondary">{{ payment.get_method_display }}</span></dd>

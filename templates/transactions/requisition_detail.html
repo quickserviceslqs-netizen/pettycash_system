@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Requisition Details - {{ requisition.transaction_id }}{% endblock %}
 
@@ -161,7 +162,7 @@
             <h4 style="margin-top:0; color:#084298;">📋 Pre-Payment Validation Checklist</h4>
             <ul style="margin-bottom:10px; color:#084298;">
                 <li>✓ Receipt/supporting document reviewed above</li>
-                <li>✓ Amount (KES {{requisition.amount|floatformat:2}}) matches documentation</li>
+                <li>✓ Amount ({{ requisition.amount|currency }}) matches documentation</li>
                 <li>✓ All required approvals completed</li>
                 <li>✓ Fund availability confirmed</li>
             </ul>

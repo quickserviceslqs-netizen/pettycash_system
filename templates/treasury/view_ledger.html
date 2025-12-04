@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Ledger Entries{% endblock %}
 
@@ -13,7 +14,7 @@
             <div class="card bg-danger text-white">
                 <div class="card-body">
                     <h6>Total Debits</h6>
-                    <h3>${{ total_debits|floatformat:2 }}</h3>
+                    <h3>{{ total_debits|currency }}</h3>
                 </div>
             </div>
         </div>
@@ -21,7 +22,7 @@
             <div class="card bg-success text-white">
                 <div class="card-body">
                     <h6>Total Credits</h6>
-                    <h3>${{ total_credits|floatformat:2 }}</h3>
+                    <h3>{{ total_credits|currency }}</h3>
                 </div>
             </div>
         </div>
@@ -108,7 +109,7 @@
                                     </td>
                                     <td>
                                         <strong class="{% if entry.entry_type == 'debit' %}text-danger{% else %}text-success{% endif %}">
-                                            {% if entry.entry_type == 'debit' %}-{% else %}+{% endif %}${{ entry.amount|floatformat:2 }}
+                                            {% if entry.entry_type == 'debit' %}-{% else %}+{% endif %}{{ entry.amount|currency }}
                                         </strong>
                                     </td>
                                     <td><small>{{ entry.description|truncatechars:50 }}</small></td>

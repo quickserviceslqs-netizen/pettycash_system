@@ -199,25 +199,31 @@ class ReportService:
         }
     
     @staticmethod
-    def generate_replenishment_forecast(fund, horizon_days=30):
+    def generate_replenishment_forecast(fund, horizon_days=None):
         """
         Generate replenishment forecast for a fund.
         Predicts when fund will reach reorder level based on spending patterns.
         """
+        from settings_manager.models import SystemSetting
+        
+        if horizon_days is None:
+            horizon_days = SystemSetting.get_setting('TREASURY_FORECAST_HORIZON_DAYS', 30)
+        
         today = timezone.now().date()
         forecast_date = today + timedelta(days=horizon_days)
         
-        # Calculate average daily expense (last 30 days)
-        thirty_days_ago = today - timedelta(days=30)
+        # Calculate average daily expense (configured lookback period)
+        lookback_days = SystemSetting.get_setting('TREASURY_HISTORY_LOOKBACK_DAYS', 30)
+        lookback_date = today - timedelta(days=lookback_days)
         ledger_entries = LedgerEntry.objects.filter(
             treasury_fund=fund,
-            created_at__date__gte=thirty_days_ago,
+            created_at__date__gte=lookback_date,
             created_at__date__lte=today,
             entry_type='debit'
         )
         
         total_expense = ledger_entries.aggregate(Sum('amount'))['amount__sum'] or Decimal('0.00')
-        days_with_data = 30
+        days_with_data = lookback_days
         daily_average = total_expense / Decimal(days_with_data) if days_with_data > 0 else Decimal('0.00')
         
         # Predict balance at forecast date

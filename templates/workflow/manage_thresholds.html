@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Manage Approval Thresholds{% endblock %}
 
@@ -66,7 +67,7 @@
                                     <td><strong>{{ threshold.name }}</strong></td>
                                     <td><span class="badge bg-info">{{ threshold.get_origin_type_display }}</span></td>
                                     <td>
-                                        ${{ threshold.min_amount|floatformat:2 }} - ${{ threshold.max_amount|floatformat:2 }}
+                                        {{ threshold.min_amount|currency }} - {{ threshold.max_amount|currency }}
                                     </td>
                                     <td>
                                         <small>
