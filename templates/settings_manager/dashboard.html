@@ -274,30 +274,27 @@
             </div>
             {% endif %}
 
-            <!-- Filter Bar (shown when category selected) -->
-            {% if selected_category %}
-            <div class="card mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="mb-0">
-                                <i class="bi bi-funnel-fill"></i> Filtered by: 
-                                <span class="badge bg-primary">{{ selected_category|title }}</span>
-                            </h5>
-                        </div>
-                        <a href="{% url 'settings_manager:dashboard' %}" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-x-circle"></i> Clear Filter
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Search Bar -->
+            <!-- Filter & Search Bar -->
             <div class="card mb-4">
                 <div class="card-body">
                     <form method="get" class="row g-3 align-items-end">
-                        <div class="col-md-10">
+                        <div class="col-md-4">
+                            <label for="category" class="form-label">
+                                <i class="bi bi-funnel"></i> Filter by Category
+                            </label>
+                            <select name="category" 
+                                    id="category" 
+                                    class="form-select"
+                                    onchange="this.form.submit()">
+                                <option value="">All Categories</option>
+                                {% for cat_key, cat_name in categories %}
+                                    <option value="{{ cat_key }}" {% if selected_category == cat_key %}selected{% endif %}>
+                                        {{ cat_name }} ({{ category_counts|get_item:cat_key|default:"0" }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
                             <label for="search" class="form-label">
                                 <i class="bi bi-search"></i> Search Settings
                             </label>
@@ -308,18 +305,15 @@
                                    placeholder="Search by name, key, or description..."
                                    value="{{ search_query }}"
                                    autocomplete="off">
-                            {% if selected_category %}
-                                <input type="hidden" name="category" value="{{ selected_category }}">
-                            {% endif %}
                         </div>
                         <div class="col-md-2">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bi bi-search"></i> Search
                             </button>
-                            {% if search_query %}
-                                <a href="{% url 'settings_manager:dashboard' %}{% if selected_category %}?category={{ selected_category }}{% endif %}" 
+                            {% if search_query or selected_category %}
+                                <a href="{% url 'settings_manager:dashboard' %}" 
                                    class="btn btn-outline-secondary w-100 mt-2">
-                                    <i class="bi bi-x-circle"></i> Clear
+                                    <i class="bi bi-x-circle"></i> Reset
                                 </a>
                             {% endif %}
                         </div>
@@ -422,7 +416,7 @@
                         </div>
                         
                         <!-- Pagination Controls for Filtered View -->
-                        {% if all_settings.paginator.num_pages > 1 %}
+                        {% if all_settings.paginator %}
                             <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
@@ -547,7 +541,7 @@
                             <!-- Per-Category Pagination in Overview Mode -->
                             {% with cat_key=category.grouper|lower %}
                             {% with pag=category_pagination|get_item:cat_key %}
-                            {% if pag and pag.paginator.num_pages > 1 %}
+                            {% if pag %}
                                 <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
                                     <div class="d-flex align-items-center gap-2">
                                         <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
