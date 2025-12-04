@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Average Metrics - Quick Service LQS{% endblock %}
 
@@ -95,8 +96,8 @@
                         <tr>
                             <td><strong>{{ dept.department__name|default:"Unknown" }}</strong></td>
                             <td class="text-end">{{ dept.count }}</td>
-                            <td class="text-end">KES {{ dept.total|floatformat:2 }}</td>
-                            <td class="text-end">KES {{ dept.avg_amount|floatformat:2 }}</td>
+                            <td class="text-end">{{ dept.total|currency }}</td>
+                            <td class="text-end">{{ dept.avg_amount|currency }}</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -160,8 +161,8 @@
                         <tr>
                             <td><strong>{{ branch.branch__name|default:"Unknown" }}</strong></td>
                             <td class="text-end">{{ branch.count }}</td>
-                            <td class="text-end">KES {{ branch.total|floatformat:2 }}</td>
-                            <td class="text-end">KES {{ branch.avg_amount|floatformat:2 }}</td>
+                            <td class="text-end">{{ branch.total|currency }}</td>
+                            <td class="text-end">{{ branch.avg_amount|currency }}</td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -227,8 +228,8 @@
                             <td><strong>{{ user.requested_by__username }}</strong></td>
                             <td>{{ user.requested_by__department__name|default:"N/A" }}</td>
                             <td class="text-end">{{ user.count }}</td>
-                            <td class="text-end">KES {{ user.total|floatformat:2 }}</td>
-                            <td class="text-end">KES {{ user.avg_amount|floatformat:2 }}</td>
+                            <td class="text-end">{{ user.total|currency }}</td>
+                            <td class="text-end">{{ user.avg_amount|currency }}</td>
                         </tr>
                         {% empty %}
                         <tr>

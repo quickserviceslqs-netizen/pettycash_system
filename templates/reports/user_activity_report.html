@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}User Activity Report - {{ block.super }}{% endblock %}
 
@@ -40,7 +41,7 @@
                         <tr>
                             <td class="fw-semibold">{{ user.username }}</td>
                             <td class="text-center">{{ user.total_requisitions }}</td>
-                            <td class="text-end">${{ user.total_amount_requested|floatformat:2 }}</td>
+                            <td class="text-end">{{ user.total_amount_requested|currency }}</td>
                             <td class="text-center">
                                 <span class="badge bg-warning">{{ user.pending_count }}</span>
                             </td>

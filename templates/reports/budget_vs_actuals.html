@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Budget vs Actuals - {{ block.super }}{% endblock %}
 
@@ -68,10 +69,10 @@
                         <tr>
                             <td>{{ r.scope_name }}</td>
                             <td>{% if r.month %}{{ r.month|date:"M Y" }}{% else %}-{% endif %}</td>
-                            <td class="text-end">${{ r.actual|floatformat:2 }}</td>
-                            <td class="text-end">${{ r.budget|floatformat:2 }}</td>
+                            <td class="text-end">{{ r.actual|currency }}</td>
+                            <td class="text-end">{{ r.budget|currency }}</td>
                             <td class="text-end {% if r.variance > 0 %}text-danger{% elif r.variance < 0 %}text-success{% endif %}"> 
-                                {% if r.variance > 0 %}+{% endif %}${{ r.variance|floatformat:2 }}
+                                {% if r.variance > 0 %}+{% endif %}{{ r.variance|currency }}
                             </td>
                             <td class="text-end">{% if r.variance_pct %}{{ r.variance_pct|floatformat:2 }}%{% else %}-{% endif %}</td>
                         </tr>

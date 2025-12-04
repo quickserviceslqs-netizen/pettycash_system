@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Threshold Overrides - {{ block.super }}{% endblock %}
 
@@ -76,12 +77,12 @@
                             <td>{{ it.requested_by }}</td>
                             <td>{{ it.branch|default:'-' }}</td>
                             <td>{{ it.department|default:'-' }}</td>
-                            <td class="text-end">${{ it.amount|floatformat:2 }}</td>
+                            <td class="text-end">{{ it.amount|currency }}</td>
                             <td><span class="badge bg-secondary">{{ it.status|title }}</span></td>
                             <td>{{ it.created_at|date:"M d, Y H:i" }}</td>
                             <td>{{ it.applied_threshold|default:'-' }}</td>
-                            <td class="text-end">{% if it.min_amount %}${{ it.min_amount|floatformat:2 }}{% else %}-{% endif %}</td>
-                            <td class="text-end">{% if it.max_amount %}${{ it.max_amount|floatformat:2 }}{% else %}-{% endif %}</td>
+                            <td class="text-end">{% if it.min_amount %}{{ it.min_amount|currency }}{% else %}-{% endif %}</td>
+                            <td class="text-end">{% if it.max_amount %}{{ it.max_amount|currency }}{% else %}-{% endif %}</td>
                             <td>{% if it.is_fast_tracked %}<span class="badge bg-warning">Yes</span>{% else %}-{% endif %}</td>
                             <td>{% if it.has_trail_override %}<span class="badge bg-danger">Yes</span>{% else %}-{% endif %}</td>
                         </tr>

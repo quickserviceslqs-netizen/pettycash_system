@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Stuck Approvals - {{ block.super }}{% endblock %}
 
@@ -99,7 +100,7 @@
                                     <td>{{ it.requested_by }}</td>
                                     <td>{{ it.branch|default:'-' }}</td>
                                     <td>{{ it.department|default:'-' }}</td>
-                                    <td class="text-end">${{ it.amount|floatformat:2 }}</td>
+                                    <td class="text-end">{{ it.amount|currency }}</td>
                                     <td><span class="badge bg-warning">{{ it.status|title }}</span></td>
                                     <td>{{ it.created_at|date:"M d, Y H:i" }}</td>
                                     <td class="text-end fw-semibold">{{ it.age_days }}</td>

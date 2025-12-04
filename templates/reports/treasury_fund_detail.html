@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Fund Detail - {{ block.super }}{% endblock %}
 
@@ -31,16 +32,16 @@
                     <div class="d-flex gap-4 align-items-center">
                         <div>
                             <small class="text-muted">Debits</small>
-                            <div class="fw-semibold text-danger">${{ debits|floatformat:2 }}</div>
+                            <div class="fw-semibold text-danger">{{ debits|currency }}</div>
                         </div>
                         <div>
                             <small class="text-muted">Credits</small>
-                            <div class="fw-semibold text-success">${{ credits|floatformat:2 }}</div>
+                            <div class="fw-semibold text-success">{{ credits|currency }}</div>
                         </div>
                         <div class="vr"></div>
                         <div>
                             <small class="text-muted">Current Balance</small>
-                            <div class="fw-semibold">${{ fund.current_balance|floatformat:2 }}</div>
+                            <div class="fw-semibold">{{ fund.current_balance|currency }}</div>
                         </div>
                     </div>
                 </div>
@@ -88,7 +89,7 @@
                                             <span class="badge bg-secondary">Adj</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-end">${{ e.amount|floatformat:2 }}</td>
+                                    <td class="text-end">{{ e.amount|currency }}</td>
                                     <td>{{ e.description|default:'-' }}</td>
                                     <td>{{ e.payment_execution.gateway_reference|default:'-' }}</td>
                                 </tr>
@@ -162,7 +163,7 @@
                                 <tr>
                                     <td>{{ p.created_at|date:"M d, Y H:i" }}</td>
                                     <td><code class="small">{{ p.payment_id|slice:':8' }}...</code></td>
-                                    <td class="text-end">${{ p.amount|floatformat:2 }}</td>
+                                    <td class="text-end">{{ p.amount|currency }}</td>
                                     <td>{{ p.method|title }}</td>
                                     <td>
                                         {% if p.status == 'success' %}

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Regional/Branch Comparison - Quick Service LQS{% endblock %}
 
@@ -62,8 +63,8 @@
                         <tr>
                             <td><strong>{{ branch.branch__name|default:"Unknown" }}</strong></td>
                             <td class="text-end">{{ branch.count }}</td>
-                            <td class="text-end">KES {{ branch.total_amount|floatformat:2 }}</td>
-                            <td class="text-end">KES {{ branch.avg_amount|floatformat:2 }}</td>
+                            <td class="text-end">{{ branch.total_amount|currency }}</td>
+                            <td class="text-end">{{ branch.avg_amount|currency }}</td>
                             <td class="text-end text-success">{{ branch.paid_count }}</td>
                             <td class="text-end text-warning">{{ branch.pending_count }}</td>
                             <td class="text-end text-danger">{{ branch.rejected_count }}</td>

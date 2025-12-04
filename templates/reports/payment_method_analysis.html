@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Payment Method Analysis - Quick Service LQS{% endblock %}
 
@@ -99,8 +100,8 @@
                         <tr>
                             <td><strong>{{ method.method_display }}</strong></td>
                             <td class="text-end">{{ method.count }}</td>
-                            <td class="text-end">KES {{ method.total_amount|floatformat:2 }}</td>
-                            <td class="text-end">KES {{ method.avg_amount|floatformat:2 }}</td>
+                            <td class="text-end">{{ method.total_amount|currency }}</td>
+                            <td class="text-end">{{ method.avg_amount|currency }}</td>
                             <td class="text-end text-success">{{ method.success_count }}</td>
                             <td class="text-end text-danger">{{ method.failed_count }}</td>
                             <td class="text-end">

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Transaction Report - {{ block.super }}{% endblock %}
 
@@ -90,7 +91,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <p class="text-muted mb-1 small">Total Amount</p>
-                    <h3 class="mb-0">${{ total_amount|floatformat:2 }}</h3>
+                    <h3 class="mb-0">{{ total_amount|currency }}</h3>
                 </div>
             </div>
         </div>
@@ -98,7 +99,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <p class="text-muted mb-1 small">Average Amount</p>
-                    <h3 class="mb-0">${{ avg_amount|floatformat:2 }}</h3>
+                    <h3 class="mb-0">{{ avg_amount|currency }}</h3>
                 </div>
             </div>
         </div>
@@ -150,7 +151,7 @@
                             <td>{{ req.requested_by.username }}</td>
                             <td>{{ req.branch.name|default:"-" }}</td>
                             <td>{{ req.department.name|default:"-" }}</td>
-                            <td>${{ req.amount|floatformat:2 }}</td>
+                            <td>{{ req.amount|currency }}</td>
                             <td>
                                 {% if req.status == 'paid' %}
                                     <span class="badge bg-success">{{ req.get_status_display }}</span>

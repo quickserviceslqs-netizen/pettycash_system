@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Treasury Report - {{ block.super }}{% endblock %}
 
@@ -22,7 +23,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <p class="text-muted mb-1 small">Total Balance</p>
-                    <h3 class="mb-0 text-success">${{ total_balance|floatformat:2 }}</h3>
+                    <h3 class="mb-0 text-success">{{ total_balance|currency }}</h3>
                 </div>
             </div>
         </div>
@@ -72,8 +73,8 @@
                             <td>{{ fund.company.name }}</td>
                             <td>{{ fund.region.name|default:"-" }}</td>
                             <td>{{ fund.branch.name|default:"HQ" }}</td>
-                            <td class="fw-semibold">${{ fund.current_balance|floatformat:2 }}</td>
-                            <td>${{ fund.reorder_level|floatformat:2 }}</td>
+                            <td class="fw-semibold">{{ fund.current_balance|currency }}</td>
+                            <td>{{ fund.reorder_level|currency }}</td>
                             <td>
                                 {% if fund.needs_replenishment %}
                                     <span class="badge bg-danger">
@@ -172,7 +173,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-end">{{ stat.count }}</td>
-                                    <td class="text-end fw-semibold">${{ stat.total_amount|floatformat:2 }}</td>
+                                    <td class="text-end fw-semibold">{{ stat.total_amount|currency }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>
@@ -217,7 +218,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-end">{{ stat.count }}</td>
-                                    <td class="text-end fw-semibold">${{ stat.total_amount|floatformat:2 }}</td>
+                                    <td class="text-end fw-semibold">{{ stat.total_amount|currency }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>

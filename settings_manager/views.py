@@ -71,7 +71,7 @@ def edit_setting(request, setting_id):
     
     if not setting.editable_by_admin:
         messages.error(request, "This setting cannot be edited through the UI.")
-        return redirect('settings-dashboard')
+        return redirect('settings_manager:dashboard')
     
     if request.method == 'POST':
         old_value = setting.value
@@ -116,7 +116,7 @@ def edit_setting(request, setting_id):
                 request=request
             )
         
-        return redirect('settings-dashboard')
+        return redirect('settings_manager:dashboard')
     
     context = {
         'setting': setting,

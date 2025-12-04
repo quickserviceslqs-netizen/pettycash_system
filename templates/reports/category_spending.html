@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Category Spending Report - {{ block.super }}{% endblock %}
 
@@ -66,7 +67,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <p class="text-muted mb-1 small">Total Spend</p>
-                    <h3 class="mb-0">${{ total_amount|floatformat:2 }}</h3>
+                    <h3 class="mb-0">{{ total_amount|currency }}</h3>
                     <small class="text-muted">{{ total_count }} requisitions</small>
                 </div>
             </div>
@@ -84,7 +85,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <p class="text-muted mb-1 small">Average per Requisition</p>
-                    <h4 class="mb-0">${{ avg_amount|floatformat:2 }}</h4>
+                    <h4 class="mb-0">{{ avg_amount|currency }}</h4>
                 </div>
             </div>
         </div>
@@ -123,8 +124,8 @@
                                 {{ cat.display_name }}
                             </td>
                             <td class="text-end">{{ cat.count }}</td>
-                            <td class="text-end">${{ cat.total|floatformat:2 }}</td>
-                            <td class="text-end">${{ cat.average|floatformat:2 }}</td>
+                            <td class="text-end">{{ cat.total|currency }}</td>
+                            <td class="text-end">{{ cat.average|currency }}</td>
                             <td class="text-end">
                                 <span class="badge bg-primary">{{ cat.percentage|floatformat:1 }}%</span>
                             </td>
@@ -193,7 +194,7 @@
                             <td>{{ item.department__name|default:"Unassigned" }}</td>
                             <td>{{ item.display_name }}</td>
                             <td class="text-end">{{ item.count }}</td>
-                            <td class="text-end">${{ item.total|floatformat:2 }}</td>
+                            <td class="text-end">{{ item.total|currency }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
