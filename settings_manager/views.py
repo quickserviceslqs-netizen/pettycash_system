@@ -54,37 +54,43 @@ def settings_dashboard(request):
     category_filter = request.GET.get('category')
     search_query = request.GET.get('search', '').strip()
     
-    if category_filter:
-        settings = SystemSetting.objects.filter(category=category_filter, is_active=True)
-    else:
-        settings = SystemSetting.objects.filter(is_active=True)
+    # Determine if we're in filtered/search mode
+    is_filtered = bool(category_filter or search_query)
     
-    # Apply search filter if provided
-    if search_query:
-        settings = settings.filter(
-            Q(display_name__icontains=search_query) |
-            Q(key__icontains=search_query) |
-            Q(description__icontains=search_query)
-        )
-    
-    # Paginate when filtering/searching
-    paginated_settings = None
-    if category_filter or search_query:
+    if is_filtered:
+        # FILTERED MODE: Get filtered queryset and paginate it
+        if category_filter:
+            settings = SystemSetting.objects.filter(category=category_filter, is_active=True)
+        else:
+            settings = SystemSetting.objects.filter(is_active=True)
+        
+        # Apply search filter if provided
+        if search_query:
+            settings = settings.filter(
+                Q(display_name__icontains=search_query) |
+                Q(key__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+        
+        # Paginate the filtered results
         page_size = request.GET.get('page_size', 25)
         paginator = Paginator(settings, page_size)
         page_number = request.GET.get('page', 1)
-        paginated_settings = paginator.get_page(page_number)
+        all_settings = paginator.get_page(page_number)
+    else:
+        # OVERVIEW MODE: Get all active settings as queryset for regrouping
+        all_settings = SystemSetting.objects.filter(is_active=True)
     
     context = {
         'settings_by_category': settings_by_category,
         'category_pagination': category_pagination,
         'category_counts': category_counts,
-        'all_settings': paginated_settings if paginated_settings else settings,
+        'all_settings': all_settings,
         'categories': categories,
         'selected_category': category_filter,
         'search_query': search_query,
         'total_settings': SystemSetting.objects.filter(is_active=True).count(),
-        'is_paginated': bool(paginated_settings),
+        'is_paginated': is_filtered,
         'page_size': page_size,
     }
     

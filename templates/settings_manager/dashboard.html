@@ -334,14 +334,21 @@
                 </div>
             </div>
 
-            <!-- Settings by Category -->
-            {% regroup all_settings by category as category_list %}
-            {% for category in category_list %}
+            <!-- Settings Display: Overview (grouped) or Filtered (flat list) -->
+            
+            {% if is_paginated %}
+                <!-- FILTERED/SEARCH VIEW: Flat list with pagination -->
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
-                            <i class="bi bi-{% if category.grouper == 'email' %}envelope{% elif category.grouper == 'approval' %}check-circle{% elif category.grouper == 'payment' %}currency-dollar{% elif category.grouper == 'security' %}shield-lock{% elif category.grouper == 'notifications' %}bell{% elif category.grouper == 'reporting' %}graph-up{% elif category.grouper == 'requisition' %}file-text{% elif category.grouper == 'treasury' %}piggy-bank{% elif category.grouper == 'workflow' %}diagram-3{% elif category.grouper == 'organization' %}people{% else %}gear{% endif %}"></i>
-                            {{ category.grouper|title }} Settings
+                            <i class="bi bi-search"></i>
+                            {% if selected_category %}
+                                {{ selected_category|title }} Settings ({{ all_settings.paginator.count }} total)
+                            {% elif search_query %}
+                                Search Results for "{{ search_query }}" ({{ all_settings.paginator.count }} total)
+                            {% else %}
+                                Filtered Settings ({{ all_settings.paginator.count }} total)
+                            {% endif %}
                         </h5>
                     </div>
                     <div class="card-body">
@@ -357,7 +364,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for setting in category.list %}
+                                    {% for setting in all_settings %}
                                         <tr>
                                             <td>
                                                 <strong>{{ setting.display_name }}</strong>
@@ -414,51 +421,8 @@
                             </table>
                         </div>
                         
-                        <!-- Compact Pagination per Category -->
-                        {% with cat_key=category.grouper|lower %}
-                        {% with pag=category_pagination|get_item:cat_key %}
-                        
-                        <!-- Show per-category pagination on overview, or all_settings pagination when filtered -->
-                        {% if pag and pag.paginator.num_pages > 1 %}
-                            <!-- Overview Mode: Per-category pagination -->
-                            <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
-                                    <select class="form-select form-select-sm" style="width: auto; font-size: 0.9rem;" onchange="window.location.href='?page_{{ cat_key }}=1&page_size=' + this.value">
-                                        <option value="10" {% if page_size == '10' %}selected{% endif %}>10</option>
-                                        <option value="25" {% if page_size == '25' %}selected{% endif %}>25</option>
-                                        <option value="50" {% if page_size == '50' %}selected{% endif %}>50</option>
-                                        <option value="100" {% if page_size == '100' %}selected{% endif %}>100</option>
-                                    </select>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.9rem;">
-                                    {{ pag.start_index }}-{{ pag.end_index }} of {{ pag.paginator.count }}
-                                </div>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="?page_{{ cat_key }}=1&page_size={{ page_size }}" 
-                                       class="btn btn-outline-secondary {% if not pag.has_previous %}disabled{% endif %}" 
-                                       title="First page">
-                                        <i class="bi bi-chevron-double-left"></i>
-                                    </a>
-                                    <a href="{% if pag.has_previous %}?page_{{ cat_key }}={{ pag.previous_page_number }}&page_size={{ page_size }}{% else %}#{% endif %}" 
-                                       class="btn btn-outline-secondary {% if not pag.has_previous %}disabled{% endif %}" 
-                                       title="Previous page">
-                                        <i class="bi bi-chevron-left"></i>
-                                    </a>
-                                    <a href="{% if pag.has_next %}?page_{{ cat_key }}={{ pag.next_page_number }}&page_size={{ page_size }}{% else %}#{% endif %}" 
-                                       class="btn btn-outline-secondary {% if not pag.has_next %}disabled{% endif %}" 
-                                       title="Next page">
-                                        <i class="bi bi-chevron-right"></i>
-                                    </a>
-                                    <a href="{% if pag.has_next %}?page_{{ cat_key }}={{ pag.paginator.num_pages }}&page_size={{ page_size }}{% else %}#{% endif %}" 
-                                       class="btn btn-outline-secondary {% if not pag.has_next %}disabled{% endif %}" 
-                                       title="Last page">
-                                        <i class="bi bi-chevron-double-right"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        {% elif is_paginated and all_settings.paginator.num_pages > 1 %}
-                            <!-- Filtered/Category View Mode: Single category or search pagination -->
+                        <!-- Pagination Controls for Filtered View -->
+                        {% if all_settings.paginator.num_pages > 1 %}
                             <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
@@ -496,15 +460,141 @@
                                 </div>
                             </div>
                         {% endif %}
+                    </div>
                 </div>
-            </div>
-        {% endwith %}
-        {% endwith %}
-            {% empty %}
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> No settings found. Run the seed command to create default settings.
-                </div>
-            {% endfor %}
+            
+            {% else %}
+                <!-- OVERVIEW VIEW: Grouped by category with per-category pagination -->
+                {% regroup all_settings by category as category_list %}
+                {% for category in category_list %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-{% if category.grouper == 'email' %}envelope{% elif category.grouper == 'approval' %}check-circle{% elif category.grouper == 'payment' %}currency-dollar{% elif category.grouper == 'security' %}shield-lock{% elif category.grouper == 'notifications' %}bell{% elif category.grouper == 'reporting' %}graph-up{% elif category.grouper == 'requisition' %}file-text{% elif category.grouper == 'treasury' %}piggy-bank{% elif category.grouper == 'workflow' %}diagram-3{% elif category.grouper == 'organization' %}people{% else %}gear{% endif %}"></i>
+                                {{ category.grouper|title }} Settings
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 25%;">Setting</th>
+                                            <th style="width: 35%;">Description</th>
+                                            <th style="width: 20%;">Current Value</th>
+                                            <th style="width: 10%;">Status</th>
+                                            <th style="width: 10%;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for setting in category.list %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ setting.display_name }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">{{ setting.key }}</small>
+                                                    {% if setting.requires_restart %}
+                                                        <br>
+                                                        <span class="badge bg-warning text-dark">
+                                                            <i class="bi bi-exclamation-triangle"></i> Restart Required
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <small>{{ setting.description }}</small>
+                                                </td>
+                                                <td>
+                                                    {% if setting.is_sensitive %}
+                                                        <span class="text-muted">
+                                                            <i class="bi bi-eye-slash"></i> ••••••••
+                                                        </span>
+                                                    {% else %}
+                                                        <code>{{ setting.value|truncatewords:5 }}</code>
+                                                    {% endif %}
+                                                    {% if setting.value != setting.default_value %}
+                                                        <br>
+                                                        <small class="text-info">
+                                                            <i class="bi bi-info-circle"></i> Modified from default
+                                                        </small>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if setting.is_active %}
+                                                        <span class="badge bg-success">Active</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Inactive</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if setting.editable_by_admin %}
+                                                        <a href="{% url 'settings_manager:edit_setting' setting.id %}" 
+                                                           class="btn btn-sm btn-outline-primary" 
+                                                           title="Edit Setting">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                    {% else %}
+                                                        <button class="btn btn-sm btn-outline-secondary" disabled title="Not editable">
+                                                            <i class="bi bi-lock"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Per-Category Pagination in Overview Mode -->
+                            {% with cat_key=category.grouper|lower %}
+                            {% with pag=category_pagination|get_item:cat_key %}
+                            {% if pag and pag.paginator.num_pages > 1 %}
+                                <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-muted" style="font-size: 0.9rem;">Rows:</span>
+                                        <select class="form-select form-select-sm" style="width: auto; font-size: 0.9rem;" onchange="window.location.href='?page_{{ cat_key }}=1&page_size=' + this.value">
+                                            <option value="10" {% if page_size == '10' %}selected{% endif %}>10</option>
+                                            <option value="25" {% if page_size == '25' %}selected{% endif %}>25</option>
+                                            <option value="50" {% if page_size == '50' %}selected{% endif %}>50</option>
+                                            <option value="100" {% if page_size == '100' %}selected{% endif %}>100</option>
+                                        </select>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.9rem;">
+                                        {{ pag.start_index }}-{{ pag.end_index }} of {{ pag.paginator.count }}
+                                    </div>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="?page_{{ cat_key }}=1&page_size={{ page_size }}" 
+                                           class="btn btn-outline-secondary {% if not pag.has_previous %}disabled{% endif %}" 
+                                           title="First page">
+                                            <i class="bi bi-chevron-double-left"></i>
+                                        </a>
+                                        <a href="{% if pag.has_previous %}?page_{{ cat_key }}={{ pag.previous_page_number }}&page_size={{ page_size }}{% else %}#{% endif %}" 
+                                           class="btn btn-outline-secondary {% if not pag.has_previous %}disabled{% endif %}" 
+                                           title="Previous page">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                        <a href="{% if pag.has_next %}?page_{{ cat_key }}={{ pag.next_page_number }}&page_size={{ page_size }}{% else %}#{% endif %}" 
+                                           class="btn btn-outline-secondary {% if not pag.has_next %}disabled{% endif %}" 
+                                           title="Next page">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                        <a href="{% if pag.has_next %}?page_{{ cat_key }}={{ pag.paginator.num_pages }}&page_size={{ page_size }}{% else %}#{% endif %}" 
+                                           class="btn btn-outline-secondary {% if not pag.has_next %}disabled{% endif %}" 
+                                           title="Last page">
+                                            <i class="bi bi-chevron-double-right"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% endwith %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No settings found. Run the seed command to create default settings.
+                    </div>
+                {% endfor %}
+            {% endif %}
         </div>
     </div>
 </div>
