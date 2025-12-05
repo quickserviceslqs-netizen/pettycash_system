@@ -292,11 +292,11 @@
                                class="form-control" 
                                placeholder="Filter by setting name, key, or description..."
                                autocomplete="off">
-                        <button type="button" class="btn btn-primary" onclick="applyFilter()">
-                            <i class="bi bi-search"></i> Filter
+                        <button type="button" class="btn btn-primary" onclick="applyFilter(event)">
+                            <i class="bi bi-funnel"></i> Filter
                         </button>
-                        <button type="button" class="btn btn-outline-secondary" onclick="clearFilter()">
-                            <i class="bi bi-x-circle"></i> Clear
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearFilter(event)">
+                            <i class="bi bi-arrow-clockwise"></i> Clear
                         </button>
                     </form>
                 </div>
@@ -415,8 +415,9 @@ window.addEventListener('load', function() {
 });
 
 // Client-side filtering
-function applyFilter() {
-    const filterText = document.getElementById('filterInput').value.toLowerCase();
+function applyFilter(event) {
+    if (event) event.preventDefault();
+    const filterText = document.getElementById('filterInput').value.toLowerCase().trim();
     const rows = document.querySelectorAll('tbody tr');
     let visibleCount = 0;
     
@@ -445,7 +446,8 @@ function applyFilter() {
     });
 }
 
-function clearFilter() {
+function clearFilter(event) {
+    if (event) event.preventDefault();
     document.getElementById('filterInput').value = '';
     const rows = document.querySelectorAll('tbody tr');
     rows.forEach(row => {
