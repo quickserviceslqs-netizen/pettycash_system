@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from django.conf import settings
 from django.core.management import call_command
-from django.db import connection
+from django.db import connection, models
 from django.utils import timezone
 from django.apps import apps
 from system_maintenance.models import BackupRecord

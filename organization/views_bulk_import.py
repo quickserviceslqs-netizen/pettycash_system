@@ -200,33 +200,28 @@ def import_regions(request):
     """Bulk import regions from CSV"""
     if request.method == 'POST' and request.FILES.get('csv_file'):
         csv_file = request.FILES['csv_file']
-        
+        is_excel = csv_file.name.endswith(('.xlsx', '.xls'))
         if not csv_file.name.endswith('.csv'):
             messages.error(request, 'Please upload a CSV file')
             return redirect('import_organizations')
-        
         try:
             decoded_file = csv_file.read().decode('utf-8')
             io_string = io.StringIO(decoded_file)
             reader = csv.DictReader(io_string)
-            
+            data_rows = list(reader)
             success_count = 0
             error_count = 0
             errors = []
-            
             with transaction.atomic():
                 for row_num, row in enumerate(data_rows, start=2):
                     try:
                         if is_excel:
                             row = {k: (str(v) if pd.notna(v) else '') for k, v in row.items()}
-                        
                         if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
-                        
                         name = str(row['name']).strip()
                         code = str(row['code']).strip()
                         company_name = str(row['company_name']).strip()
-                        
                         if not all([name, code, company_name]):
                             errors.append(f"Row {row_num}: Missing required fields")
                             error_count += 1
@@ -331,29 +326,25 @@ def import_branches(request):
     """Bulk import branches from CSV"""
     if request.method == 'POST' and request.FILES.get('csv_file'):
         csv_file = request.FILES['csv_file']
-        
+        is_excel = csv_file.name.endswith(('.xlsx', '.xls'))
         if not csv_file.name.endswith('.csv'):
             messages.error(request, 'Please upload a CSV file')
             return redirect('import_organizations')
-        
         try:
             decoded_file = csv_file.read().decode('utf-8')
             io_string = io.StringIO(decoded_file)
             reader = csv.DictReader(io_string)
-            
+            data_rows = list(reader)
             success_count = 0
             error_count = 0
             errors = []
-            
             with transaction.atomic():
                 for row_num, row in enumerate(data_rows, start=2):
                     try:
                         if is_excel:
                             row = {k: (str(v) if pd.notna(v) else '') for k, v in row.items()}
-                        
                         if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
-                        
                         name = str(row['name']).strip()
                         code = str(row['code']).strip()
                         phone = row.get('phone', '').strip()
@@ -487,32 +478,27 @@ def import_departments(request):
     """Bulk import departments from CSV"""
     if request.method == 'POST' and request.FILES.get('csv_file'):
         csv_file = request.FILES['csv_file']
-        
+        is_excel = csv_file.name.endswith(('.xlsx', '.xls'))
         if not csv_file.name.endswith('.csv'):
             messages.error(request, 'Please upload a CSV file')
             return redirect('import_organizations')
-        
         try:
             decoded_file = csv_file.read().decode('utf-8')
             io_string = io.StringIO(decoded_file)
             reader = csv.DictReader(io_string)
-            
+            data_rows = list(reader)
             success_count = 0
             error_count = 0
             errors = []
-            
             with transaction.atomic():
                 for row_num, row in enumerate(data_rows, start=2):
                     try:
                         if is_excel:
                             row = {k: (str(v) if pd.notna(v) else '') for k, v in row.items()}
-                        
                         if not row.get('name') or str(row.get('name', '')).startswith('INSTRUCTIONS'):
                             continue
-                        
                         name = str(row['name']).strip()
                         branch_name = str(row['branch_name']).strip()
-                        
                         if not all([name, branch_name]):
                             errors.append(f"Row {row_num}: Missing required fields")
                             error_count += 1
