@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Treasury Report - {{ block.super }}{% endblock %}
 
@@ -12,7 +13,7 @@
             <p class="text-muted mb-0">Fund balances and payment activity</p>
         </div>
         <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
         </a>
     </div>
 
@@ -22,7 +23,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <p class="text-muted mb-1 small">Total Balance</p>
-                    <h3 class="mb-0 text-success">${{ total_balance|floatformat:2 }}</h3>
+                    <h3 class="mb-0 text-success">{{ total_balance|currency }}</h3>
                 </div>
             </div>
         </div>
@@ -63,6 +64,7 @@
                             <th>Reorder Level</th>
                             <th>Status</th>
                             <th>Last Replenished</th>
+                            <th>Details</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -71,16 +73,16 @@
                             <td>{{ fund.company.name }}</td>
                             <td>{{ fund.region.name|default:"-" }}</td>
                             <td>{{ fund.branch.name|default:"HQ" }}</td>
-                            <td class="fw-semibold">${{ fund.current_balance|floatformat:2 }}</td>
-                            <td>${{ fund.reorder_level|floatformat:2 }}</td>
+                            <td class="fw-semibold">{{ fund.current_balance|currency }}</td>
+                            <td>{{ fund.reorder_level|currency }}</td>
                             <td>
                                 {% if fund.needs_replenishment %}
                                     <span class="badge bg-danger">
-                                        <i class="bi bi-exclamation-triangle"></i> Below Reorder Level
+                                        <i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Below Reorder Level
                                     </span>
                                 {% else %}
                                     <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Healthy
+                                        <i aria-hidden="true" class="bi bi-check-circle"></i> Healthy
                                     </span>
                                 {% endif %}
                             </td>
@@ -91,6 +93,11 @@
                                     <span class="text-muted">Never</span>
                                 {% endif %}
                             </td>
+                            <td>
+                                <a href="{% url 'reports:treasury-fund-detail' fund.fund_id %}?days={{ days }}" class="btn btn-sm btn-outline-primary">
+                                    <i aria-hidden="true" class="bi bi-search"></i>
+                                </a>
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
@@ -100,6 +107,36 @@
                     </tbody>
                 </table>
             </div>
+            {% if funds.paginator %}
+            <div class="d-flex align-items-center justify-content-between mt-3 px-3 pb-3">
+                <div>
+                    <label for="page_size" class="form-label mb-0 me-2 d-inline">Rows per page:</label>
+                    <select id="page_size" class="form-select d-inline" style="width: auto;" onchange="window.location.href='?days={{ days }}&page_size=' + this.value;">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                    </select>
+                </div>
+                <span class="text-muted small">{{ funds.start_index }}-{{ funds.end_index }} of {{ funds.paginator.count }}</span>
+                <div class="btn-group" role="group">
+                    {% if funds.has_previous %}
+                    <a href="?days={{ days }}&page_size={{ page_size }}&page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                    <a href="?days={{ days }}&page_size={{ page_size }}&page={{ funds.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
+                    {% endif %}
+                    {% if funds.has_next %}
+                    <a href="?days={{ days }}&page_size={{ page_size }}&page={{ funds.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <a href="?days={{ days }}&page_size={{ page_size }}&page={{ funds.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -126,17 +163,17 @@
                                 <tr>
                                     <td>
                                         {% if stat.method == 'mpesa' %}
-                                            <i class="bi bi-phone text-success"></i> MPESA
+                                            <i aria-hidden="true" class="bi bi-phone text-success"></i> MPESA
                                         {% elif stat.method == 'bank' %}
-                                            <i class="bi bi-bank text-primary"></i> Bank Transfer
+                                            <i aria-hidden="true" class="bi bi-bank text-primary"></i> Bank Transfer
                                         {% elif stat.method == 'cash' %}
-                                            <i class="bi bi-cash text-warning"></i> Cash
+                                            <i aria-hidden="true" class="bi bi-cash text-warning"></i> Cash
                                         {% else %}
                                             {{ stat.method|title }}
                                         {% endif %}
                                     </td>
                                     <td class="text-end">{{ stat.count }}</td>
-                                    <td class="text-end fw-semibold">${{ stat.total_amount|floatformat:2 }}</td>
+                                    <td class="text-end fw-semibold">{{ stat.total_amount|currency }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>
@@ -181,7 +218,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-end">{{ stat.count }}</td>
-                                    <td class="text-end fw-semibold">${{ stat.total_amount|floatformat:2 }}</td>
+                                    <td class="text-end fw-semibold">{{ stat.total_amount|currency }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>

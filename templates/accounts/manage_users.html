@@ -3,18 +3,24 @@
 {% block title %}Manage Users{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid mt-4 manage-users">
     <div class="row mb-4">
         <div class="col-md-6">
-            <h2><i class="bi bi-people"></i> Manage Users</h2>
+            <h2><i aria-hidden="true" class="bi bi-people"></i> Manage Users</h2>
             <p class="text-muted">Search, filter, and manage user permissions</p>
         </div>
         <div class="col-md-6 text-end">
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Dashboard
+                <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="{% url 'accounts:audit_logs' %}" class="btn btn-info">
+                <i aria-hidden="true" class="bi bi-clock-history"></i> Audit Logs
+            </a>
+            <a href="{% url 'accounts:create_user' %}" class="btn btn-primary">
+                <i aria-hidden="true" class="bi bi-person-plus"></i> Add User
             </a>
             <a href="{% url 'accounts:bulk_import' %}" class="btn btn-success">
-                <i class="bi bi-file-earmark-arrow-up"></i> Bulk Import
+                <i aria-hidden="true" class="bi bi-file-earmark-arrow-up"></i> Bulk Import
             </a>
         </div>
     </div>
@@ -22,7 +28,7 @@
     <!-- Filters -->
     <div class="card mb-4">
         <div class="card-header">
-            <i class="bi bi-funnel"></i> Filters
+            <i aria-hidden="true" class="bi bi-funnel"></i> Filters
         </div>
         <div class="card-body">
             <form method="get" class="row g-3">
@@ -59,14 +65,15 @@
                         <option value="">All Status</option>
                         <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
                         <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                        <option value="locked" {% if status_filter == 'locked' %}selected{% endif %}>Locked</option>
                     </select>
                 </div>
                 <div class="col-md-12">
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-search"></i> Apply Filters
+                        <i aria-hidden="true" class="bi bi-search"></i> Apply Filters
                     </button>
                     <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
-                        <i class="bi bi-x-circle"></i> Clear
+                        <i aria-hidden="true" class="bi bi-x-circle"></i> Clear
                     </a>
                 </div>
             </form>
@@ -76,77 +83,119 @@
     <!-- Users Table -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-table"></i> Users ({{ users.count }})</span>
+            <span><i aria-hidden="true" class="bi bi-table"></i> Users ({{ page_obj.paginator.count }})</span>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 toolbar-wrap">
+                <div class="btn-group" role="group">
+                    <a id="exportLink" class="btn btn-outline-secondary" href="{% url 'accounts:export_users' %}?{{ request.GET.urlencode }}">
+                        <i aria-hidden="true" class="bi bi-download"></i> Export CSV
+                    </a>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-columns-gap" aria-hidden="true"></i> Columns
+                        </button>
+                        <div class="dropdown-menu p-3" style="min-width: 220px;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <button type="button" id="colsSelectAll" class="btn btn-sm btn-link p-0">Select all</button>
+                                <button type="button" id="colsClearAll" class="btn btn-sm btn-link text-danger p-0">Clear</button>
+                            </div>
+                            <div class="mb-2">
+                                <button type="button" id="colsResetDefaults" class="btn btn-sm btn-outline-secondary w-100">Reset to default</button>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input col-toggle" type="checkbox" value="cost-center" id="colCostCenter">
+                                <label class="form-check-label" for="colCostCenter">Cost Center</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input col-toggle" type="checkbox" value="position" id="colPosition">
+                                <label class="form-check-label" for="colPosition">Position</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input col-toggle" type="checkbox" value="region" id="colRegion">
+                                <label class="form-check-label" for="colRegion">Region</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input col-toggle" type="checkbox" value="phone" id="colPhone">
+                                <label class="form-check-label" for="colPhone">Phone</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap toolbar-actions">
+                    <label class="me-2 text-nowrap">Assign app:</label>
+                    <select class="form-select form-select-sm" style="min-width: 260px;" name="app_id" form="bulkForm">
+                        <option value="">Select app</option>
+                        {% for app in all_apps %}
+                        <option value="{{ app.id }}">{{ app.display_name|default:app.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-outline-success text-nowrap" form="bulkForm" formaction="{% url 'accounts:bulk_assign_app' %}" title="Assign selected app to checked users">
+                        <i aria-hidden="true" class="bi bi-plus-circle"></i> Assign
+                    </button>
+                    <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap" form="bulkForm" formaction="{% url 'accounts:bulk_update_status' %}?status=activate">
+                        <i aria-hidden="true" class="bi bi-play-circle"></i> Activate
+                    </button>
+                    <button type="submit" class="btn btn-sm btn-outline-warning text-nowrap" form="bulkForm" formaction="{% url 'accounts:bulk_update_status' %}?status=deactivate">
+                        <i aria-hidden="true" class="bi bi-pause-circle"></i> Deactivate
+                    </button>
+                </div>
+            </div>
+            <form id="bulkForm" method="post" action="{% url 'accounts:bulk_update_status' %}">
+                {% csrf_token %}
+            <div class="table-responsive" style="overflow-x:auto;">
+                <table class="table table-hover align-middle" style="min-width: 1100px;">
                     <thead>
                         <tr>
-                            <th>Username</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Company</th>
-                            <th>Branch</th>
-                            <th>Department</th>
-                            <th>Apps</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th style="width:36px;"><input type="checkbox" id="selectAll"></th>
+                            <th class="col-username">Username</th>
+                            <th class="col-name">Name</th>
+                            <th class="col-email">Email</th>
+                            <th class="col-role">Role</th>
+                            <th class="col-company">Company</th>
+                            <th class="col-branch">Branch</th>
+                            <th class="col-department">Department</th>
+                            <th class="col-optional col-cost-center">Cost Center</th>
+                            <th class="col-optional col-position">Position</th>
+                            <th class="col-optional col-region">Region</th>
+                            <th class="col-optional col-phone">Phone</th>
+                            <th style="width: 100px;">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for user in users %}
-                        <tr>
-                            <td><strong>{{ user.username }}</strong></td>
-                            <td>{{ user.get_display_name }}</td>
-                            <td>{{ user.email }}</td>
-                            <td>
+                        <tr style="cursor: pointer;" onclick="window.location='{% url 'accounts:edit_user_permissions' user.id %}';" title="Click to edit user">
+                            <td><input type="checkbox" name="user_ids" value="{{ user.id }}" onclick="event.stopPropagation();"></td>
+                            <td class="col-username"><strong>{{ user.username }}</strong></td>
+                            <td class="col-name">{{ user.get_display_name }}</td>
+                            <td class="col-email">{{ user.email }}</td>
+                            <td class="col-role">
                                 <span class="badge bg-secondary">{{ user.get_role_display }}</span>
                                 {% if user.is_centralized_approver %}
                                 <span class="badge bg-warning text-dark">Centralized</span>
                                 {% endif %}
                             </td>
-                            <td>{{ user.company.name|default:"—" }}</td>
-                            <td>{{ user.branch.name|default:"—" }}</td>
-                            <td>{{ user.department.name|default:"—" }}</td>
-                            <td>
-                                {% with user.assigned_apps.all as apps %}
-                                {% if apps %}
-                                    {% for app in apps %}
-                                    <span class="badge bg-info">{{ app.name }}</span>
-                                    {% endfor %}
-                                {% else %}
-                                    <span class="text-muted">No apps</span>
-                                {% endif %}
-                                {% endwith %}
-                            </td>
+                            <td class="col-company">{{ user.company.name|default:"—" }}</td>
+                            <td class="col-branch">{{ user.branch.name|default:"—" }}</td>
+                            <td class="col-department">{{ user.department.name|default:"—" }}</td>
+                            <td class="col-optional col-cost-center">{{ user.cost_center.name|default:"—" }}</td>
+                            <td class="col-optional col-position">{{ user.position_title.name|default:"—" }}</td>
+                            <td class="col-optional col-region">{{ user.region.name|default:"—" }}</td>
+                            <td class="col-optional col-phone">{{ user.phone_number|default:"—" }}</td>
                             <td>
                                 {% if user.is_active %}
                                 <span class="badge bg-success">Active</span>
                                 {% else %}
                                 <span class="badge bg-danger">Inactive</span>
                                 {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{% url 'accounts:edit_user_permissions' user.id %}" 
-                                       class="btn btn-sm btn-outline-primary" title="Edit Permissions">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    <form method="post" action="{% url 'accounts:toggle_user_status' user.id %}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-outline-warning" 
-                                                title="{% if user.is_active %}Deactivate{% else %}Activate{% endif %}">
-                                            <i class="bi bi-{% if user.is_active %}pause-circle{% else %}play-circle{% endif %}"></i>
-                                        </button>
-                                    </form>
-                                </div>
+                                {% if user.lockout_until %}
+                                <span class="badge bg-warning text-dark" title="Locked until {{ user.lockout_until }}">Locked</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="10" class="text-center text-muted">
+                            <td colspan="9" class="text-center text-muted">
                                 No users found matching your filters.
                             </td>
                         </tr>
@@ -154,7 +203,138 @@
                     </tbody>
                 </table>
             </div>
+            </form>
+            <div class="mt-3">
+                <p class="text-muted"><i aria-hidden="true" class="bi bi-info-circle"></i> Click on any user row to edit their profile, permissions, and settings.</p>
+            </div>
+            <nav aria-label="User pagination" class="d-flex justify-content-end align-items-center">
+                <form id="pagerForm" method="get" class="mb-0">
+                    <input type="hidden" name="search" value="{{ search }}">
+                    <input type="hidden" name="role" value="{{ role_filter }}">
+                    <input type="hidden" name="company" value="{{ company_filter }}">
+                    <input type="hidden" name="status" value="{{ status_filter }}">
+                    <input type="hidden" name="page" id="pageInput" value="{{ page_obj.number }}">
+                    <ul class="pagination pagination-sm mb-0 align-items-center">
+                        <li class="page-item mx-2">
+                            <select name="page_size" id="page_size" class="form-select form-select-sm page-size-select" onchange="document.getElementById('pageInput').value=1; this.form.submit();">
+                                <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                                <option value="20" {% if page_size == 20 %}selected{% endif %}>20</option>
+                                <option value="30" {% if page_size == 30 %}selected{% endif %}>30</option>
+                                <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                                <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                            </select>
+                        </li>
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <button type="submit" class="page-link" onclick="document.getElementById('pageInput').value={{ page_obj.previous_page_number }};">Prev</button>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">Prev</span></li>
+                        {% endif %}
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <button type="submit" class="page-link" onclick="document.getElementById('pageInput').value={{ page_obj.next_page_number }};">Next</button>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">Next</span></li>
+                        {% endif %}
+                        <li class="page-item disabled ms-3"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                    </ul>
+                </form>
+            </nav>
         </div>
     </div>
 </div>
+
+<style>
+    .table tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    #selectAll { cursor: pointer; }
+    .toolbar-actions .btn, .toolbar-actions label { white-space: nowrap; }
+    .toolbar-actions { row-gap: .5rem; }
+    .toolbar-wrap { overflow: visible; }
+    /* Prevent header clipping and allow readable sizing */
+    .col-email { min-width: 220px; }
+    .col-company, .col-branch, .col-department { min-width: 140px; }
+    .col-optional { display: none; }
+    .manage-users.show-col-cost-center .col-cost-center,
+    .manage-users.show-col-position .col-position,
+    .manage-users.show-col-region .col-region,
+    .manage-users.show-col-phone .col-phone { display: table-cell; }
+    /* Make page-size dropdown match pagination control size */
+    .pagination .page-size-select {
+        height: calc(1.5rem + 0.5rem);
+        padding: .25rem .5rem;
+        line-height: 1.5;
+    }
+    @media (max-width: 992px) {
+        .toolbar-actions select { min-width: 200px !important; }
+    }
+</style>
+
+<script>
+    (function(){
+        const selectAll = document.getElementById('selectAll');
+        if (!selectAll) return;
+        selectAll.addEventListener('click', function(e){
+            const checks = document.querySelectorAll('input[type="checkbox"][name="user_ids"]');
+            checks.forEach(c => c.checked = selectAll.checked);
+        });
+    })();
+
+    (function(){
+        const root = document.querySelector('.manage-users');
+        const STORAGE_KEY = 'manageUsersCols';
+        let saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const apply = () => {
+            ['cost-center','position','region','phone'].forEach(key => {
+                const cls = 'show-col-' + key.replace(/_/g,'-');
+                if (saved[key]) root.classList.add(cls); else root.classList.remove(cls);
+                const checkbox = document.querySelector('.col-toggle[value="'+key+'"]');
+                if (checkbox) checkbox.checked = !!saved[key];
+            });
+            // Update Export link with selected columns
+            const selected = Object.keys(saved).filter(k => saved[k]);
+            const a = document.getElementById('exportLink');
+            if (a) {
+                const url = new URL(a.href, window.location.origin);
+                if (selected.length) {
+                    url.searchParams.set('cols', selected.join(','));
+                } else {
+                    url.searchParams.delete('cols');
+                }
+                a.href = url.toString();
+            }
+        };
+        document.querySelectorAll('.col-toggle').forEach(cb => {
+            cb.addEventListener('change', () => {
+                saved[cb.value] = cb.checked;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+                apply();
+            });
+        });
+        const selectAllBtn = document.getElementById('colsSelectAll');
+        const clearAllBtn = document.getElementById('colsClearAll');
+        const allKeys = ['cost-center','position','region','phone'];
+        if (selectAllBtn) selectAllBtn.addEventListener('click', () => {
+            allKeys.forEach(k => saved[k] = true);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+            apply();
+        });
+        if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
+            allKeys.forEach(k => saved[k] = false);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+            apply();
+        });
+        const resetBtn = document.getElementById('colsResetDefaults');
+        if (resetBtn) resetBtn.addEventListener('click', () => {
+            localStorage.removeItem(STORAGE_KEY);
+            saved = {};
+            apply();
+        });
+        apply();
+    })();
+</script>
+
 {% endblock %}

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Approval Report - {{ block.super }}{% endblock %}
 
@@ -12,7 +13,7 @@
             <p class="text-muted mb-0">Workflow analytics and approver performance</p>
         </div>
         <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
         </a>
     </div>
 
@@ -45,9 +46,9 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <p class="text-muted mb-1 small">Active Approvers</p>
-                    <h3 class="mb-0">{{ approver_stats|length }}</h3>
-                    <small class="text-muted">Users with approval activity</small>
+                    <p class="text-muted mb-1 small">Avg Time to First Approval</p>
+                    <h3 class="mb-0">{% if avg_time_to_first_hours %}{{ avg_time_to_first_hours }}<small class="text-muted"> h</small>{% else %}-{% endif %}</h3>
+                    <small class="text-muted">From request to first approval</small>
                 </div>
             </div>
         </div>
@@ -55,8 +56,21 @@
 
     <!-- Approver Performance -->
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white border-bottom">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Approver Performance</h5>
+            <div class="btn-group">
+                <button type="button" class="btn btn-sm btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i aria-hidden="true" class="bi bi-download"></i> Export
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'reports:approver-perf-export-csv' %}?days={{ days }}">Export CSV</a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'reports:approver-perf-export-xlsx' %}?days={{ days }}">Export Excel</a>
+                    </li>
+                </ul>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -106,8 +120,17 @@
 
     <!-- Recent Approval Logs -->
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Recent Approval Actions</h5>
+            <div class="btn-group">
+                <button type="button" class="btn btn-sm btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i aria-hidden="true" class="bi bi-download"></i> Export
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'reports:approval-logs-export-csv' %}?days={{ days }}">Export CSV</a></li>
+                    <li><a class="dropdown-item" href="{% url 'reports:approval-logs-export-xlsx' %}?days={{ days }}">Export Excel</a></li>
+                </ul>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -129,15 +152,15 @@
                             <td>
                                 {% if log.action == 'approved' %}
                                     <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Approved
+                                        <i aria-hidden="true" class="bi bi-check-circle"></i> Approved
                                     </span>
                                 {% elif log.action == 'rejected' %}
                                     <span class="badge bg-danger">
-                                        <i class="bi bi-x-circle"></i> Rejected
+                                        <i aria-hidden="true" class="bi bi-x-circle"></i> Rejected
                                     </span>
                                 {% elif log.action == 'changes_requested' %}
                                     <span class="badge bg-warning">
-                                        <i class="bi bi-arrow-clockwise"></i> Requested Changes
+                                        <i aria-hidden="true" class="bi bi-arrow-clockwise"></i> Requested Changes
                                     </span>
                                 {% else %}
                                     <span class="badge bg-secondary">{{ log.action|title }}</span>
@@ -153,6 +176,34 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            <div class="d-flex align-items-center justify-content-between p-3 border-top">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 small">Rows per page:</label>
+                    <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?days={{ days }}&page_size=' + this.value">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                    </select>
+                    <span class="text-muted small">{{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+                </div>
+                <div class="btn-group" role="group">
+                    {% if page_obj.has_previous %}
+                    <a href="?days={{ days }}&page_size={{ page_size }}&page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                    <a href="?days={{ days }}&page_size={{ page_size }}&page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                    <a href="?days={{ days }}&page_size={{ page_size }}&page={{ page_obj.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <a href="?days={{ days }}&page_size={{ page_size }}&page={{ page_obj.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

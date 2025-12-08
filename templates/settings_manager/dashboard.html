@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load settings_tags %}
 
 {% block title %}System Settings - {{ block.super }}{% endblock %}
 
@@ -115,7 +116,7 @@
                 </div>
             </div>
 
-            <!-- Category Cards (if no filter selected) -->
+            <!-- Category Cards (only show when no filter) -->
             {% if not selected_category %}
             <div class="card mb-4">
                 <div class="card-header bg-light">
@@ -126,143 +127,143 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <div class="card category-card email" onclick="window.location='?category=email'">
+                            <div class="card category-card email" onclick="filterByCategory('email', 'Email Configuration')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-envelope-fill fs-2 text-primary me-3"></i>
                                         <div>
                                             <h6 class="mb-0">Email Configuration</h6>
-                                            <small class="text-muted">3 settings</small>
+                                            <small class="text-muted">{{ category_counts.email|default:"0" }} setting{{ category_counts.email|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card approval" onclick="window.location='?category=approval'">
+                            <div class="card category-card approval" onclick="filterByCategory('approval', 'Approval Workflow')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-check-circle-fill fs-2 text-success me-3"></i>
                                         <div>
                                             <h6 class="mb-0">Approval Workflow</h6>
-                                            <small class="text-muted">5 settings</small>
+                                            <small class="text-muted">{{ category_counts.approval|default:"0" }} setting{{ category_counts.approval|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card payment" onclick="window.location='?category=payment'">
+                            <div class="card category-card payment" onclick="filterByCategory('payment', 'Payment Settings')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-currency-dollar fs-2 text-warning me-3"></i>
                                         <div>
                                             <h6 class="mb-0">Payment Settings</h6>
-                                            <small class="text-muted">5 settings</small>
+                                            <small class="text-muted">{{ category_counts.payment|default:"0" }} setting{{ category_counts.payment|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card security" onclick="window.location='?category=security'">
+                            <div class="card category-card security" onclick="filterByCategory('security', 'Security & Auth')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-shield-lock-fill fs-2 text-danger me-3"></i>
                                         <div>
                                             <h6 class="mb-0">Security & Auth</h6>
-                                            <small class="text-muted">30 settings</small>
+                                            <small class="text-muted">{{ category_counts.security|default:"0" }} setting{{ category_counts.security|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card notifications" onclick="window.location='?category=notifications'">
+                            <div class="card category-card notifications" onclick="filterByCategory('notifications', 'Notifications')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-bell-fill fs-2 text-info me-3"></i>
                                         <div>
                                             <h6 class="mb-0">Notifications</h6>
-                                            <small class="text-muted">4 settings</small>
+                                            <small class="text-muted">{{ category_counts.notifications|default:"0" }} setting{{ category_counts.notifications|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card general" onclick="window.location='?category=general'">
+                            <div class="card category-card general" onclick="filterByCategory('general', 'General Settings')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-gear-fill fs-2 text-secondary me-3"></i>
                                         <div>
                                             <h6 class="mb-0">General Settings</h6>
-                                            <small class="text-muted">12 settings</small>
+                                            <small class="text-muted">{{ category_counts.general|default:"0" }} setting{{ category_counts.general|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card reporting" onclick="window.location='?category=reporting'">
+                            <div class="card category-card reporting" onclick="filterByCategory('reporting', 'Reports & Analytics')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-graph-up fs-2 text-purple me-3" style="color: #6f42c1;"></i>
                                         <div>
                                             <h6 class="mb-0">Reports & Analytics</h6>
-                                            <small class="text-muted">5 settings</small>
+                                            <small class="text-muted">{{ category_counts.reporting|default:"0" }} setting{{ category_counts.reporting|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card requisition" onclick="window.location='?category=requisition'">
+                            <div class="card category-card requisition" onclick="filterByCategory('requisition', 'Requisition Mgmt')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-file-text-fill fs-2 me-3" style="color: #fd7e14;"></i>
                                         <div>
                                             <h6 class="mb-0">Requisition Mgmt</h6>
-                                            <small class="text-muted">7 settings</small>
+                                            <small class="text-muted">{{ category_counts.requisition|default:"0" }} setting{{ category_counts.requisition|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card treasury" onclick="window.location='?category=treasury'">
+                            <div class="card category-card treasury" onclick="filterByCategory('treasury', 'Treasury Operations')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-piggy-bank-fill fs-2 me-3" style="color: #20c997;"></i>
                                         <div>
                                             <h6 class="mb-0">Treasury Operations</h6>
-                                            <small class="text-muted">5 settings</small>
+                                            <small class="text-muted">{{ category_counts.treasury|default:"0" }} setting{{ category_counts.treasury|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card workflow" onclick="window.location='?category=workflow'">
+                            <div class="card category-card workflow" onclick="filterByCategory('workflow', 'Workflow Automation')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-diagram-3-fill fs-2 me-3" style="color: #d63384;"></i>
                                         <div>
                                             <h6 class="mb-0">Workflow Automation</h6>
-                                            <small class="text-muted">15 settings</small>
+                                            <small class="text-muted">{{ category_counts.workflow|default:"0" }} setting{{ category_counts.workflow|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card organization" onclick="window.location='?category=organization'">
+                            <div class="card category-card organization" onclick="filterByCategory('organization', 'Users & Organization')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-people-fill fs-2 text-primary me-3"></i>
                                         <div>
                                             <h6 class="mb-0">Users & Organization</h6>
-                                            <small class="text-muted">15 settings</small>
+                                            <small class="text-muted">{{ category_counts.organization|default:"0" }} setting{{ category_counts.organization|pluralize }}</small>
                                         </div>
                                     </div>
                                 </div>
@@ -273,92 +274,60 @@
             </div>
             {% endif %}
 
-            <!-- Filter Bar (shown when category selected) -->
+            <!-- Settings Display: Per-Category without Pagination -->
             {% if selected_category %}
-            <div class="card mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="mb-0">
-                                <i class="bi bi-funnel-fill"></i> Filtered by: 
-                                <span class="badge bg-primary">{{ selected_category|title }}</span>
-                            </h5>
-                        </div>
-                        <a href="{% url 'settings_manager:dashboard' %}" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-x-circle"></i> Clear Filter
-                        </a>
-                    </div>
+                <div class="mb-3">
+                    <a href="{% url 'settings_manager:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to All Categories
+                    </a>
                 </div>
-            </div>
             {% endif %}
-
-            <!-- Search Bar -->
+            
+            <!-- Search/Filter Bar -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <form method="get" class="row g-3 align-items-end">
-                        <div class="col-md-10">
-                            <label for="search" class="form-label">
-                                <i class="bi bi-search"></i> Search Settings
-                            </label>
-                            <input type="text" 
-                                   name="search" 
-                                   id="search" 
-                                   class="form-control" 
-                                   placeholder="Search by name, key, or description..."
-                                   value="{{ search_query }}"
-                                   autocomplete="off">
-                            {% if selected_category %}
-                                <input type="hidden" name="category" value="{{ selected_category }}">
-                            {% endif %}
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-search"></i> Search
-                            </button>
-                            {% if search_query %}
-                                <a href="{% url 'settings_manager:dashboard' %}{% if selected_category %}?category={{ selected_category }}{% endif %}" 
-                                   class="btn btn-outline-secondary w-100 mt-2">
-                                    <i class="bi bi-x-circle"></i> Clear
-                                </a>
-                            {% endif %}
-                        </div>
+                    <form method="get" class="d-flex gap-2" id="searchForm" onsubmit="return false">
+                        <input type="text" 
+                               id="filterInput" 
+                               class="form-control" 
+                               placeholder="Filter by setting name, key, or description..."
+                               autocomplete="off">
+                        <button type="button" class="btn btn-primary" onclick="applyFilter(event)">
+                            <i class="bi bi-funnel"></i> Filter
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearFilter(event)">
+                            <i class="bi bi-arrow-clockwise"></i> Clear
+                        </button>
                     </form>
-                    {% if search_query %}
-                        <div class="mt-3">
-                            <span class="badge bg-info">
-                                <i class="bi bi-info-circle"></i> Found {{ all_settings.count }} result{{ all_settings.count|pluralize }} for "{{ search_query }}"
-                            </span>
-                        </div>
-                    {% endif %}
                 </div>
             </div>
-
+            
             <!-- Settings by Category -->
-            {% regroup all_settings by category as category_list %}
-            {% for category in category_list %}
+            {% for cat_info, settings_list in settings_by_category.items %}
+                {% with cat_key=cat_info.0 cat_name=cat_info.1 %}
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-{% if category.grouper == 'email' %}envelope{% elif category.grouper == 'approval' %}check-circle{% elif category.grouper == 'payment' %}currency-dollar{% elif category.grouper == 'security' %}shield-lock{% elif category.grouper == 'notifications' %}bell{% elif category.grouper == 'reporting' %}graph-up{% elif category.grouper == 'requisition' %}file-text{% elif category.grouper == 'treasury' %}piggy-bank{% elif category.grouper == 'workflow' %}diagram-3{% elif category.grouper == 'organization' %}people{% else %}gear{% endif %}"></i>
-                            {{ category.grouper|title }} Settings
+                        <h5 class="mb-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <i class="bi bi-{% if cat_key == 'email' %}envelope{% elif cat_key == 'approval' %}check-circle{% elif cat_key == 'payment' %}currency-dollar{% elif cat_key == 'security' %}shield-lock{% elif cat_key == 'notifications' %}bell{% elif cat_key == 'reporting' %}graph-up{% elif cat_key == 'requisition' %}file-text{% elif cat_key == 'treasury' %}piggy-bank{% elif cat_key == 'workflow' %}diagram-3{% elif cat_key == 'organization' %}people{% else %}gear{% endif %}"></i>
+                            {{ cat_name|title }} ({{ settings_list|length }} settings)
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
+                        <div class="table-responsive" style="overflow-x: auto;">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th style="width: 25%;">Setting</th>
-                                        <th style="width: 35%;">Description</th>
-                                        <th style="width: 20%;">Current Value</th>
-                                        <th style="width: 10%;">Status</th>
-                                        <th style="width: 10%;">Actions</th>
+                                        <th style="white-space: nowrap;">Setting</th>
+                                        <th style="white-space: nowrap;">Description</th>
+                                        <th style="white-space: nowrap;">Current Value</th>
+                                        <th style="white-space: nowrap;">Status</th>
+                                        <th style="white-space: nowrap;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for setting in category.list %}
+                                    {% for setting in settings_list %}
                                         <tr>
-                                            <td>
+                                            <td style="white-space: nowrap;">
                                                 <strong>{{ setting.display_name }}</strong>
                                                 <br>
                                                 <small class="text-muted">{{ setting.key }}</small>
@@ -369,10 +338,10 @@
                                                     </span>
                                                 {% endif %}
                                             </td>
-                                            <td>
+                                            <td style="white-space: nowrap;">
                                                 <small>{{ setting.description }}</small>
                                             </td>
-                                            <td>
+                                            <td style="white-space: nowrap;">
                                                 {% if setting.is_sensitive %}
                                                     <span class="text-muted">
                                                         <i class="bi bi-eye-slash"></i> ••••••••
@@ -387,14 +356,14 @@
                                                     </small>
                                                 {% endif %}
                                             </td>
-                                            <td>
+                                            <td style="white-space: nowrap;">
                                                 {% if setting.is_active %}
                                                     <span class="badge bg-success">Active</span>
                                                 {% else %}
                                                     <span class="badge bg-secondary">Inactive</span>
                                                 {% endif %}
                                             </td>
-                                            <td>
+                                            <td style="white-space: nowrap;">
                                                 {% if setting.editable_by_admin %}
                                                     <a href="{% url 'settings_manager:edit_setting' setting.id %}" 
                                                        class="btn btn-sm btn-outline-primary" 
@@ -408,12 +377,19 @@
                                                 {% endif %}
                                             </td>
                                         </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-3">
+                                                No settings in this category
+                                            </td>
+                                        </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
+                {% endwith %}
             {% empty %}
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i> No settings found. Run the seed command to create default settings.
@@ -422,4 +398,79 @@
         </div>
     </div>
 </div>
+
+<script>
+// Save scroll position before page reload
+window.addEventListener('beforeunload', function() {
+    sessionStorage.setItem('scrollPosition', window.scrollY);
+});
+
+// Restore scroll position after page load
+window.addEventListener('load', function() {
+    const scrollPosition = sessionStorage.getItem('scrollPosition');
+    if (scrollPosition) {
+        window.scrollTo(0, parseInt(scrollPosition));
+        sessionStorage.removeItem('scrollPosition');
+    }
+});
+
+// Client-side filtering
+function applyFilter(event) {
+    if (event) event.preventDefault();
+    const filterText = document.getElementById('filterInput').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('tbody tr');
+    let visibleCount = 0;
+    
+    if (!filterText) {
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+        return;
+    }
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(filterText)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Show empty message if no results
+    rows.forEach(row => {
+        if (row.innerHTML.includes('No settings in this category') && visibleCount === 0) {
+            row.style.display = '';
+        }
+    });
+}
+
+function clearFilter(event) {
+    if (event) event.preventDefault();
+    document.getElementById('filterInput').value = '';
+    const rows = document.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        row.style.display = '';
+    });
+}
+
+// Allow Enter key to trigger filter
+document.addEventListener('DOMContentLoaded', function() {
+    const filterInput = document.getElementById('filterInput');
+    if (filterInput) {
+        filterInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyFilter();
+            }
+        });
+    }
+});
+
+// Filter by category - populate the filter input and apply
+function filterByCategory(categoryKey, categoryName) {
+    window.location.href = '?category=' + categoryKey;
+}
+</script>
 {% endblock %}

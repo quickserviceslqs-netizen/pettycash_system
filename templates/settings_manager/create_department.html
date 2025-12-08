@@ -8,7 +8,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header bg-success text-white">
-                    <h4 class="mb-0"><i class="bi bi-building-add"></i> Create Department</h4>
+                    <h4 class="mb-0"><i aria-hidden="true" class="bi bi-building-add"></i> Create Department</h4>
                 </div>
                 <div class="card-body">
                     {% if messages %}
@@ -40,10 +40,10 @@
 
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{% url 'settings_manager:manage_departments' %}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> Cancel
+                                <i aria-hidden="true" class="bi bi-x-circle"></i> Cancel
                             </a>
                             <button type="submit" class="btn btn-success">
-                                <i class="bi bi-save"></i> Create Department
+                                <i aria-hidden="true" class="bi bi-save"></i> Create Department
                             </button>
                         </div>
                     </form>

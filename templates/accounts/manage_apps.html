@@ -6,9 +6,9 @@
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-grid-3x3-gap"></i> Manage Applications</h2>
+        <h2><i aria-hidden="true" class="bi bi-grid-3x3-gap"></i> Manage Applications</h2>
         <a href="{% url 'accounts:create_app' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Create New App
+            <i aria-hidden="true" class="bi bi-plus-circle"></i> Create New App
         </a>
     </div>
 
@@ -51,7 +51,7 @@
     <!-- Filters -->
     <div class="card mb-4">
         <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-funnel"></i> Filters</h5>
         </div>
         <div class="card-body">
             <form method="get" class="row g-3">
@@ -72,14 +72,14 @@
 
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Filter
+                        <i aria-hidden="true" class="bi bi-search"></i> Filter
                     </button>
                 </div>
 
                 {% if filters.status or filters.search %}
                 <div class="col-md-12">
                     <a href="{% url 'accounts:manage_apps' %}" class="btn btn-secondary">
-                        <i class="bi bi-x-circle"></i> Clear Filters
+                        <i aria-hidden="true" class="bi bi-x-circle"></i> Clear Filters
                     </a>
                 </div>
                 {% endif %}
@@ -124,9 +124,9 @@
                                                 data-app-id="{{ app.id }}"
                                                 data-url="{% url 'accounts:toggle_app_status' app.id %}">
                                             {% if app.is_active %}
-                                                <i class="bi bi-check-circle"></i> Active
+                                                <i aria-hidden="true" class="bi bi-check-circle"></i> Active
                                             {% else %}
-                                                <i class="bi bi-x-circle"></i> Inactive
+                                                <i aria-hidden="true" class="bi bi-x-circle"></i> Inactive
                                             {% endif %}
                                         </button>
                                     </td>
@@ -134,11 +134,11 @@
                                         <div class="btn-group" role="group">
                                             <a href="{% url 'accounts:edit_app' app.id %}" 
                                                class="btn btn-sm btn-info" title="Edit">
-                                                <i class="bi bi-pencil"></i>
+                                                <i aria-hidden="true" class="bi bi-pencil"></i>
                                             </a>
                                             <a href="{% url 'accounts:app_users' app.id %}" 
                                                class="btn btn-sm btn-primary" title="View Users">
-                                                <i class="bi bi-people"></i>
+                                                <i aria-hidden="true" class="bi bi-people"></i>
                                             </a>
                                         </div>
                                     </td>
@@ -149,10 +149,10 @@
                 </div>
             {% else %}
                 <div class="text-center py-5">
-                    <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                    <i aria-hidden="true" class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
                     <p class="text-muted mt-3">No applications found.</p>
                     <a href="{% url 'accounts:create_app' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> Create First App
+                        <i aria-hidden="true" class="bi bi-plus-circle"></i> Create First App
                     </a>
                 </div>
             {% endif %}
@@ -181,10 +181,10 @@ document.querySelectorAll('.toggle-status').forEach(button => {
                 // Update button appearance
                 if (data.is_active) {
                     this.className = 'btn btn-sm btn-success toggle-status';
-                    this.innerHTML = '<i class="bi bi-check-circle"></i> Active';
+                    this.innerHTML = '<i aria-hidden="true" class="bi bi-check-circle"></i> Active';
                 } else {
                     this.className = 'btn btn-sm btn-secondary toggle-status';
-                    this.innerHTML = '<i class="bi bi-x-circle"></i> Inactive';
+                    this.innerHTML = '<i aria-hidden="true" class="bi bi-x-circle"></i> Inactive';
                 }
                 alert(data.message);
             } else {

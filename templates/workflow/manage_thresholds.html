@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Manage Approval Thresholds{% endblock %}
 
@@ -8,7 +9,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Approval Thresholds</h2>
         <a href="{% url 'workflow:create_threshold' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Create New Threshold
+            <i aria-hidden="true" class="fas fa-plus"></i> Create New Threshold
         </a>
     </div>
 
@@ -66,7 +67,7 @@
                                     <td><strong>{{ threshold.name }}</strong></td>
                                     <td><span class="badge bg-info">{{ threshold.get_origin_type_display }}</span></td>
                                     <td>
-                                        ${{ threshold.min_amount|floatformat:2 }} - ${{ threshold.max_amount|floatformat:2 }}
+                                        {{ threshold.min_amount|currency }} - {{ threshold.max_amount|currency }}
                                     </td>
                                     <td>
                                         <small>
@@ -96,11 +97,11 @@
                                     </td>
                                     <td>
                                         <a href="{% url 'workflow:edit_threshold' threshold.id %}" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-edit"></i> Edit
+                                            <i aria-hidden="true" class="fas fa-edit"></i> Edit
                                         </a>
                                         <button type="button" class="btn btn-sm btn-outline-danger" 
                                                 onclick="confirmDelete({{ threshold.id }}, '{{ threshold.name }}')">
-                                            <i class="fas fa-trash"></i> Delete
+                                            <i aria-hidden="true" class="fas fa-trash"></i> Delete
                                         </button>
                                     </td>
                                 </tr>
@@ -110,7 +111,7 @@
                 </div>
             {% else %}
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> No approval thresholds found. 
+                    <i aria-hidden="true" class="fas fa-info-circle"></i> No approval thresholds found. 
                     <a href="{% url 'workflow:create_threshold' %}">Create your first threshold</a>
                 </div>
             {% endif %}

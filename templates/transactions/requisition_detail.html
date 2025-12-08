@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Requisition Details - {{ requisition.transaction_id }}{% endblock %}
 
@@ -12,7 +13,7 @@
         {% if trail.action == 'reverted_to_normal' %}
             <div style="padding:20px; background:#fff3cd; border-left:5px solid #ffc107; margin-bottom:20px; border-radius:5px;">
                 <h4 style="margin-top:0; color:#856404;">
-                    <i class="bi bi-exclamation-triangle-fill"></i> Fast-Track Approval Reverted
+                    <i aria-hidden="true" class="bi bi-exclamation-triangle-fill"></i> Fast-Track Approval Reverted
                 </h4>
                 <p style="margin-bottom:10px; color:#856404;">
                     Your requisition was originally fast-tracked but has been <strong>reverted to normal approval flow</strong> by {{ trail.user.get_full_name|default:trail.user.username }}.
@@ -26,7 +27,7 @@
                     Current next approver: <strong>{{ requisition.next_approver.get_full_name|default:"Pending assignment" }}</strong>
                 </p>
                 <small style="color:#6c757d; display:block; margin-top:8px;">
-                    <i class="bi bi-clock"></i> Reverted on {{ trail.timestamp|date:"M d, Y - g:i A" }}
+                    <i aria-hidden="true" class="bi bi-clock"></i> Reverted on {{ trail.timestamp|date:"M d, Y - g:i A" }}
                 </small>
             </div>
         {% endif %}
@@ -37,7 +38,7 @@
 {% if user.id == requisition.requested_by.id and requisition.status == 'pending_changes' %}
     <div style="padding:25px; background:#fff3cd; border-left:5px solid #ff9800; margin-bottom:20px; border-radius:5px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
         <h4 style="margin-top:0; color:#856404;">
-            <i class="bi bi-pencil-square"></i> Changes Requested by Approver
+            <i aria-hidden="true" class="bi bi-pencil-square"></i> Changes Requested by Approver
         </h4>
         <p style="margin-bottom:10px; color:#856404;">
             <strong>{{ requisition.change_requested_by.get_full_name|default:requisition.change_requested_by.username }}</strong> has requested changes before approving your requisition.
@@ -49,7 +50,7 @@
         </div>
         
         <div style="padding:12px; background:#dc3545; color:#fff; border-radius:3px; margin:15px 0; font-weight:bold;">
-            <i class="bi bi-clock-fill"></i> DEADLINE: {{ requisition.change_request_deadline|date:"F d, Y - g:i A" }}
+            <i aria-hidden="true" class="bi bi-clock-fill"></i> DEADLINE: {{ requisition.change_request_deadline|date:"F d, Y - g:i A" }}
             {% if requisition.change_request_deadline %}
                 <span style="font-size:0.9em; font-weight:normal;">
                     ({% now "U" as current_time %}
@@ -99,7 +100,7 @@
             <div style="text-align:right;">
                 <button type="submit" 
                         style="padding:12px 25px; background:#28a745; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:1.05em;">
-                    <i class="bi bi-check-circle"></i> Submit Changes
+                    <i aria-hidden="true" class="bi bi-check-circle"></i> Submit Changes
                 </button>
             </div>
         </form>
@@ -161,7 +162,7 @@
             <h4 style="margin-top:0; color:#084298;">📋 Pre-Payment Validation Checklist</h4>
             <ul style="margin-bottom:10px; color:#084298;">
                 <li>✓ Receipt/supporting document reviewed above</li>
-                <li>✓ Amount (KES {{requisition.amount|floatformat:2}}) matches documentation</li>
+                <li>✓ Amount ({{ requisition.amount|currency }}) matches documentation</li>
                 <li>✓ All required approvals completed</li>
                 <li>✓ Fund availability confirmed</li>
             </ul>
@@ -516,7 +517,7 @@
 <div id="revertModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
     <div style="background-color:#fff; margin:10% auto; padding:30px; border-radius:10px; width:90%; max-width:600px; box-shadow:0 4px 6px rgba(0,0,0,0.3);">
         <h3 style="margin-top:0; color:#856404;">
-            <i class="bi bi-exclamation-triangle-fill"></i> Revert to Normal Approval Flow
+            <i aria-hidden="true" class="bi bi-exclamation-triangle-fill"></i> Revert to Normal Approval Flow
         </h3>
         
         <div style="padding:15px; background:#fff3cd; border-left:4px solid #ffc107; margin-bottom:20px;">
@@ -568,7 +569,7 @@
 <div id="requestChangesModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5);">
     <div style="background-color:#fff; margin:5% auto; padding:30px; border-radius:10px; width:90%; max-width:700px; box-shadow:0 4px 6px rgba(0,0,0,0.3);">
         <h3 style="margin-top:0; color:#ff9800;">
-            <i class="bi bi-pencil-square"></i> Request Changes from Requester
+            <i aria-hidden="true" class="bi bi-pencil-square"></i> Request Changes from Requester
         </h3>
         
         <div style="padding:15px; background:#fff3cd; border-left:4px solid #ff9800; margin-bottom:20px;">
@@ -618,7 +619,7 @@
                 </button>
                 <button type="submit" 
                         style="padding:10px 20px; background:#ff9800; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">
-                    <i class="bi bi-send"></i> Send Change Request
+                    <i aria-hidden="true" class="bi bi-send"></i> Send Change Request
                 </button>
             </div>
         </form>

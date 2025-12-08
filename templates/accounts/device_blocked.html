@@ -8,17 +8,17 @@
         <div class="col-md-8">
             <div class="card shadow-lg border-danger">
                 <div class="card-header bg-danger text-white text-center py-4">
-                    <h2><i class="bi bi-shield-x"></i> Device Not Authorized</h2>
+                    <h2><i aria-hidden="true" class="bi bi-shield-x"></i> Device Not Authorized</h2>
                 </div>
                 <div class="card-body p-5">
                     <div class="text-center mb-4">
-                        <i class="bi bi-laptop" style="font-size: 5rem; color: #dc3545;"></i>
+                        <i aria-hidden="true" class="bi bi-laptop" style="font-size: 5rem; color: #dc3545;"></i>
                     </div>
                     
                     <h4 class="text-center mb-4">Access Denied</h4>
                     
                     <div class="alert alert-danger">
-                        <h5><i class="bi bi-exclamation-triangle"></i> Why am I seeing this?</h5>
+                        <h5><i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Why am I seeing this?</h5>
                         <p class="mb-0">
                             This system only allows access from registered and whitelisted devices for security reasons. 
                             Your current device is not authorized to access this account.
@@ -27,7 +27,7 @@
                     
                     <div class="card bg-light mb-4">
                         <div class="card-body">
-                            <h6><i class="bi bi-info-circle"></i> What can I do?</h6>
+                            <h6><i aria-hidden="true" class="bi bi-info-circle"></i> What can I do?</h6>
                             <ol>
                                 <li><strong>Use your registered device:</strong> Login from a device you've previously used</li>
                                 <li><strong>Request device registration:</strong> Request to add this device to your account</li>
@@ -38,10 +38,10 @@
                     
                     <div class="d-grid gap-2">
                         <a href="{% url 'request_device' %}" class="btn btn-primary btn-lg">
-                            <i class="bi bi-send"></i> Request Device Registration
+                            <i aria-hidden="true" class="bi bi-send"></i> Request Device Registration
                         </a>
                         <a href="{% url 'login' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left"></i> Back to Login
+                            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Login
                         </a>
                     </div>
                     
@@ -49,7 +49,7 @@
                     
                     <div class="text-center">
                         <small class="text-muted">
-                            <i class="bi bi-envelope"></i> Need help? Contact: 
+                            <i aria-hidden="true" class="bi bi-envelope"></i> Need help? Contact: 
                             <a href="mailto:{{ support_email }}">{{ support_email }}</a>
                         </small>
                     </div>

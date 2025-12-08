@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Approve Variance Adjustment{% endblock %}
 
@@ -8,7 +9,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Review Variance Adjustment</h2>
         <a href="{% url 'treasury:manage_variances' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Variances
+            <i aria-hidden="true" class="fas fa-arrow-left"></i> Back to Variances
         </a>
     </div>
 
@@ -28,15 +29,15 @@
                         <dd class="col-sm-8"><strong>{{ variance.treasury_fund }}</strong></dd>
                         
                         <dt class="col-sm-4">Current Balance:</dt>
-                        <dd class="col-sm-8">${{ variance.original_amount|floatformat:2 }}</dd>
+                        <dd class="col-sm-8">{{ variance.original_amount|currency }}</dd>
                         
                         <dt class="col-sm-4">Adjusted Balance:</dt>
-                        <dd class="col-sm-8"><strong>${{ variance.adjusted_amount|floatformat:2 }}</strong></dd>
+                        <dd class="col-sm-8"><strong>{{ variance.adjusted_amount|currency }}</strong></dd>
                         
                         <dt class="col-sm-4">Variance Amount:</dt>
                         <dd class="col-sm-8">
                             <strong class="{% if variance.variance_amount < 0 %}text-danger{% else %}text-success{% endif %} fs-5">
-                                {% if variance.variance_amount > 0 %}+{% endif %}${{ variance.variance_amount|floatformat:2 }}
+                                {% if variance.variance_amount > 0 %}+{% endif %}{{ variance.variance_amount|currency }}
                             </strong>
                             {% if variance.variance_amount < 0 %}
                                 <span class="badge bg-danger">Deficit</span>
@@ -78,7 +79,7 @@
                         <div class="alert alert-warning">
                             <h6>⚠️ Impact of Approval:</h6>
                             <ul class="mb-0">
-                                <li>Fund balance will be updated to <strong>${{ variance.adjusted_amount|floatformat:2 }}</strong></li>
+                                <li>Fund balance will be updated to <strong>{{ variance.adjusted_amount|currency }}</strong></li>
                                 <li>Ledger entry will be created for audit trail</li>
                                 <li>Variance will be marked as reconciled</li>
                                 <li>This action cannot be undone</li>
@@ -89,11 +90,11 @@
                             <a href="{% url 'treasury:manage_variances' %}" class="btn btn-secondary">Cancel</a>
                             <button type="submit" name="action" value="reject" class="btn btn-danger"
                                     onclick="return confirm('Are you sure you want to REJECT this variance adjustment?');">
-                                <i class="fas fa-times"></i> Reject
+                                <i aria-hidden="true" class="fas fa-times"></i> Reject
                             </button>
                             <button type="submit" name="action" value="approve" class="btn btn-success"
                                     onclick="return confirm('Are you sure you want to APPROVE this variance adjustment? The fund balance will be updated immediately.');">
-                                <i class="fas fa-check"></i> Approve
+                                <i aria-hidden="true" class="fas fa-check"></i> Approve
                             </button>
                         </div>
                     </form>

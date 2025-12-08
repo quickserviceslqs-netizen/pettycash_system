@@ -276,12 +276,12 @@ function addRole(roleKey, roleName) {
     li.innerHTML = `
         <div>
             <span class="drag-handle">
-                <i class="bi bi-grip-vertical"></i>
+                <i aria-hidden="true" class="bi bi-grip-vertical"></i>
             </span>
             <span class="badge bg-primary role-badge">${roleName}</span>
         </div>
         <button type="button" class="btn btn-sm btn-outline-danger remove-btn" onclick="removeRole('${roleKey}')">
-            <i class="bi bi-x-lg"></i> Remove
+            <i aria-hidden="true" class="bi bi-x-lg"></i> Remove
         </button>
     `;
     

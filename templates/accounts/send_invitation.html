@@ -10,7 +10,7 @@
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h4 class="mb-0">
-                        <i class="bi bi-envelope-plus"></i> Send User Invitation
+                        <i aria-hidden="true" class="bi bi-envelope-plus"></i> Send User Invitation
                     </h4>
                 </div>
                 <div class="card-body">
@@ -98,7 +98,7 @@
                         </div>
                         
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> <strong>Security Notes:</strong>
+                            <i aria-hidden="true" class="bi bi-info-circle"></i> <strong>Security Notes:</strong>
                             <ul class="mb-0 mt-2">
                                 <li>User will receive an email with a secure signup link</li>
                                 <li>Link expires in 7 days</li>
@@ -109,10 +109,10 @@
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{% url 'accounts:manage_invitations' %}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> Cancel
+                                <i aria-hidden="true" class="bi bi-arrow-left"></i> Cancel
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-send"></i> Send Invitation
+                                <i aria-hidden="true" class="bi bi-send"></i> Send Invitation
                             </button>
                         </div>
                     </form>

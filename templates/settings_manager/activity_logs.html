@@ -6,13 +6,13 @@
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-clock-history"></i> Activity Logs</h2>
+        <h2><i aria-hidden="true" class="bi bi-clock-history"></i> Activity Logs</h2>
         <div class="btn-group">
             <a href="{% url 'settings_manager:export_logs' %}?{{ request.GET.urlencode }}&format=csv" class="btn btn-success">
-                <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+                <i aria-hidden="true" class="bi bi-file-earmark-spreadsheet"></i> Export CSV
             </a>
             <a href="{% url 'settings_manager:export_logs' %}?{{ request.GET.urlencode }}&format=json" class="btn btn-info">
-                <i class="bi bi-file-earmark-code"></i> Export JSON
+                <i aria-hidden="true" class="bi bi-file-earmark-code"></i> Export JSON
             </a>
         </div>
     </div>
@@ -77,7 +77,7 @@
     <!-- Filters -->
     <div class="card mb-4">
         <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-funnel"></i> Filters</h5>
         </div>
         <div class="card-body">
             <form method="get" class="row g-3">
@@ -144,14 +144,14 @@
 
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Filter
+                        <i aria-hidden="true" class="bi bi-search"></i> Filter
                     </button>
                 </div>
 
                 {% if filters.action or filters.user or filters.content_type or filters.date_from or filters.date_to or filters.search or filters.success %}
                 <div class="col-md-12">
                     <a href="{% url 'settings_manager:admin_activity_logs' %}" class="btn btn-secondary">
-                        <i class="bi bi-x-circle"></i> Clear Filters
+                        <i aria-hidden="true" class="bi bi-x-circle"></i> Clear Filters
                     </a>
                 </div>
                 {% endif %}
@@ -234,7 +234,7 @@
                                     <td>
                                         <a href="{% url 'settings_manager:view_log_detail' log.id %}" 
                                            class="btn btn-sm btn-info">
-                                            <i class="bi bi-eye"></i> View
+                                            <i aria-hidden="true" class="bi bi-eye"></i> View
                                         </a>
                                     </td>
                                 </tr>
@@ -242,9 +242,49 @@
                         </tbody>
                     </table>
                 </div>
+                
+                <!-- Compact Pagination -->
+                {% if logs.paginator.num_pages > 1 %}
+                <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted">Rows per page:</span>
+                        <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?page=1&page_size=' + this.value + '&{{ request.GET.urlencode|slice:'9:' }}'">
+                            <option value="10" {% if request.GET.page_size == '10' %}selected{% endif %}>10</option>
+                            <option value="25" {% if request.GET.page_size == '25' or not request.GET.page_size %}selected{% endif %}>25</option>
+                            <option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50</option>
+                            <option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100</option>
+                        </select>
+                    </div>
+                    <div class="text-muted">
+                        {{ logs.start_index }}-{{ logs.end_index }} of {{ logs.paginator.count }}
+                    </div>
+                    <div class="btn-group" role="group">
+                        <a href="?page=1&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}{% if not logs.has_previous %}#{% endif %}" 
+                           class="btn btn-sm btn-outline-secondary {% if not logs.has_previous %}disabled{% endif %}" 
+                           title="First page">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                        <a href="{% if logs.has_previous %}?page={{ logs.previous_page_number }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}{% else %}#{% endif %}" 
+                           class="btn btn-sm btn-outline-secondary {% if not logs.has_previous %}disabled{% endif %}" 
+                           title="Previous page">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                        <a href="{% if logs.has_next %}?page={{ logs.next_page_number }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}{% else %}#{% endif %}" 
+                           class="btn btn-sm btn-outline-secondary {% if not logs.has_next %}disabled{% endif %}" 
+                           title="Next page">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                        <a href="{% if logs.has_next %}?page={{ logs.paginator.num_pages }}&page_size={{ request.GET.page_size|default:'25' }}&{{ request.GET.urlencode|slice:'9:' }}{% else %}#{% endif %}" 
+                           class="btn btn-sm btn-outline-secondary {% if not logs.has_next %}disabled{% endif %}" 
+                           title="Last page">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
             {% else %}
                 <div class="text-center py-5">
-                    <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                    <i aria-hidden="true" class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
                     <p class="text-muted mt-3">No activity logs found matching your filters.</p>
                 </div>
             {% endif %}
@@ -254,7 +294,7 @@
     <!-- Maintenance Actions -->
     <div class="card mt-4 border-warning">
         <div class="card-header bg-warning">
-            <h5 class="mb-0"><i class="bi bi-tools"></i> Maintenance</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-tools"></i> Maintenance</h5>
         </div>
         <div class="card-body">
             <p>Delete old activity logs to maintain database performance.</p>
@@ -273,7 +313,7 @@
                     </div>
                     <div class="col-md-3">
                         <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash"></i> Delete Old Logs
+                            <i aria-hidden="true" class="bi bi-trash"></i> Delete Old Logs
                         </button>
                     </div>
                 </div>

@@ -6,9 +6,9 @@
 {% block content %}
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-file-text"></i> Activity Log Detail</h2>
+        <h2><i aria-hidden="true" class="bi bi-file-text"></i> Activity Log Detail</h2>
         <a href="{% url 'settings_manager:admin_activity_logs' %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Logs
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Logs
         </a>
     </div>
 
@@ -96,7 +96,7 @@
             {% if log.changes %}
             <div class="card mb-4">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-code-square"></i> Changes</h5>
+                    <h5 class="mb-0"><i aria-hidden="true" class="bi bi-code-square"></i> Changes</h5>
                 </div>
                 <div class="card-body">
                     <pre class="bg-dark text-light p-3 rounded"><code>{{ changes_formatted }}</code></pre>
@@ -110,7 +110,7 @@
             <!-- Network Info -->
             <div class="card mb-3 bg-light">
                 <div class="card-header bg-secondary text-white">
-                    <h6 class="mb-0"><i class="bi bi-globe"></i> Network Info</h6>
+                    <h6 class="mb-0"><i aria-hidden="true" class="bi bi-globe"></i> Network Info</h6>
                 </div>
                 <div class="card-body">
                     <p><strong>IP Address:</strong><br>
@@ -143,7 +143,7 @@
             {% if log.user_agent %}
             <div class="card mb-3">
                 <div class="card-header bg-secondary text-white">
-                    <h6 class="mb-0"><i class="bi bi-browser-chrome"></i> User Agent</h6>
+                    <h6 class="mb-0"><i aria-hidden="true" class="bi bi-browser-chrome"></i> User Agent</h6>
                 </div>
                 <div class="card-body">
                     <small class="text-muted" style="word-break: break-all;">
@@ -156,7 +156,7 @@
             <!-- Timeline -->
             <div class="card bg-info text-white">
                 <div class="card-body">
-                    <h6><i class="bi bi-clock"></i> Timeline</h6>
+                    <h6><i aria-hidden="true" class="bi bi-clock"></i> Timeline</h6>
                     <p class="mb-0">
                         <strong>{{ log.timestamp|date:"F d, Y" }}</strong><br>
                         {{ log.timestamp|time:"g:i:s A" }}<br>

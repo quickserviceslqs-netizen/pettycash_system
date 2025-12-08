@@ -8,11 +8,11 @@
         <div class="col-md-12">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Bulk User Import</h4>
+                    <h4 class="mb-0"><i aria-hidden="true" class="bi bi-file-earmark-arrow-up"></i> Bulk User Import</h4>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
-                        <h5><i class="bi bi-info-circle"></i> How to Use Bulk Import</h5>
+                        <h5><i aria-hidden="true" class="bi bi-info-circle"></i> How to Use Bulk Import</h5>
                         <ol class="mb-0">
                             <li><strong>Download Template:</strong> Click the button below to download the Excel template</li>
                             <li><strong>Fill Template:</strong> Add user data (email, name, role, org, apps)</li>
@@ -26,7 +26,7 @@
                         <div class="col-md-6">
                             <div class="card border-primary">
                                 <div class="card-header bg-primary text-white">
-                                    <i class="bi bi-download"></i> Step 1: Download Template
+                                    <i aria-hidden="true" class="bi bi-download"></i> Step 1: Download Template
                                 </div>
                                 <div class="card-body">
                                     <p>Download the Excel template with example data and instructions.</p>
@@ -78,7 +78,7 @@
                                     </div>
                                     
                                     <button type="button" id="downloadUserTemplateBtn" class="btn btn-primary">
-                                        <i class="bi bi-file-earmark-spreadsheet"></i> Download Excel Template
+                                        <i aria-hidden="true" class="bi bi-file-earmark-spreadsheet"></i> Download Excel Template
                                     </button>
                                 </div>
                             </div>
@@ -87,7 +87,7 @@
                         <div class="col-md-6">
                             <div class="card border-success">
                                 <div class="card-header bg-success text-white">
-                                    <i class="bi bi-upload"></i> Step 2: Upload Completed File
+                                    <i aria-hidden="true" class="bi bi-upload"></i> Step 2: Upload Completed File
                                 </div>
                                 <div class="card-body">
                                     <form method="post" enctype="multipart/form-data">
@@ -99,7 +99,7 @@
                                             <div class="form-text">Supported formats: .xlsx, .xls, .csv</div>
                                         </div>
                                         <button type="submit" class="btn btn-success">
-                                            <i class="bi bi-cloud-upload"></i> Upload & Process
+                                            <i aria-hidden="true" class="bi bi-cloud-upload"></i> Upload & Process
                                         </button>
                                     </form>
                                 </div>
@@ -108,7 +108,7 @@
                     </div>
                     
                     <div class="alert alert-warning">
-                        <h5><i class="bi bi-exclamation-triangle"></i> Important Notes</h5>
+                        <h5><i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Important Notes</h5>
                         <ul class="mb-0">
                             <li><strong>Usernames:</strong> Auto-generated as <code>FirstInitial.LastName</code> (e.g., <code>A.Cheloti</code> for Amos Cheloti)</li>
                             <li><strong>Passwords:</strong> Users set their own password via invitation link</li>
@@ -123,11 +123,11 @@
                     
                     <div class="card">
                         <div class="card-header">
-                            <i class="bi bi-table"></i> CSV Template Format
+                            <i aria-hidden="true" class="bi bi-table"></i> CSV Template Format
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm">
+                            <div class="table-responsive" style="overflow-x:auto;">
+                                <table class="table table-bordered table-sm" style="min-width: 900px;">
                                     <thead class="table-light">
                                         <tr>
                                             <th>email</th>
@@ -143,26 +143,15 @@
                                     </thead>
                                     <tbody>
                                         <tr class="table-success">
-                                            <td>amos.cheloti@example.com</td>
-                                            <td>Amos</td>
-                                            <td>Cheloti</td>
+                                            <td>demo.user@example.com</td>
+                                            <td>Demo</td>
+                                            <td>User</td>
                                             <td>REQUESTER</td>
-                                            <td>Quick Services LQS</td>
-                                            <td>East Africa</td>
-                                            <td>Nairobi Branch</td>
-                                            <td>Finance</td>
+                                            <td>DemoCo</td>
+                                            <td>DemoRegion</td>
+                                            <td>DemoBranch</td>
+                                            <td>DemoDepartment</td>
                                             <td>treasury,workflow</td>
-                                        </tr>
-                                        <tr class="table-success">
-                                            <td>jane.doe@example.com</td>
-                                            <td>Jane</td>
-                                            <td>Doe</td>
-                                            <td>APPROVER</td>
-                                            <td>Quick Services LQS</td>
-                                            <td>East Africa</td>
-                                            <td>Mombasa Branch</td>
-                                            <td>Operations</td>
-                                            <td>treasury,workflow,reports</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -179,11 +168,11 @@
                     
                     <div class="card mt-3">
                         <div class="card-header">
-                            <i class="bi bi-gear"></i> Multi-Company/Branch/Region System
+                            <i aria-hidden="true" class="bi bi-gear"></i> Multi-Company/Branch/Region System
                         </div>
                         <div class="card-body">
                             <div class="alert alert-info mb-3">
-                                <strong><i class="bi bi-info-circle"></i> Organization Mapping:</strong>
+                                <strong><i aria-hidden="true" class="bi bi-info-circle"></i> Organization Mapping:</strong>
                                 <p class="mb-0">
                                     The downloaded template includes a complete list of ALL companies, regions, branches, 
                                     and departments in your system. Use this reference to map users to the correct organization.
@@ -193,48 +182,34 @@
                                 <div class="col-md-3">
                                     <h6>Companies ({{ companies.count }})</h6>
                                     <ul class="small" style="max-height: 200px; overflow-y: auto;">
-                                        {% for company in companies %}
-                                        <li><code>{{ company.name }}</code></li>
-                                        {% empty %}
-                                        <li class="text-muted">No companies found</li>
-                                        {% endfor %}
+                                        <li class="text-muted">List omitted to keep template light.</li>
+                                        <li class="text-muted">Use the download button for a filtered reference.</li>
                                     </ul>
                                 </div>
                                 <div class="col-md-3">
                                     <h6>Departments ({{ departments.count }})</h6>
                                     <ul class="small" style="max-height: 200px; overflow-y: auto;">
-                                        {% for dept in departments %}
-                                        <li><code>{{ dept.name }}</code></li>
-                                        {% empty %}
-                                        <li class="text-muted">No departments found</li>
-                                        {% endfor %}
+                                        <li class="text-muted">List omitted to keep template light.</li>
+                                        <li class="text-muted">Use the download button for a filtered reference.</li>
                                     </ul>
                                 </div>
                                 <div class="col-md-3">
                                     <h6>Branches ({{ branches.count }})</h6>
                                     <ul class="small" style="max-height: 200px; overflow-y: auto;">
-                                        {% for branch in branches %}
-                                        <li><code>{{ branch.name }}</code></li>
-                                        {% empty %}
-                                        <li class="text-muted">No branches found</li>
-                                        {% endfor %}
+                                        <li class="text-muted">List omitted to keep template light.</li>
+                                        <li class="text-muted">Use the download button for a filtered reference.</li>
                                     </ul>
                                 </div>
                                 <div class="col-md-3">
                                     <h6>Regions</h6>
                                     <ul class="small" style="max-height: 200px; overflow-y: auto;">
-                                        {% for branch in branches %}
-                                            {% if branch.region %}
-                                            <li><code>{{ branch.region.name }}</code></li>
-                                            {% endif %}
-                                        {% empty %}
-                                        <li class="text-muted">No regions found</li>
-                                        {% endfor %}
+                                        <li class="text-muted">List omitted to keep template light.</li>
+                                        <li class="text-muted">Use the download button for a filtered reference.</li>
                                     </ul>
                                 </div>
                             </div>
                             <div class="alert alert-warning mt-3 mb-0">
-                                <strong><i class="bi bi-exclamation-triangle"></i> Copy Exact Names:</strong>
+                                <strong><i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Copy Exact Names:</strong>
                                 Names are case-sensitive. Copy exactly from the template's organization list to avoid errors.
                             </div>
                         </div>
@@ -242,7 +217,7 @@
                     
                     <div class="mt-3 text-center">
                         <a href="{% url 'accounts:manage_invitations' %}" class="btn btn-secondary">
-                            <i class="bi bi-arrow-left"></i> Back to Invitations
+                            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Invitations
                         </a>
                     </div>
                 </div>

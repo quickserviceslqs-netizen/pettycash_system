@@ -113,3 +113,16 @@ def setting_enabled(key):
         {% setting_enabled 'ENABLE_MULTI_CURRENCY' %}
     """
     return get_setting(key, 'false').lower() in ['true', '1', 'yes', 'on']
+
+
+@register.filter(name='get_item')
+def get_item(dictionary, key):
+    """
+    Get an item from a dictionary in templates
+    
+    Usage:
+        {{ my_dict|get_item:my_key }}
+    """
+    if dictionary:
+        return dictionary.get(key)
+    return None

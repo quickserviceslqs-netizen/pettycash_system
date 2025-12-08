@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load currency_filters %}
 
 {% block title %}Approve Requisition{% endblock %}
 
@@ -12,7 +13,7 @@
                 </div>
                 <div class="card-body">
                     <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i> You are about to approve this requisition.
+                        <i aria-hidden="true" class="fas fa-exclamation-triangle"></i> You are about to approve this requisition.
                     </div>
 
                     <dl class="row">
@@ -23,7 +24,7 @@
                         <dd class="col-sm-8">{{ requisition.requested_by.get_full_name }}</dd>
 
                         <dt class="col-sm-4">Amount:</dt>
-                        <dd class="col-sm-8"><strong class="text-success">${{ requisition.amount|floatformat:2 }}</strong></dd>
+                        <dd class="col-sm-8"><strong class="text-success">{{ requisition.amount|currency }}</strong></dd>
 
                         <dt class="col-sm-4">Purpose:</dt>
                         <dd class="col-sm-8">{{ requisition.purpose|truncatewords:20 }}</dd>
@@ -38,10 +39,10 @@
 
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'transactions:view_requisition' requisition.transaction_id %}" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> Cancel
+                                <i aria-hidden="true" class="fas fa-times"></i> Cancel
                             </a>
                             <button type="submit" class="btn btn-success">
-                                <i class="fas fa-check"></i> Approve Requisition
+                                <i aria-hidden="true" class="fas fa-check"></i> Approve Requisition
                             </button>
                         </div>
                     </form>

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Transaction Report - {{ block.super }}{% endblock %}
 
@@ -12,7 +13,7 @@
             <p class="text-muted mb-0">Detailed requisition analysis</p>
         </div>
         <a href="{% url 'reports:dashboard' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
         </a>
     </div>
 
@@ -72,10 +73,10 @@
                 </div>
                 <div class="col-12 d-flex gap-2 flex-wrap mt-2">
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-funnel"></i> Apply Filters
+                        <i aria-hidden="true" class="bi bi-funnel"></i> Apply Filters
                     </button>
                     <a href="{% url 'reports:transaction-report' %}" class="btn btn-secondary">
-                        <i class="bi bi-x-circle"></i> Clear All
+                        <i aria-hidden="true" class="bi bi-x-circle"></i> Clear All
                     </a>
                 </div>
             </form>
@@ -96,7 +97,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <p class="text-muted mb-1 small">Total Amount</p>
-                    <h3 class="mb-0">${{ total_amount|floatformat:2 }}</h3>
+                    <h3 class="mb-0">{{ total_amount|currency }}</h3>
                 </div>
             </div>
         </div>
@@ -104,7 +105,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <p class="text-muted mb-1 small">Average Amount</p>
-                    <h3 class="mb-0">${{ avg_amount|floatformat:2 }}</h3>
+                    <h3 class="mb-0">{{ avg_amount|currency }}</h3>
                 </div>
             </div>
         </div>
@@ -114,9 +115,25 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Requisitions</h5>
-            <button class="btn btn-sm btn-success" onclick="exportToCSV()">
-                <i class="bi bi-download"></i> Export CSV
-            </button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-sm btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i aria-hidden="true" class="bi bi-download"></i> Export
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'reports:transaction-report-export-csv' %}?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}">
+                            Export CSV (server-side)
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'reports:transaction-report-export-xlsx' %}?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}">
+                            Export Excel (server-side)
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item" type="button" onclick="exportToCSV()">Quick CSV (current page)</button></li>
+                </ul>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -140,7 +157,7 @@
                             <td>{{ req.requested_by.username }}</td>
                             <td>{{ req.branch.name|default:"-" }}</td>
                             <td>{{ req.department.name|default:"-" }}</td>
-                            <td>${{ req.amount|floatformat:2 }}</td>
+                            <td>{{ req.amount|currency }}</td>
                             <td>
                                 {% if req.status == 'paid' %}
                                     <span class="badge bg-success text-bg-dark" aria-label="Paid">{{ req.get_status_display }}</span>
@@ -164,6 +181,35 @@
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+            <!-- Pagination Controls -->
+            <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 small">Rows per page:</label>
+                    <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}&page_size=' + this.value">
+                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                    </select>
+                    <span class="text-muted small">{{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+                </div>
+                <div class="btn-group" role="group">
+                    {% if page_obj.has_previous %}
+                    <a href="?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}&page_size={{ page_size }}&page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                    <a href="?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}&page_size={{ page_size }}&page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                    <a href="?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}&page_size={{ page_size }}&page={{ page_obj.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                    <a href="?days={{ days }}&status={{ selected_status }}&branch={{ selected_branch }}&department={{ selected_department }}&min_amount={{ min_amount }}&max_amount={{ max_amount }}&page_size={{ page_size }}&page={{ page_obj.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

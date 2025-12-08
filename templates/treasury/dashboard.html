@@ -8,13 +8,13 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <h1 class="mb-0">
-                <i class="bi bi-building"></i> Treasury Dashboard
+                <i aria-hidden="true" class="bi bi-building"></i> Treasury Dashboard
             </h1>
             <small class="text-muted">Real-time fund monitoring and payment tracking</small>
         </div>
         <div class="col-md-4 text-end">
             <button class="btn btn-primary" id="refreshBtn" onclick="refreshDashboard()">
-                <i class="bi bi-arrow-clockwise"></i> Refresh
+                <i aria-hidden="true" class="bi bi-arrow-clockwise"></i> Refresh
             </button>
         </div>
     </div>
@@ -68,7 +68,7 @@
             <div class="card">
                 <div class="card-header bg-light">
                     <h5 class="mb-0">
-                        <i class="bi bi-piggy-bank"></i> Fund Status Cards
+                        <i aria-hidden="true" class="bi bi-piggy-bank"></i> Fund Status Cards
                     </h5>
                 </div>
                 <div class="card-body">
@@ -84,7 +84,7 @@
             <div class="card">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="bi bi-hourglass-split"></i> Pending Payments
+                        <i aria-hidden="true" class="bi bi-hourglass-split"></i> Pending Payments
                     </h5>
                     <span class="badge bg-warning" id="pendingCount">0</span>
                 </div>
@@ -101,7 +101,7 @@
             <div class="card">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="bi bi-check-circle"></i> Recent Executions
+                        <i aria-hidden="true" class="bi bi-check-circle"></i> Recent Executions
                     </h5>
                 </div>
                 <div class="card-body">
@@ -119,7 +119,7 @@
             <div class="card">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="bi bi-exclamation-triangle"></i> Pending Variances
+                        <i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Pending Variances
                     </h5>
                     <span class="badge bg-info" id="varianceCount">0</span>
                 </div>
@@ -135,7 +135,7 @@
             <div class="card">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="bi bi-arrow-repeat"></i> Replenishment Status
+                        <i aria-hidden="true" class="bi bi-arrow-repeat"></i> Replenishment Status
                     </h5>
                     <span class="badge bg-secondary" id="replenishCount">0</span>
                 </div>
@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function refreshDashboard() {
     const btn = document.getElementById('refreshBtn');
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass"></i> Refreshing...';
+    btn.innerHTML = '<i aria-hidden="true" class="bi bi-hourglass"></i> Refreshing...';
 
     Promise.all([
         (window.pc_api && window.pc_api.get ? window.pc_api.get('/api/dashboard/summary/') : fetch('/api/dashboard/summary/').then(r=>r.json())),
@@ -195,11 +195,11 @@ function refreshDashboard() {
     ]).then(([summary, fundStatus, pending, recent, alerts]) => {
         updateDashboard(summary, fundStatus, pending, recent, alerts);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+        btn.innerHTML = '<i aria-hidden="true" class="bi bi-arrow-clockwise"></i> Refresh';
     }).catch(err => {
         console.error('Error refreshing dashboard:', err);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+        btn.innerHTML = '<i aria-hidden="true" class="bi bi-arrow-clockwise"></i> Refresh';
     });
 }
 

@@ -8,7 +8,7 @@
         <div class="col-md-7">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white text-center py-4">
-                    <h3><i class="bi bi-laptop"></i> Request Device Registration</h3>
+                    <h3><i aria-hidden="true" class="bi bi-laptop"></i> Request Device Registration</h3>
                 </div>
                 <div class="card-body p-4">
                     <p class="text-center text-muted mb-4">
@@ -16,7 +16,7 @@
                     </p>
                     
                     <div class="alert alert-info">
-                        <h6><i class="bi bi-info-circle"></i> Your Current Device</h6>
+                        <h6><i aria-hidden="true" class="bi bi-info-circle"></i> Your Current Device</h6>
                         <p class="mb-0">
                             <strong>Device:</strong> <code id="deviceInfo">Detecting...</code><br>
                             <strong>Browser:</strong> <span id="browserInfo">Detecting...</span>
@@ -41,7 +41,7 @@
                         </div>
                         
                         <div class="alert alert-warning">
-                            <h6><i class="bi bi-clock-history"></i> What happens next?</h6>
+                            <h6><i aria-hidden="true" class="bi bi-clock-history"></i> What happens next?</h6>
                             <ol class="mb-0 small">
                                 <li>Your request will be sent to system administrators</li>
                                 <li>Admin will review your device information</li>
@@ -52,10 +52,10 @@
                         
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-send"></i> Submit Registration Request
+                                <i aria-hidden="true" class="bi bi-send"></i> Submit Registration Request
                             </button>
                             <a href="{% url 'login' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left"></i> Cancel
+                                <i aria-hidden="true" class="bi bi-arrow-left"></i> Cancel
                             </a>
                         </div>
                     </form>
@@ -64,7 +64,7 @@
                     
                     <div class="card bg-light">
                         <div class="card-body">
-                            <h6><i class="bi bi-shield-check"></i> Security Notes</h6>
+                            <h6><i aria-hidden="true" class="bi bi-shield-check"></i> Security Notes</h6>
                             <ul class="small mb-0">
                                 <li>Device registration requires administrator approval</li>
                                 <li>Your device information (OS, browser, IP) will be logged</li>

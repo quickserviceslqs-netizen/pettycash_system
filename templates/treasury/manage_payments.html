@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Manage Payments{% endblock %}
 
@@ -100,7 +101,7 @@
                                 <tr>
                                     <td><code>{{ payment.payment_id|truncatechars:12 }}</code></td>
                                     <td><small>{{ payment.requisition.transaction_id|truncatechars:12 }}</small></td>
-                                    <td><strong>${{ payment.amount|floatformat:2 }}</strong></td>
+                                    <td><strong>{{ payment.amount|currency }}</strong></td>
                                     <td><span class="badge bg-secondary">{{ payment.get_method_display }}</span></td>
                                     <td><small>{{ payment.destination|truncatechars:20 }}</small></td>
                                     <td>
@@ -126,11 +127,11 @@
                                     <td>
                                         {% if payment.status == 'pending' %}
                                             <a href="{% url 'treasury:execute_payment' payment.payment_id %}" class="btn btn-sm btn-primary">
-                                                <i class="fas fa-play"></i> Execute
+                                                <i aria-hidden="true" class="fas fa-play"></i> Execute
                                             </a>
                                         {% elif payment.status == 'failed' %}
                                             <button class="btn btn-sm btn-warning" title="Retry payment">
-                                                <i class="fas fa-redo"></i> Retry
+                                                <i aria-hidden="true" class="fas fa-redo"></i> Retry
                                             </button>
                                         {% else %}
                                             <button class="btn btn-sm btn-secondary" disabled>-</button>
@@ -143,7 +144,7 @@
                 </div>
             {% else %}
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> No payments found matching your filters.
+                    <i aria-hidden="true" class="fas fa-info-circle"></i> No payments found matching your filters.
                 </div>
             {% endif %}
         </div>

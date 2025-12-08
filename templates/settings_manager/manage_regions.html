@@ -7,9 +7,9 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-globe"></i> Manage Regions</h2>
+                <h2><i aria-hidden="true" class="bi bi-globe"></i> Manage Regions</h2>
                 <a href="{% url 'settings_manager:data_operations' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Back
+                    <i aria-hidden="true" class="bi bi-arrow-left"></i> Back
                 </a>
             </div>
 
@@ -43,6 +43,46 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Compact Pagination -->
+                    {% if regions.paginator.num_pages > 1 %}
+                    <div class="d-flex justify-content-between align-items-center mt-3 px-3 pb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted">Rows per page:</span>
+                            <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?page=1&page_size=' + this.value">
+                                <option value="10" {% if request.GET.page_size == '10' %}selected{% endif %}>10</option>
+                                <option value="25" {% if request.GET.page_size == '25' or not request.GET.page_size %}selected{% endif %}>25</option>
+                                <option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50</option>
+                                <option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100</option>
+                            </select>
+                        </div>
+                        <div class="text-muted">
+                            {{ regions.start_index }}-{{ regions.end_index }} of {{ regions.paginator.count }}
+                        </div>
+                        <div class="btn-group" role="group">
+                            <a href="?page=1&page_size={{ request.GET.page_size|default:'25' }}" 
+                               class="btn btn-sm btn-outline-secondary {% if not regions.has_previous %}disabled{% endif %}" 
+                               title="First page">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                            <a href="?page={{ regions.previous_page_number }}&page_size={{ request.GET.page_size|default:'25' }}" 
+                               class="btn btn-sm btn-outline-secondary {% if not regions.has_previous %}disabled{% endif %}" 
+                               title="Previous page">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                            <a href="?page={{ regions.next_page_number }}&page_size={{ request.GET.page_size|default:'25' }}" 
+                               class="btn btn-sm btn-outline-secondary {% if not regions.has_next %}disabled{% endif %}" 
+                               title="Next page">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                            <a href="?page={{ regions.paginator.num_pages }}&page_size={{ request.GET.page_size|default:'25' }}" 
+                               class="btn btn-sm btn-outline-secondary {% if not regions.has_next %}disabled{% endif %}" 
+                               title="Last page">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

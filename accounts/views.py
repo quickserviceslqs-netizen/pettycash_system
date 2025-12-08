@@ -1,5 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.utils import timezone
+from django.contrib.sessions.models import Session
 
 # ---------------------------------------------------------------------
 # Role access mapping: which apps are visible to which roles
@@ -205,11 +208,17 @@ def dashboard(request):
         from accounts.models_device import UserInvitation
         from django.db.models import Count
         
+        locked_users_count = User.objects.filter(
+            lockout_until__isnull=False,
+            lockout_until__gt=timezone.now()
+        ).count()
+
         admin_stats = {
             'total_users': User.objects.count(),
             'active_users': User.objects.filter(is_active=True).count(),
             'pending_invitations': UserInvitation.objects.filter(status='pending').count(),
             'users_by_role': User.objects.values('role').annotate(count=Count('id')).order_by('-count')[:5],
+            'locked_users': locked_users_count,
             'show_admin_section': True,
         }
     else:
@@ -242,3 +251,25 @@ def dashboard(request):
     }
 
     return render(request, "accounts/dashboard.html", context)
+
+
+@login_required
+def terminate_my_other_sessions(request):
+    """Terminate all other active sessions for the current user, keeping this one."""
+    if request.method == 'POST':
+        current_key = request.session.session_key
+        deleted = 0
+        for s in Session.objects.all():
+            try:
+                data = s.get_decoded()
+            except Exception:
+                continue
+            uid = str(data.get('_auth_user_id')) if data else None
+            if uid and int(uid) == request.user.id and s.session_key != current_key:
+                s.delete()
+                deleted += 1
+        if deleted:
+            messages.success(request, f'Terminated {deleted} other session(s).')
+        else:
+            messages.info(request, 'No other active sessions found.')
+    return redirect('dashboard')

@@ -249,8 +249,13 @@ class MaintenanceMode(models.Model):
         except cls.DoesNotExist:
             return False
     
-    def activate(self, user, reason, duration_minutes=30, backup=None):
+    def activate(self, user, reason, duration_minutes=None, backup=None):
         """Activate maintenance mode"""
+        from settings_manager.models import SystemSetting
+        
+        if duration_minutes is None:
+            duration_minutes = SystemSetting.get_setting('MAINTENANCE_WINDOW_DURATION_MINUTES', 30)
+        
         self.is_active = True
         self.activated_at = timezone.now()
         self.activated_by = user

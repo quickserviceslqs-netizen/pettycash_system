@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Reports Dashboard - {{ block.super }}{% endblock %}
 
@@ -38,10 +39,10 @@
                             <h3 class="mb-0">{{ total_requisitions }}</h3>
                         </div>
                         <div class="bg-primary bg-opacity-10 rounded p-2">
-                            <i class="bi bi-file-earmark-text text-primary fs-4"></i>
+                            <i aria-hidden="true" class="bi bi-file-earmark-text text-primary fs-4"></i>
                         </div>
                     </div>
-                    <p class="text-muted mb-0 mt-2 small">Amount: ${{ total_amount|floatformat:2 }}</p>
+                    <p class="text-muted mb-0 mt-2 small">Amount: {{ total_amount|currency }}</p>
                 </div>
             </div>
         </div>
@@ -54,7 +55,7 @@
                             <h3 class="mb-0">{{ pending_count }}</h3>
                         </div>
                         <div class="bg-warning bg-opacity-10 rounded p-2">
-                            <i class="bi bi-hourglass-split text-warning fs-4"></i>
+                            <i aria-hidden="true" class="bi bi-hourglass-split text-warning fs-4"></i>
                         </div>
                     </div>
                     <p class="text-muted mb-0 mt-2 small">
@@ -69,10 +70,10 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <p class="text-muted mb-1 small">Treasury Balance</p>
-                            <h3 class="mb-0">${{ total_treasury_balance|floatformat:2 }}</h3>
+                            <h3 class="mb-0">{{ total_treasury_balance|currency }}</h3>
                         </div>
                         <div class="bg-success bg-opacity-10 rounded p-2">
-                            <i class="bi bi-bank text-success fs-4"></i>
+                            <i aria-hidden="true" class="bi bi-bank text-success fs-4"></i>
                         </div>
                     </div>
                     <p class="text-muted mb-0 mt-2 small">
@@ -94,7 +95,7 @@
                             <h3 class="mb-0">{{ active_users }}</h3>
                         </div>
                         <div class="bg-info bg-opacity-10 rounded p-2">
-                            <i class="bi bi-people text-info fs-4"></i>
+                            <i aria-hidden="true" class="bi bi-people text-info fs-4"></i>
                         </div>
                     </div>
                     <p class="text-muted mb-0 mt-2 small">Users with activity in period</p>
@@ -111,7 +112,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-3">
                             <div class="bg-primary bg-opacity-10 rounded p-3 me-3">
-                                <i class="bi bi-receipt text-primary fs-3"></i>
+                                <i aria-hidden="true" class="bi bi-receipt text-primary fs-3"></i>
                             </div>
                             <div>
                                 <h5 class="mb-0">Transaction Report</h5>
@@ -131,7 +132,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-3">
                             <div class="bg-success bg-opacity-10 rounded p-3 me-3">
-                                <i class="bi bi-cash-stack text-success fs-3"></i>
+                                <i aria-hidden="true" class="bi bi-cash-stack text-success fs-3"></i>
                             </div>
                             <div>
                                 <h5 class="mb-0">Treasury Report</h5>
@@ -151,7 +152,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-3">
                             <div class="bg-warning bg-opacity-10 rounded p-3 me-3">
-                                <i class="bi bi-check2-circle text-warning fs-3"></i>
+                                <i aria-hidden="true" class="bi bi-check2-circle text-warning fs-3"></i>
                             </div>
                             <div>
                                 <h5 class="mb-0">Approval Report</h5>
@@ -171,7 +172,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-3">
                             <div class="bg-info bg-opacity-10 rounded p-3 me-3">
-                                <i class="bi bi-activity text-info fs-3"></i>
+                                <i aria-hidden="true" class="bi bi-activity text-info fs-3"></i>
                             </div>
                             <div>
                                 <h5 class="mb-0">User Activity</h5>
@@ -180,6 +181,171 @@
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="text-info fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:stuck-approvals-report' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-danger bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-exclamation-triangle text-danger fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Stuck Approvals</h5>
+                                <small class="text-muted">Exceptions & escalations</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-danger fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:threshold-overrides-report' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-warning bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-sliders text-warning fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Threshold Overrides</h5>
+                                <small class="text-muted">Out-of-policy detections</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-warning fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:budget-vs-actuals' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-graph-up-arrow text-primary fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Budget vs Actuals</h5>
+                                <small class="text-muted">Variance & trends</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-primary fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Phase 1: Quick Win Reports -->
+    <h4 class="mb-3 mt-4">Quick Analysis Reports</h4>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:category-spending-report' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-purple bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-pie-chart text-purple fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Category Spending</h5>
+                                <small class="text-muted">Expense breakdown</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-purple fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:payment-method-analysis' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-teal bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-credit-card text-teal fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Payment Methods</h5>
+                                <small class="text-muted">Success rates & volume</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-teal fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:regional-comparison' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-orange bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-geo-alt text-orange fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Regional Comparison</h5>
+                                <small class="text-muted">Branch performance</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-orange fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:rejection-analysis' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-red bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-x-circle text-danger fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Rejection Analysis</h5>
+                                <small class="text-muted">Patterns & reasons</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-danger fw-semibold">View Report →</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <a href="{% url 'reports:average-metrics' %}?days={{ days }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-cyan bg-opacity-10 rounded p-3 me-3">
+                                <i aria-hidden="true" class="bi bi-calculator text-cyan fs-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Average Metrics</h5>
+                                <small class="text-muted">Amounts & times</small>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-cyan fw-semibold">View Report →</span>
                         </div>
                     </div>
                 </div>
@@ -249,7 +415,7 @@
                                 <tr>
                                     <td>{{ requester.requested_by__username }}</td>
                                     <td class="text-end">{{ requester.total }}</td>
-                                    <td class="text-end">${{ requester.amount|floatformat:2 }}</td>
+                                    <td class="text-end">{{ requester.amount|currency }}</td>
                                 </tr>
                                 {% empty %}
                                 <tr>
@@ -275,7 +441,7 @@
                             <div class="border rounded p-3">
                                 <p class="text-muted mb-1 small">Successful Payments</p>
                                 <h4 class="mb-0 text-success">{{ successful_payments }}</h4>
-                                <small class="text-muted">${{ total_paid_amount|floatformat:2 }}</small>
+                                <small class="text-muted">{{ total_paid_amount|currency }}</small>
                             </div>
                         </div>
                         <div class="col-6">
@@ -326,7 +492,6 @@
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 </style>
-{% endblock %}
         </div>
     </div>
 

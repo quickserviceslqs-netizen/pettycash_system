@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 from organization.models import Company, Region, Branch, Department, CostCenter, Position
 
 # Import device management models
@@ -103,6 +104,13 @@ class User(AbstractUser):
         help_text="Applications this user has access to. Use Django permissions to control add/view/change/delete within each app."
     )
 
+    # Security tracking
+    failed_login_attempts = models.PositiveIntegerField(default=0)
+    lockout_until = models.DateTimeField(null=True, blank=True)
+    last_failed_login = models.DateTimeField(null=True, blank=True)
+    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
+    last_login_user_agent = models.TextField(blank=True)
+
     def __str__(self):
         return f"{self.username} ({self.role})"
 
@@ -133,3 +141,73 @@ class User(AbstractUser):
         maps to `user.company` without requiring a separate Profile model.
         """
         return self
+
+class UserAuditLog(models.Model):
+    """
+    Tracks administrative actions performed on user accounts.
+    Records who did what, when, and what changed.
+    """
+    ACTION_CHOICES = [
+        ('create', 'User Created'),
+        ('update', 'User Updated'),
+        ('delete', 'User Deleted'),
+        ('activate', 'User Activated'),
+        ('deactivate', 'User Deactivated'),
+        ('password_reset', 'Password Reset Sent'),
+        ('role_change', 'Role Changed'),
+        ('app_assign', 'Apps Assigned'),
+        ('permission_change', 'Permissions Changed'),
+        ('group_change', 'Groups Changed'),
+    ]
+    
+    target_user = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='audit_logs',
+        help_text="User who was affected by this action"
+    )
+    performed_by = models.ForeignKey(
+        'User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='performed_audits',
+        help_text="Admin who performed the action"
+    )
+    action = models.CharField(
+        max_length=30,
+        choices=ACTION_CHOICES,
+        help_text="Type of action performed"
+    )
+    timestamp = models.DateTimeField(
+        default=timezone.now,
+        help_text="When the action occurred"
+    )
+    changes = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="Details of what changed (before/after values)"
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text="Additional context or reason for the change"
+    )
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True,
+        help_text="IP address of the admin who made the change"
+    )
+    
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = "User Audit Log"
+        verbose_name_plural = "User Audit Logs"
+        indexes = [
+            models.Index(fields=['-timestamp']),
+            models.Index(fields=['target_user', '-timestamp']),
+            models.Index(fields=['performed_by', '-timestamp']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_action_display()} on {self.target_user.username} by {self.performed_by} at {self.timestamp}"
+

@@ -121,12 +121,16 @@ class AlertService:
         return None
     
     @staticmethod
-    def check_payment_timeout(payment, execution_time_minutes=60):
+    def check_payment_timeout(payment, execution_time_minutes=None):
         """
         Check if payment execution is taking too long.
         """
         from django.utils.timezone import now
         from datetime import timedelta
+        from settings_manager.models import SystemSetting
+        
+        if execution_time_minutes is None:
+            execution_time_minutes = SystemSetting.get_setting('PAYMENT_EXECUTION_TIMEOUT_MINUTES', 60)
         
         if payment.status == 'executing':
             if (now() - payment.execution_timestamp) > timedelta(minutes=execution_time_minutes):
@@ -150,13 +154,16 @@ class AlertService:
     @staticmethod
     def check_otp_expired(payment):
         """
-        Check if OTP has expired (> 5 minutes).
+        Check if OTP has expired.
         """
         from django.utils.timezone import now
         from datetime import timedelta
+        from settings_manager.models import SystemSetting
+        
+        otp_expiry_minutes = SystemSetting.get_setting('PAYMENT_OTP_EXPIRY_MINUTES', 5)
         
         if payment.otp_sent_timestamp and not payment.otp_verified:
-            if (now() - payment.otp_sent_timestamp) > timedelta(minutes=5):
+            if (now() - payment.otp_sent_timestamp) > timedelta(minutes=otp_expiry_minutes):
                 existing = Alert.objects.filter(
                     alert_type='otp_expired',
                     related_payment=payment,
@@ -174,12 +181,16 @@ class AlertService:
         return None
     
     @staticmethod
-    def check_variance_pending(variance, threshold_hours=24):
+    def check_variance_pending(variance, threshold_hours=None):
         """
         Check if variance has been pending approval for too long.
         """
         from django.utils.timezone import now
         from datetime import timedelta
+        from settings_manager.models import SystemSetting
+        
+        if threshold_hours is None:
+            threshold_hours = SystemSetting.get_setting('VARIANCE_APPROVAL_DEADLINE_HOURS', 24)
         
         if variance.status == 'pending':
             if (now() - variance.created_at) > timedelta(hours=threshold_hours):

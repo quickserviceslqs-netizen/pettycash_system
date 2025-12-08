@@ -7,11 +7,11 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1 text-danger"><i class="bi bi-exclamation-octagon"></i> Factory Reset</h2>
+            <h2 class="mb-1 text-danger"><i aria-hidden="true" class="bi bi-exclamation-octagon"></i> Factory Reset</h2>
             <p class="text-muted mb-0">Reset system to factory defaults - USE WITH EXTREME CAUTION</p>
         </div>
         <a href="{% url 'system_maintenance:dashboard' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Dashboard
         </a>
     </div>
 
@@ -26,14 +26,14 @@
 
     <!-- Warning Banner -->
     <div class="alert alert-danger border-danger">
-        <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> DANGER ZONE</h4>
+        <h4 class="alert-heading"><i aria-hidden="true" class="bi bi-exclamation-triangle-fill"></i> DANGER ZONE</h4>
         <p class="mb-2">
             <strong>Factory reset will permanently delete data from your system.</strong> 
             This action cannot be undone without a backup.
         </p>
         <hr>
         <p class="mb-0">
-            <i class="bi bi-shield-check"></i> A backup will be created automatically before reset to allow recovery if needed.
+            <i aria-hidden="true" class="bi bi-shield-check"></i> A backup will be created automatically before reset to allow recovery if needed.
         </p>
     </div>
 
@@ -41,7 +41,7 @@
     <!-- Reset Configuration -->
     <div class="card border-danger shadow-sm">
         <div class="card-header bg-danger text-white">
-            <h5 class="mb-0"><i class="bi bi-sliders"></i> Configure Factory Reset</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-sliders"></i> Configure Factory Reset</h5>
         </div>
         <div class="card-body">
             <form method="post">
@@ -49,7 +49,7 @@
                 <input type="hidden" name="action" value="initiate">
 
                 <div class="alert alert-warning">
-                    <i class="bi bi-info-circle"></i> Select what to reset. <strong>Unchecked items will be preserved.</strong>
+                    <i aria-hidden="true" class="bi bi-info-circle"></i> Select what to reset. <strong>Unchecked items will be preserved.</strong>
                 </div>
 
                 <div class="row g-4 mb-4">
@@ -103,7 +103,7 @@
                 </div>
 
                 <div class="alert alert-info">
-                    <h6 class="alert-heading"><i class="bi bi-shield-fill-check"></i> Automatic Safety Measures:</h6>
+                    <h6 class="alert-heading"><i aria-hidden="true" class="bi bi-shield-fill-check"></i> Automatic Safety Measures:</h6>
                     <ul class="mb-0">
                         <li>A full backup will be created automatically before reset</li>
                         <li>The backup will be protected from automatic deletion</li>
@@ -114,7 +114,7 @@
 
                 <div class="d-grid">
                     <button type="submit" class="btn btn-danger btn-lg">
-                        <i class="bi bi-exclamation-triangle"></i> Proceed to Confirmation
+                        <i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Proceed to Confirmation
                     </button>
                 </div>
             </form>
@@ -125,11 +125,11 @@
     <!-- Confirmation Step -->
     <div class="card border-danger shadow-sm">
         <div class="card-header bg-danger text-white">
-            <h5 class="mb-0"><i class="bi bi-key"></i> Confirm Factory Reset</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-key"></i> Confirm Factory Reset</h5>
         </div>
         <div class="card-body">
             <div class="alert alert-warning">
-                <h6 class="alert-heading"><i class="bi bi-info-circle-fill"></i> Reset Configuration:</h6>
+                <h6 class="alert-heading"><i aria-hidden="true" class="bi bi-info-circle-fill"></i> Reset Configuration:</h6>
                 <ul class="mb-0">
                     {% if reset_database %}<li><strong>Database will be reset</strong> - All transaction data will be deleted</li>{% endif %}
                     {% if reset_media %}<li><strong>Media files will be reset</strong> - All uploaded files will be deleted</li>{% endif %}
@@ -156,12 +156,12 @@
                 <div class="row g-2">
                     <div class="col-md-6">
                         <button type="button" onclick="window.location.reload()" class="btn btn-outline-secondary w-100">
-                            <i class="bi bi-x-circle"></i> Cancel
+                            <i aria-hidden="true" class="bi bi-x-circle"></i> Cancel
                         </button>
                     </div>
                     <div class="col-md-6">
                         <button type="submit" class="btn btn-danger w-100">
-                            <i class="bi bi-trash"></i> Execute Factory Reset
+                            <i aria-hidden="true" class="bi bi-trash"></i> Execute Factory Reset
                         </button>
                     </div>
                 </div>
@@ -173,7 +173,7 @@
     <!-- Reset History -->
     <div class="card border-0 shadow-sm mt-4">
         <div class="card-header bg-white border-bottom">
-            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Reset History</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-clock-history"></i> Reset History</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -208,7 +208,7 @@
                             <td>
                                 {% if reset.pre_reset_backup %}
                                     <code class="small">{{ reset.pre_reset_backup.backup_id|slice:":8" }}</code>
-                                    <i class="bi bi-shield-check text-success" title="Backup available"></i>
+                                    <i aria-hidden="true" class="bi bi-shield-check text-success" title="Backup available"></i>
                                 {% else %}
                                     <span class="text-muted">None</span>
                                 {% endif %}

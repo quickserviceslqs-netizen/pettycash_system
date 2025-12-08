@@ -1,9 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.db.models import Q, Count
+from django.db.models import Count
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
+from django.core.paginator import Paginator
 from datetime import timedelta
 import csv
 
@@ -25,38 +26,41 @@ def settings_dashboard(request):
     log_activity(request.user, 'view', content_type='Settings Dashboard', 
                  description='Viewed settings dashboard', request=request)
     
-    # Get all settings grouped by category
+    # Get category filter from URL if provided
+    category_filter = request.GET.get('category')
+    
+    # Get all settings grouped by category - NO PAGINATION
     categories = SystemSetting.CATEGORY_CHOICES
     settings_by_category = {}
-    
-    for category_key, category_name in categories:
-        settings = SystemSetting.objects.filter(category=category_key, is_active=True)
-        if settings.exists():
-            settings_by_category[category_name] = settings
-    
-    # Get filter and search
-    category_filter = request.GET.get('category')
-    search_query = request.GET.get('search', '').strip()
+    category_counts = {}
     
     if category_filter:
-        settings = SystemSetting.objects.filter(category=category_filter, is_active=True)
+        # Show only the filtered category
+        for category_key, category_name in categories:
+            if category_key == category_filter:
+                all_settings = SystemSetting.objects.filter(category=category_key, is_active=True).order_by('display_name')
+                if all_settings.exists():
+                    category_counts[category_key] = all_settings.count()
+                    # Store with tuple (key, name, settings) for template access
+                    settings_by_category[(category_key, category_name)] = all_settings
     else:
-        settings = SystemSetting.objects.filter(is_active=True)
+        # Show all categories
+        for category_key, category_name in categories:
+            all_settings = SystemSetting.objects.filter(category=category_key, is_active=True).order_by('display_name')
+            if all_settings.exists():
+                category_counts[category_key] = all_settings.count()
+                # Store with tuple (key, name, settings) for template access
+                settings_by_category[(category_key, category_name)] = all_settings
     
-    # Apply search filter if provided
-    if search_query:
-        settings = settings.filter(
-            Q(display_name__icontains=search_query) |
-            Q(key__icontains=search_query) |
-            Q(description__icontains=search_query)
-        )
+    # Get all active settings
+    all_settings = SystemSetting.objects.filter(is_active=True)
     
     context = {
         'settings_by_category': settings_by_category,
-        'all_settings': settings,
+        'category_counts': category_counts,
+        'all_settings': all_settings,
         'categories': categories,
         'selected_category': category_filter,
-        'search_query': search_query,
         'total_settings': SystemSetting.objects.filter(is_active=True).count(),
     }
     
@@ -71,7 +75,7 @@ def edit_setting(request, setting_id):
     
     if not setting.editable_by_admin:
         messages.error(request, "This setting cannot be edited through the UI.")
-        return redirect('settings-dashboard')
+        return redirect('settings_manager:dashboard')
     
     if request.method == 'POST':
         old_value = setting.value
@@ -116,7 +120,7 @@ def edit_setting(request, setting_id):
                 request=request
             )
         
-        return redirect('settings-dashboard')
+        return redirect('settings_manager:dashboard')
     
     context = {
         'setting': setting,
@@ -153,8 +157,11 @@ def activity_logs(request):
         start_date = timezone.now() - timedelta(days=days_filter)
         logs = logs.filter(timestamp__gte=start_date)
     
-    # Paginate (last 100)
-    logs = logs[:100]
+    # Paginate
+    page_size = request.GET.get('page_size', 25)
+    paginator = Paginator(logs, page_size)
+    page_number = request.GET.get('page', 1)
+    logs = paginator.get_page(page_number)
     
     # Get statistics
     stats = ActivityLog.objects.filter(
@@ -390,6 +397,12 @@ def manage_users(request):
     elif status_filter == 'inactive':
         users = users.filter(is_active=False)
     
+    # Paginate
+    page_size = request.GET.get('page_size', 25)
+    paginator = Paginator(users, page_size)
+    page_number = request.GET.get('page', 1)
+    users = paginator.get_page(page_number)
+    
     context = {
         'users': users,
         'search_query': search_query,
@@ -527,6 +540,12 @@ def manage_departments(request):
     if branch_filter:
         departments = departments.filter(branch_id=branch_filter)
     
+    # Paginate
+    page_size = request.GET.get('page_size', 25)
+    paginator = Paginator(departments, page_size)
+    page_number = request.GET.get('page', 1)
+    departments = paginator.get_page(page_number)
+    
     context = {
         'departments': departments,
         'branches': Branch.objects.all().select_related('region'),
@@ -630,6 +649,12 @@ def delete_department(request, department_id):
 def manage_regions(request):
     """Region management interface"""
     regions = Region.objects.all().select_related('company').order_by('name')
+    
+    # Paginate
+    page_size = request.GET.get('page_size', 25)
+    paginator = Paginator(regions, page_size)
+    page_number = request.GET.get('page', 1)
+    regions = paginator.get_page(page_number)
     
     context = {
         'regions': regions,

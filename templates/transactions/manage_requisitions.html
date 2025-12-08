@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load currency_filters %}
 
 {% block title %}Manage Requisitions{% endblock %}
 
@@ -49,7 +50,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
                     <a href="{% url 'transactions:create_requisition' %}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Create Requisition
+                        <i aria-hidden="true" class="fas fa-plus"></i> Create Requisition
                     </a>
                 </div>
             </div>
@@ -141,11 +142,11 @@
                                         <small>{{ req.requested_by.get_full_name }}</small><br>
                                         <small class="text-muted">{{ req.requested_by.role }}</small>
                                     </td>
-                                    <td><strong>${{ req.amount|floatformat:2 }}</strong></td>
+                                    <td><strong>{{ req.amount|currency }}</strong></td>
                                     <td><small>{{ req.purpose|truncatewords:8 }}</small></td>
                                     <td>
                                         {% if req.applied_threshold %}
-                                            <small class="badge bg-secondary">{{ req.applied_threshold.name }}</small>
+                                            <small class="badge bg-secondary text-break">{{ req.applied_threshold.name }}</small>
                                         {% else %}
                                             <small class="text-muted">-</small>
                                         {% endif %}
@@ -154,16 +155,16 @@
                                         {% if req.status == 'draft' %}
                                             <span class="badge bg-secondary">Draft</span>
                                         {% elif req.status == 'pending' or req.status == 'pending_urgency_confirmation' %}
-                                            <span class="badge bg-warning text-dark">Pending</span>
+                                            <span class="badge bg-warning text-dark text-break">Pending</span>
                                         {% elif req.status == 'paid' %}
                                             <span class="badge bg-success">Paid</span>
                                         {% elif req.status == 'rejected' %}
-                                            <span class="badge bg-danger">Rejected</span>
+                                            <span class="badge bg-danger text-break">Rejected</span>
                                         {% else %}
-                                            <span class="badge bg-info">{{ req.get_status_display }}</span>
+                                            <span class="badge bg-info text-break">{{ req.get_status_display }}</span>
                                         {% endif %}
                                         {% if req.is_urgent %}
-                                            <span class="badge bg-danger">⚡ URGENT</span>
+                                            <span class="badge bg-danger text-break">⚡ URGENT</span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -177,7 +178,7 @@
                                     <td>
                                         <a href="{% url 'transactions:view_requisition' req.transaction_id %}" 
                                            class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye"></i> View
+                                            <i aria-hidden="true" class="fas fa-eye"></i> View
                                         </a>
                                     </td>
                                 </tr>
@@ -188,7 +189,7 @@
                 <p class="text-muted mt-2"><small>Showing up to 200 recent requisitions</small></p>
             {% else %}
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> No requisitions found. 
+                    <i aria-hidden="true" class="fas fa-info-circle"></i> No requisitions found. 
                     <a href="{% url 'transactions:create_requisition' %}">Create your first requisition</a>
                 </div>
             {% endif %}

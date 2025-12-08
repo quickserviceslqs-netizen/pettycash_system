@@ -5,9 +5,9 @@
 {% block content %}
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-plus-circle"></i> Create New Cost Center</h2>
+        <h2><i aria-hidden="true" class="bi bi-plus-circle"></i> Create New Cost Center</h2>
         <a href="{% url 'organization:manage_cost_centers' %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Cost Centers
+            <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Cost Centers
         </a>
     </div>
 
@@ -51,13 +51,13 @@
                         </div>
 
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> <strong>Note:</strong> Cost centers help track budget allocations and expenses within departments.
+                            <i aria-hidden="true" class="bi bi-info-circle"></i> <strong>Note:</strong> Cost centers help track budget allocations and expenses within departments.
                         </div>
 
                         <div class="d-flex justify-content-between">
                             <a href="{% url 'organization:manage_cost_centers' %}" class="btn btn-secondary">Cancel</a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> Create Cost Center
+                                <i aria-hidden="true" class="bi bi-check-circle"></i> Create Cost Center
                             </button>
                         </div>
                     </form>

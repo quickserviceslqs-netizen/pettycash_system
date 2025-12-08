@@ -6,12 +6,12 @@
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-md-6">
-            <h2><i class="bi bi-pencil-square"></i> Edit User Permissions</h2>
+            <h2><i aria-hidden="true" class="bi bi-pencil-square"></i> Edit User Profile & Permissions</h2>
             <p class="text-muted">{{ user_to_edit.get_display_name }} ({{ user_to_edit.username }})</p>
         </div>
         <div class="col-md-6 text-end">
             <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Users
+                <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Users
             </a>
         </div>
     </div>
@@ -24,11 +24,22 @@
             <div class="col-md-4 mb-4">
                 <div class="card">
                     <div class="card-header bg-primary text-white">
-                        <i class="bi bi-person-badge"></i> User Information
+                        <i aria-hidden="true" class="bi bi-person-badge"></i> User Information
                     </div>
                     <div class="card-body">
                         <p><strong>Username:</strong> {{ user_to_edit.username }}</p>
-                        <p><strong>Email:</strong> {{ user_to_edit.email }}</p>
+                        <div class="mb-2">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user_to_edit.first_name }}">
+                        </div>
+                        <div class="mb-2">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user_to_edit.last_name }}">
+                        </div>
+                        <div class="mb-2">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user_to_edit.email }}">
+                        </div>
                         <p><strong>Joined:</strong> {{ user_to_edit.date_joined|date:"M d, Y" }}</p>
                         <p><strong>Last Login:</strong> 
                             {% if user_to_edit.last_login %}
@@ -57,7 +68,7 @@
                 <!-- Role -->
                 <div class="card mb-4">
                     <div class="card-header bg-info text-white">
-                        <i class="bi bi-diagram-3"></i> Role & Organization
+                        <i aria-hidden="true" class="bi bi-diagram-3"></i> Role & Organization
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -125,7 +136,7 @@
                 <!-- App Access -->
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
-                        <i class="bi bi-grid-3x3-gap"></i> App Access
+                        <i aria-hidden="true" class="bi bi-grid-3x3-gap"></i> App Access
                     </div>
                     <div class="card-body">
                         <p class="text-muted">Select which applications this user can access</p>
@@ -159,7 +170,7 @@
                 <!-- Permission Groups -->
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
-                        <i class="bi bi-people"></i> Permission Groups
+                        <i aria-hidden="true" class="bi bi-people"></i> Permission Groups
                     </div>
                     <div class="card-body">
                         <p class="text-muted small">Assign user to groups. Users inherit all permissions from their groups.</p>
@@ -182,7 +193,7 @@
                         </div>
                         {% else %}
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> No groups defined yet. Create groups in Django Admin to organize permissions.
+                            <i aria-hidden="true" class="bi bi-info-circle"></i> No groups defined yet. Create groups in Django Admin to organize permissions.
                         </div>
                         {% endif %}
                     </div>
@@ -191,7 +202,7 @@
                 <!-- Detailed Permissions -->
                 <div class="card mb-4">
                     <div class="card-header bg-warning text-dark">
-                        <i class="bi bi-shield-lock"></i> Detailed Permissions (In-App Access)
+                        <i aria-hidden="true" class="bi bi-shield-lock"></i> Detailed Permissions (In-App Access)
                     </div>
                     <div class="card-body">
                         <p class="text-muted small">Granular permissions for specific actions within each app. Only select what this user needs.</p>
@@ -199,7 +210,7 @@
                         {% for app_label, perms in permissions_by_app.items %}
                         <div class="mb-4">
                             <h6 class="text-uppercase text-primary border-bottom pb-2">
-                                <i class="bi bi-app"></i> {{ app_label|title }}
+                                <i aria-hidden="true" class="bi bi-app"></i> {{ app_label|title }}
                             </h6>
                             <div class="row">
                                 {% for perm in perms %}
@@ -226,14 +237,99 @@
                 <!-- Save Button -->
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-save"></i> Save Changes
+                        <i aria-hidden="true" class="bi bi-save"></i> Save Changes
                     </button>
                     <a href="{% url 'accounts:manage_users' %}" class="btn btn-secondary">
-                        <i class="bi bi-x-circle"></i> Cancel
+                        <i aria-hidden="true" class="bi bi-x-circle"></i> Cancel
                     </a>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="card mt-4 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <i aria-hidden="true" class="bi bi-lightning"></i> Quick Actions
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <form method="post" action="{% url 'accounts:reset_user_password' user_to_edit.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-info w-100" {% if not user_to_edit.email %}disabled{% endif %}>
+                                    <i aria-hidden="true" class="bi bi-key"></i> Send Password Reset Email
+                                </button>
+                            </form>
+                            {% if not user_to_edit.email %}
+                            <small class="text-muted">* User needs an email address to receive password reset</small>
+                            {% endif %}
+                            
+                            <form method="post" action="{% url 'accounts:toggle_user_status' user_to_edit.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i aria-hidden="true" class="bi bi-{% if user_to_edit.is_active %}pause-circle{% else %}play-circle{% endif %}"></i> 
+                                    {% if user_to_edit.is_active %}Deactivate User{% else %}Activate User{% endif %}
+                                </button>
+                            </form>
+
+                            <a href="{% url 'accounts:user_sessions' user_to_edit.id %}" class="btn btn-outline-secondary w-100">
+                                <i aria-hidden="true" class="bi bi-shield-lock"></i> View Active Sessions
+                            </a>
+
+                            <form method="post" action="{% url 'accounts:unlock_user' user_to_edit.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-dark w-100">
+                                    <i aria-hidden="true" class="bi bi-unlock"></i> Unlock Account
+                                </button>
+                            </form>
+                            
+                            <button type="button" class="btn btn-danger w-100" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteModal"
+                                    {% if user_to_edit.id == request.user.id %}disabled{% endif %}>
+                                <i aria-hidden="true" class="bi bi-trash"></i> Delete User
+                            </button>
+                            {% if user_to_edit.id == request.user.id %}
+                            <small class="text-muted">* You cannot delete your own account</small>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </form>
+    
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">
+                        <i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Confirm Delete
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Are you sure you want to delete this user?</strong></p>
+                    <p class="mb-2"><strong>Username:</strong> {{ user_to_edit.username }}</p>
+                    <p class="mb-2"><strong>Name:</strong> {{ user_to_edit.get_display_name }}</p>
+                    <p class="mb-2"><strong>Email:</strong> {{ user_to_edit.email }}</p>
+                    <p class="mb-2"><strong>Role:</strong> {{ user_to_edit.get_role_display }}</p>
+                    <div class="alert alert-warning mt-3">
+                        <i aria-hidden="true" class="bi bi-exclamation-circle"></i>
+                        <strong>Warning:</strong> This action cannot be undone. All user data and associations will be permanently removed.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i aria-hidden="true" class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <form method="post" action="{% url 'accounts:delete_user' user_to_edit.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i aria-hidden="true" class="bi bi-trash"></i> Delete User
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

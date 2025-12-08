@@ -160,24 +160,24 @@
                             <td>{{ req.description|truncatewords:5 }}</td>
                             <td>
                                 {% if req.status == 'pending' %}
-                                    <span class="badge bg-warning">Pending</span>
+                                    <span class="badge bg-warning text-break">Pending</span>
                                 {% elif req.status == 'pending_urgency_confirmation' %}
-                                    <span class="badge bg-warning">Pending Urgency</span>
+                                    <span class="badge bg-warning text-break">Pending Urgency</span>
                                 {% elif req.status == 'approved' %}
-                                    <span class="badge bg-success">Approved</span>
+                                    <span class="badge bg-success text-break">Approved</span>
                                 {% elif req.status == 'reviewed' %}
-                                    <span class="badge bg-info">Reviewed</span>
+                                    <span class="badge bg-info text-break">Reviewed</span>
                                 {% elif req.status == 'paid' %}
-                                    <span class="badge bg-primary">Paid</span>
+                                    <span class="badge bg-primary text-break">Paid</span>
                                 {% elif req.status == 'rejected' %}
-                                    <span class="badge bg-danger">Rejected</span>
+                                    <span class="badge bg-danger text-break">Rejected</span>
                                 {% elif req.status == 'change_requested' %}
-                                    <span class="badge bg-danger">Changes Requested</span>
+                                    <span class="badge bg-danger text-break">Changes Requested</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">{{ req.status }}</span>
+                                    <span class="badge bg-secondary text-break">{{ req.status }}</span>
                                 {% endif %}
                                 {% if req.is_urgent %}
-                                    <span class="badge bg-danger ms-1">URGENT</span>
+                                    <span class="badge bg-danger ms-1 text-break">URGENT</span>
                                 {% endif %}
                             </td>
                             <td>

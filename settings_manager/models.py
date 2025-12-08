@@ -242,9 +242,24 @@ def get_setting(key, default=None):
     Get a system setting value by key.
     Returns typed value (bool, int, str, etc.)
     Falls back to default if setting doesn't exist.
+    Uses Django cache for performance.
     """
+    from django.core.cache import cache
+    
+    cache_key = f'system_setting:{key}'
+    cached_value = cache.get(cache_key)
+    
+    if cached_value is not None:
+        return cached_value
+    
     try:
         setting = SystemSetting.objects.get(key=key, is_active=True)
-        return setting.get_typed_value()
+        value = setting.get_typed_value()
+        # Cache for 5 minutes
+        cache.set(cache_key, value, 300)
+        return value
     except SystemSetting.DoesNotExist:
+        # Cache the default value too
+        if default is not None:
+            cache.set(cache_key, default, 300)
         return default

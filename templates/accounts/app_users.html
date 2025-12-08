@@ -5,13 +5,13 @@
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-people"></i> Users with Access to: {{ app.display_name }}</h2>
+        <h2><i aria-hidden="true" class="bi bi-people"></i> Users with Access to: {{ app.display_name }}</h2>
         <div>
             <a href="{% url 'accounts:bulk_assign_apps' %}" class="btn btn-success">
-                <i class="bi bi-person-plus"></i> Assign to Users
+                <i aria-hidden="true" class="bi bi-person-plus"></i> Assign to Users
             </a>
             <a href="{% url 'accounts:manage_apps' %}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Apps
+                <i aria-hidden="true" class="bi bi-arrow-left"></i> Back to Apps
             </a>
         </div>
     </div>
@@ -44,7 +44,7 @@
     <!-- Filters -->
     <div class="card mb-4">
         <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+            <h5 class="mb-0"><i aria-hidden="true" class="bi bi-funnel"></i> Filters</h5>
         </div>
         <div class="card-body">
             <form method="get" class="row g-3">
@@ -67,13 +67,13 @@
 
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Filter
+                        <i aria-hidden="true" class="bi bi-search"></i> Filter
                     </button>
                 </div>
 
                 <div class="col-md-2 d-flex align-items-end">
                     <a href="{% url 'accounts:app_users' app.id %}" class="btn btn-secondary w-100">
-                        <i class="bi bi-x-circle"></i> Clear
+                        <i aria-hidden="true" class="bi bi-x-circle"></i> Clear
                     </a>
                 </div>
             </form>
@@ -118,7 +118,7 @@
                                     <td>
                                         <a href="{% url 'accounts:assign_apps_to_user' user.id %}" 
                                            class="btn btn-sm btn-info" title="Manage Apps">
-                                            <i class="bi bi-grid-3x3-gap"></i> Apps
+                                            <i aria-hidden="true" class="bi bi-grid-3x3-gap"></i> Apps
                                         </a>
                                     </td>
                                 </tr>
@@ -128,10 +128,10 @@
                 </div>
             {% else %}
                 <div class="text-center py-5">
-                    <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                    <i aria-hidden="true" class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
                     <p class="text-muted mt-3">No users have access to this app yet.</p>
                     <a href="{% url 'accounts:bulk_assign_apps' %}" class="btn btn-primary">
-                        <i class="bi bi-person-plus"></i> Assign Users
+                        <i aria-hidden="true" class="bi bi-person-plus"></i> Assign Users
                     </a>
                 </div>
             {% endif %}
