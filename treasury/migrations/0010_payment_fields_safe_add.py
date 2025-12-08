@@ -12,14 +12,9 @@ def check_and_add_fields(apps, schema_editor):
     from django.db import connection
     
     with connection.cursor() as cursor:
-        # Check if columns exist
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name='treasury_payment' 
-            AND column_name IN ('created_by_id', 'description', 'voucher_number');
-        """)
-        existing_columns = {row[0] for row in cursor.fetchall()}
+        # Check if columns exist (SQLite compatible)
+        cursor.execute("PRAGMA table_info('treasury_payment')")
+        existing_columns = {row[1] for row in cursor.fetchall()}
         
         # Add created_by_id if it doesn't exist
         if 'created_by_id' not in existing_columns:
@@ -56,20 +51,12 @@ def make_requisition_optional(apps, schema_editor):
     from django.db import connection
     
     with connection.cursor() as cursor:
-        # Check if requisition_id is nullable
-        cursor.execute("""
-            SELECT is_nullable 
-            FROM information_schema.columns 
-            WHERE table_name='treasury_payment' 
-            AND column_name='requisition_id';
-        """)
-        result = cursor.fetchone()
-        
-        if result and result[0] == 'NO':
-            cursor.execute("""
-                ALTER TABLE treasury_payment 
-                ALTER COLUMN requisition_id DROP NOT NULL;
-            """)
+        # Check if requisition_id is nullable (SQLite compatible)
+        cursor.execute("PRAGMA table_info('treasury_payment')")
+        columns = cursor.fetchall()
+        for col in columns:
+            if col[1] == 'requisition_id' and col[3] == 1:  # 1 means NOT NULL
+                cursor.execute("ALTER TABLE treasury_payment ALTER COLUMN requisition_id DROP NOT NULL;")
 
 
 class Migration(migrations.Migration):

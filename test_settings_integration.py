@@ -95,13 +95,9 @@ def test_security_integration():
     from django.db import connection
     
     with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'accounts_user'
-            AND column_name IN ('failed_login_attempts', 'lockout_until', 'last_failed_login')
-        """)
-        fields = [row[0] for row in cursor.fetchall()]
+        cursor.execute("PRAGMA table_info('accounts_user')")
+        all_fields = [row[1] for row in cursor.fetchall()]
+        fields = [f for f in ['failed_login_attempts', 'lockout_until', 'last_failed_login'] if f in all_fields]
     
     print_section("User Model Security Fields")
     required_fields = ['failed_login_attempts', 'lockout_until', 'last_failed_login']
