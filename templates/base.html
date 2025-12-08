@@ -1,38 +1,3 @@
-        /* Sticky table headers for responsive tables */
-        .table-responsive {
-            overflow-x: auto;
-        }
-        .table-responsive table {
-            min-width: 600px;
-        }
-        .table-responsive thead th {
-            position: sticky;
-            top: 0;
-            background: #fff;
-            z-index: 2;
-            box-shadow: 0 2px 2px -1px rgba(0,0,0,0.04);
-        }
-
-        /* Mobile responsiveness for tables and forms */
-        @media (max-width: 767.98px) {
-            .container-fluid, .main-container {
-                padding: 0 0.5rem;
-            }
-            .table-responsive table {
-                font-size: 0.92rem;
-            }
-            .table-responsive thead th, .table-responsive tbody td {
-                padding: 0.5rem 0.4rem;
-            }
-            .btn, .form-control, .form-select {
-                font-size: 0.95rem;
-                padding: 0.5rem 0.75rem;
-            }
-            .navbar-nav .nav-link {
-                padding: 0.4rem 0.7rem !important;
-                font-size: 0.95rem;
-            }
-        }
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
