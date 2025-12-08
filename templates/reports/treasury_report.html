@@ -1,3 +1,14 @@
+    <!-- User Feedback Notifications -->
+    {% if messages %}
+    <div class="mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 {% extends "base.html" %}
 {% load static %}
 {% load currency_filters %}
@@ -57,89 +68,170 @@
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Company</th>
-                            <th>Region</th>
-                            <th>Branch</th>
-                            <th>Current Balance</th>
-                            <th>Reorder Level</th>
-                            <th>Status</th>
-                            <th>Last Replenished</th>
-                            <th>Details</th>
+                            <th scope="col" id="th-company">Company</th>
+                            <th scope="col" id="th-region">Region</th>
+                            <th scope="col" id="th-branch">Branch</th>
+                            <th scope="col" id="th-balance">Current Balance</th>
+                            <th scope="col" id="th-reorder">Reorder Level</th>
+                            <th scope="col" id="th-status">Status</th>
+                            <th scope="col" id="th-last">Last Replenished</th>
+                            <th scope="col" id="th-details">Details</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody aria-live="polite">
                         {% for fund in funds %}
-                        <tr>
-                            <td>{{ fund.company.name }}</td>
-                            <td>{{ fund.region.name|default:"-" }}</td>
-                            <td>{{ fund.branch.name|default:"HQ" }}</td>
-                            <td class="fw-semibold">{{ fund.current_balance|currency }}</td>
-                            <td>{{ fund.reorder_level|currency }}</td>
-                            <td>
+                        <tr tabindex="0" aria-labelledby="th-company th-region th-branch th-balance th-reorder th-status th-last th-details">
+                            <td headers="th-company">{{ fund.company.name }}</td>
+                            <td headers="th-region">{{ fund.region.name|default:"-" }}</td>
+                            <td headers="th-branch">{{ fund.branch.name|default:"HQ" }}</td>
+                            <td headers="th-balance" class="fw-semibold" aria-label="Current Balance">{{ fund.current_balance|currency }}</td>
+                            <td headers="th-reorder" aria-label="Reorder Level">{{ fund.reorder_level|currency }}</td>
+                            <td headers="th-status">
                                 {% if fund.needs_replenishment %}
-                                    <span class="badge bg-danger">
+                                    <span class="badge bg-danger" style="color:#fff;background:#dc3545;">
                                         <i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Below Reorder Level
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-success">
+                                    <span class="badge bg-success" style="color:#fff;background:#198754;">
                                         <i aria-hidden="true" class="bi bi-check-circle"></i> Healthy
                                     </span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td headers="th-last">
                                 {% if fund.last_replenished %}
                                     {{ fund.last_replenished|date:"M d, Y" }}
                                 {% else %}
                                     <span class="text-muted">Never</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                <a href="{% url 'reports:treasury-fund-detail' fund.fund_id %}?days={{ days }}" class="btn btn-sm btn-outline-primary">
+                            <td headers="th-details">
+                                <a href="{% url 'reports:treasury-fund-detail' fund.fund_id %}?days={{ days }}" class="btn btn-sm btn-outline-primary focus-ring" aria-label="View fund details">
                                     <i aria-hidden="true" class="bi bi-search"></i>
                                 </a>
                             </td>
                         </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">No treasury funds found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% if funds.paginator %}
-            <div class="d-flex align-items-center justify-content-between mt-3 px-3 pb-3">
-                <div>
-                    <label for="page_size" class="form-label mb-0 me-2 d-inline">Rows per page:</label>
-                    <select id="page_size" class="form-select d-inline" style="width: auto;" onchange="window.location.href='?days={{ days }}&page_size=' + this.value;">
-                        <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
-                        <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
-                        <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
-                        <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
-                    </select>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <div class="my-3">
+                                        <img src="https://cdn.jsdelivr.net/gh/feathericons/feather/icons/folder.svg" alt="No data" width="48" height="48" style="opacity:0.3;"/>
+                                    </div>
+                                    <div>No treasury records found for the selected filters.</div>
+                                    <div class="mt-2">
+                                        <a href="{% url 'reports:treasury-report' %}" class="btn btn-outline-primary btn-sm focus-ring" aria-label="Reset filters">Reset Filters</a>
+                                    </tbody>
+                                    </table>
+                                    <style>
+                                        .table-light th {
+                                            background-color: #f8f9fa !important;
+                                            color: #212529 !important;
+                                            font-weight: 600;
+                                        }
+                                        .focus-ring:focus {
+                                            outline: 3px solid #0d6efd !important;
+                                            outline-offset: 2px;
+                                            box-shadow: 0 0 0 2px #fff, 0 0 0 4px #0d6efd;
+                                            z-index: 2;
+                                        }
+                                        .btn-outline-primary:focus {
+                                            background: #e7f1ff;
+                                            color: #0d6efd;
+                                        }
+                                    </style>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% for fund in funds %}
+                            <tr tabindex="0" aria-labelledby="th-company th-region th-branch th-balance th-reorder th-status th-last th-details">
+                                <td headers="th-company">{{ fund.company.name }}</td>
+                                <td headers="th-region">{{ fund.region.name|default:"-" }}</td>
+                                <td headers="th-branch">{{ fund.branch.name|default:"HQ" }}</td>
+                                <td headers="th-balance" class="fw-semibold" aria-label="Current Balance">{{ fund.current_balance|currency }}</td>
+                                <td headers="th-reorder" aria-label="Reorder Level">{{ fund.reorder_level|currency }}</td>
+                                <td headers="th-status">
+                                    {% if fund.needs_replenishment %}
+                                        <span class="badge bg-danger" style="color:#fff;background:#dc3545;">
+                                            <i aria-hidden="true" class="bi bi-exclamation-triangle"></i> Below Reorder Level
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success" style="color:#fff;background:#198754;">
+                                            <i aria-hidden="true" class="bi bi-check-circle"></i> Healthy
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td headers="th-last">
+                                    {% if fund.last_replenished %}
+                                        {{ fund.last_replenished|date:"M d, Y" }}
+                                    {% else %}
+                                        <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td headers="th-details">
+                                    <a href="{% url 'reports:treasury-fund-detail' fund.fund_id %}?days={{ days }}" class="btn btn-sm btn-outline-primary focus-ring" aria-label="View fund details">
+                                        <i aria-hidden="true" class="bi bi-search"></i>
+                                    </a>
+                                </td>
+                            </tr>
                 </div>
-                <span class="text-muted small">{{ funds.start_index }}-{{ funds.end_index }} of {{ funds.paginator.count }}</span>
-                <div class="btn-group" role="group">
-                    {% if funds.has_previous %}
-                    <a href="?days={{ days }}&page_size={{ page_size }}&page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
-                    <a href="?days={{ days }}&page_size={{ page_size }}&page={{ funds.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
-                    {% else %}
-                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
-                    {% endif %}
-                    {% if funds.has_next %}
-                    <a href="?days={{ days }}&page_size={{ page_size }}&page={{ funds.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
-                    <a href="?days={{ days }}&page_size={{ page_size }}&page={{ funds.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
-                    {% else %}
-                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
-                    {% endif %}
-                </div>
             </div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 px-3 pb-3 gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="page_size" class="form-label mb-0 me-2 d-inline">Rows per page:</label>
+                        <select id="page_size" class="form-select d-inline" style="width: auto;" onchange="window.location.href='?days={{ days }}&page_size=' + this.value;">
+                            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                            <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                            <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+                        </select>
+                        <span class="text-muted small">{{ funds.start_index }}-{{ funds.end_index }} of {{ funds.paginator.count }}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group" role="group">
+                            {% if funds.has_previous %}
+                            <a href="?days={{ days }}&page_size={{ page_size }}&page=1" class="btn btn-sm btn-outline-secondary" title="First page"><i class="bi bi-chevron-double-left"></i></a>
+                            <a href="?days={{ days }}&page_size={{ page_size }}&page={{ funds.previous_page_number }}" class="btn btn-sm btn-outline-secondary" title="Previous page"><i class="bi bi-chevron-left"></i></a>
+                            {% else %}
+                            <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-left"></i></button>
+                            <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-left"></i></button>
+                            {% endif %}
+                            {% if funds.has_next %}
+                            <a href="?days={{ days }}&page_size={{ page_size }}&page={{ funds.next_page_number }}" class="btn btn-sm btn-outline-secondary" title="Next page"><i class="bi bi-chevron-right"></i></a>
+                            <a href="?days={{ days }}&page_size={{ page_size }}&page={{ funds.paginator.num_pages }}" class="btn btn-sm btn-outline-secondary" title="Last page"><i class="bi bi-chevron-double-right"></i></a>
+                            {% else %}
+                            <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-right"></i></button>
+                            <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-chevron-double-right"></i></button>
+                            {% endif %}
+                        </div>
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-sm btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i aria-hidden="true" class="bi bi-download"></i> Export
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'reports:treasury-report-export-csv' %}?days={{ days }}">
+                                        Export CSV (server-side)
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'reports:treasury-report-export-xlsx' %}?days={{ days }}">
+                                        Export Excel (server-side)
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             {% endif %}
         </div>
     </div>
 
+        <!-- Loading Spinner (hidden by default, show via JS when needed) -->
+        <div id="loadingSpinner" class="text-center my-4" style="display:none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="mt-2 text-muted">Loading data, please wait...</div>
+        </div>
     <!-- Payment Statistics -->
     <div class="row g-3">
         <!-- Payment by Method -->
