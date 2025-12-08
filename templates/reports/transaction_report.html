@@ -19,8 +19,14 @@
     <!-- Filters -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-2">
+            <form method="get" class="row g-3 align-items-end flex-wrap">
+                <div class="col-md-12 mb-2">
+                    <span class="fw-semibold">Filters</span>
+                    {% if days or selected_status or selected_branch or selected_department or min_amount or max_amount %}
+                        <span class="badge bg-info ms-2">Active</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-2 col-6">
                     <label for="days" class="form-label">Time Period</label>
                     <select name="days" id="days" class="form-select">
                         <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 Days</option>
@@ -29,7 +35,7 @@
                         <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 Days</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 col-6">
                     <label for="status" class="form-label">Status</label>
                     <select name="status" id="status" class="form-select">
                         <option value="">All Statuses</option>
@@ -38,7 +44,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 col-6">
                     <label for="branch" class="form-label">Branch</label>
                     <select name="branch" id="branch" class="form-select">
                         <option value="">All Branches</option>
@@ -47,7 +53,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 col-6">
                     <label for="department" class="form-label">Department</label>
                     <select name="department" id="department" class="form-select">
                         <option value="">All Departments</option>
@@ -56,20 +62,20 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 col-6">
                     <label for="min_amount" class="form-label">Min Amount</label>
                     <input type="number" name="min_amount" id="min_amount" class="form-control" value="{{ min_amount }}" placeholder="0.00" step="0.01">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2 col-6">
                     <label for="max_amount" class="form-label">Max Amount</label>
                     <input type="number" name="max_amount" id="max_amount" class="form-control" value="{{ max_amount }}" placeholder="Any" step="0.01">
                 </div>
-                <div class="col-12">
+                <div class="col-12 d-flex gap-2 flex-wrap mt-2">
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-funnel"></i> Apply Filters
                     </button>
-                    <a href="{% url 'reports:transaction-report' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-circle"></i> Clear Filters
+                    <a href="{% url 'reports:transaction-report' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Clear All
                     </a>
                 </div>
             </form>
@@ -137,13 +143,13 @@
                             <td>${{ req.amount|floatformat:2 }}</td>
                             <td>
                                 {% if req.status == 'paid' %}
-                                    <span class="badge bg-success">{{ req.get_status_display }}</span>
+                                    <span class="badge bg-success text-bg-dark" aria-label="Paid">{{ req.get_status_display }}</span>
                                 {% elif req.status == 'rejected' %}
-                                    <span class="badge bg-danger">{{ req.get_status_display }}</span>
+                                    <span class="badge bg-danger text-bg-dark" aria-label="Rejected">{{ req.get_status_display }}</span>
                                 {% elif 'pending' in req.status %}
-                                    <span class="badge bg-warning">{{ req.get_status_display }}</span>
+                                    <span class="badge bg-warning text-dark" aria-label="Pending">{{ req.get_status_display }}</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">{{ req.get_status_display }}</span>
+                                    <span class="badge bg-secondary text-bg-dark" aria-label="Other">{{ req.get_status_display }}</span>
                                 {% endif %}
                             </td>
                             <td>{{ req.created_at|date:"M d, Y H:i" }}</td>
@@ -163,16 +169,20 @@
     </div>
 </div>
 
+<!-- Loading Spinner Placeholder -->
+<div id="loadingSpinner" class="text-center my-4" style="display:none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
 <script>
 function exportToCSV() {
     const table = document.getElementById('transactionsTable');
     let csv = [];
-    
     // Headers
     const headers = [];
     table.querySelectorAll('thead th').forEach(th => headers.push(th.textContent));
     csv.push(headers.join(','));
-    
     // Rows
     table.querySelectorAll('tbody tr').forEach(row => {
         const rowData = [];
@@ -182,7 +192,6 @@ function exportToCSV() {
         });
         if (rowData.length > 0) csv.push(rowData.join(','));
     });
-    
     // Download
     const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);

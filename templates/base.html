@@ -401,5 +401,22 @@
     <script src="{% static 'js/forms.js' %}"></script>
 
     {% block extra_scripts %}{% endblock %}
+<style>
+/* Custom Scrollbar for .custom-scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #bdbdbd;
+    border-radius: 4px;
+}
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #bdbdbd #f1f1f1;
+}
+</style>
 </body>
 </html>
