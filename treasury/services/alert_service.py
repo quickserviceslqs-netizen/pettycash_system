@@ -2,12 +2,14 @@
 Alert Service - Manages alert creation, triggering, and email notifications.
 """
 
+from decimal import Decimal
+
+from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from django.conf import settings
 from django.utils import timezone
-from treasury.models import Alert, TreasuryFund, Payment, VarianceAdjustment
-from decimal import Decimal
+
+from treasury.models import Alert, Payment, TreasuryFund, VarianceAdjustment
 
 
 class AlertService:
@@ -122,8 +124,10 @@ class AlertService:
         """
         Check if payment execution is taking too long.
         """
-        from django.utils.timezone import now
         from datetime import timedelta
+
+        from django.utils.timezone import now
+
         from settings_manager.models import SystemSetting
 
         if execution_time_minutes is None:
@@ -157,8 +161,10 @@ class AlertService:
         """
         Check if OTP has expired.
         """
-        from django.utils.timezone import now
         from datetime import timedelta
+
+        from django.utils.timezone import now
+
         from settings_manager.models import SystemSetting
 
         otp_expiry_minutes = SystemSetting.get_setting("PAYMENT_OTP_EXPIRY_MINUTES", 5)
@@ -188,8 +194,10 @@ class AlertService:
         """
         Check if variance has been pending approval for too long.
         """
-        from django.utils.timezone import now
         from datetime import timedelta
+
+        from django.utils.timezone import now
+
         from settings_manager.models import SystemSetting
 
         if threshold_hours is None:

@@ -3,13 +3,15 @@ Workflow Admin Views
 User-friendly interface for managing approval thresholds
 """
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib import messages
-from django.db.models import Q, Count
-from workflow.models import ApprovalThreshold
-from accounts.models import User
 import json
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
+from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404, redirect, render
+
+from accounts.models import User
+from workflow.models import ApprovalThreshold
 
 
 @login_required

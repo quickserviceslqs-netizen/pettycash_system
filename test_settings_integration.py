@@ -3,15 +3,18 @@ Simplified live integration test - verify settings work with actual models
 """
 
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
-from settings_manager.models import SystemSetting, get_setting
+import time
+
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-import time
+
+from settings_manager.models import SystemSetting, get_setting
 
 User = get_user_model()
 
@@ -207,7 +210,7 @@ def test_settings_url_access():
     """Test 7: Settings UI URLs"""
     print_header("TEST 7: Settings UI URLs")
 
-    from django.urls import reverse, NoReverseMatch
+    from django.urls import NoReverseMatch, reverse
 
     url_tests = [
         ("settings_manager:dashboard", []),
@@ -235,6 +238,7 @@ def test_admin_integration():
     print_header("TEST 8: Django Admin Integration")
 
     from django.contrib import admin
+
     from settings_manager.models import SystemSetting
 
     is_registered = SystemSetting in admin.site._registry

@@ -1,8 +1,8 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 from django.contrib.sessions.models import Session
+from django.shortcuts import redirect, render
+from django.utils import timezone
 
 # ---------------------------------------------------------------------
 # Role access mapping: which apps are visible to which roles
@@ -58,7 +58,7 @@ def dashboard(request):
     Display dashboard with accessible apps and pending approvals.
     Phase 4 invariant: No-self-approval enforced.
     """
-    from transactions.models import Requisition, ApprovalTrail
+    from transactions.models import ApprovalTrail, Requisition
 
     try:
         from treasury.models import Payment
@@ -227,9 +227,10 @@ def dashboard(request):
     # ----------------------------
     admin_stats = {}
     if user.has_perm("accounts.change_user"):
-        from accounts.models import User, App
-        from accounts.models_device import UserInvitation
         from django.db.models import Count
+
+        from accounts.models import App, User
+        from accounts.models_device import UserInvitation
 
         locked_users_count = User.objects.filter(
             lockout_until__isnull=False, lockout_until__gt=timezone.now()

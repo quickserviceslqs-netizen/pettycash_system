@@ -3,23 +3,25 @@ Bulk User Import via Excel Template
 Allows admins to upload multiple user invitations at once
 """
 
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib import messages
-from django.http import HttpResponse
-from django.utils import timezone
-from django.db import transaction
-from django.core.mail import send_mail
-from django.conf import settings
-from datetime import timedelta
 import csv
 import io
+from datetime import timedelta
+
 import openpyxl
-from openpyxl.styles import Font, PatternFill
 import pandas as pd
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
+from django.core.mail import send_mail
+from django.db import transaction
+from django.http import HttpResponse
+from django.shortcuts import redirect, render
+from django.utils import timezone
+from openpyxl.styles import Font, PatternFill
+
 from accounts.models import User
 from accounts.models_device import UserInvitation
-from organization.models import Company, Department, Branch
+from organization.models import Branch, Company, Department
 from settings_manager.models import get_setting
 from settings_manager.views import log_activity
 

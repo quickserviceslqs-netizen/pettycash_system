@@ -3,25 +3,27 @@ User Invitation and Device Whitelisting Views
 Handles invitation creation, signup process, and device management
 """
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib.auth import login
-from django.contrib import messages
-from django.utils import timezone
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
+import hashlib
 from datetime import timedelta
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required, permission_required
+from django.core.mail import send_mail
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_http_methods
+
 from accounts.models import User
 from accounts.models_device import (
+    DeviceAccessAttempt,
     UserInvitation,
     WhitelistedDevice,
-    DeviceAccessAttempt,
 )
 from settings_manager.models import get_setting
 from settings_manager.views import log_activity
-from django.core.mail import send_mail
-from django.conf import settings
-import hashlib
 
 
 def get_device_info(request):
@@ -173,8 +175,8 @@ def send_invitation(request):
         return redirect("accounts:manage_invitations")
 
     # GET request - show invitation form
-    from organization.models import Company, Department, Branch
     from accounts.models import App
+    from organization.models import Branch, Company, Department
 
     context = {
         "roles": User.ROLE_CHOICES,

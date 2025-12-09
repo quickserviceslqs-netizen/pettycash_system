@@ -3,6 +3,7 @@ Create timeout/duration settings to replace hardcoded values
 """
 
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")

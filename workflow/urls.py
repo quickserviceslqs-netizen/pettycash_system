@@ -1,10 +1,11 @@
 from django.urls import path
-from workflow.views import workflow_dashboard, threshold_edit
+
+from workflow.views import threshold_edit, workflow_dashboard
 from workflow.views_admin import (
-    manage_thresholds,
     create_threshold,
-    edit_threshold,
     delete_threshold,
+    edit_threshold,
+    manage_thresholds,
     toggle_threshold_status,
 )
 

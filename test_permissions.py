@@ -4,19 +4,22 @@ Tests all permission checks across transactions, treasury, workflow, and reports
 """
 
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission, Group
-from django.contrib.contenttypes.models import ContentType
-from accounts.models import App
-from treasury.models import TreasuryFund, Payment
-from transactions.models import Requisition
-from workflow.models import ApprovalThreshold
 from decimal import Decimal
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+
+from accounts.models import App
+from transactions.models import Requisition
+from treasury.models import Payment, TreasuryFund
+from workflow.models import ApprovalThreshold
 
 User = get_user_model()
 

@@ -4,8 +4,9 @@ Usage: python manage.py show_role_access
 """
 
 from django.core.management.base import BaseCommand
+
 from accounts.models import User
-from accounts.views import ROLE_ACCESS, APPROVER_ROLES
+from accounts.views import APPROVER_ROLES, ROLE_ACCESS
 
 
 class Command(BaseCommand):

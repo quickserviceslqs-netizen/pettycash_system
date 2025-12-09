@@ -4,15 +4,18 @@ Tests settings from database, their usage in code, and functionality.
 """
 
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
-from settings_manager.models import SystemSetting, get_setting
+import json
+
 from django.contrib.auth import get_user_model
 from django.db.models import Count
-import json
+
+from settings_manager.models import SystemSetting, get_setting
 
 User = get_user_model()
 

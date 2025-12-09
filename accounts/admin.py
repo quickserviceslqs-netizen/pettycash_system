@@ -2,8 +2,9 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, Permission
 from django.utils.html import format_html
-from .models import User, App
-from .models_device import UserInvitation, WhitelistedDevice, DeviceAccessAttempt
+
+from .models import App, User
+from .models_device import DeviceAccessAttempt, UserInvitation, WhitelistedDevice
 
 
 @admin.register(App)

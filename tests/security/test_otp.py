@@ -5,15 +5,17 @@ Phase 7: Security Testing
 Tests OTP generation, validation, expiry, and rate limiting.
 """
 
-from django.test import TestCase, Client
-from accounts.models import User
+import json
+from datetime import timedelta
+from decimal import Decimal
+
+from django.test import Client, TestCase
 from django.utils import timezone
-from organization.models import Company, Region, Branch
+
+from accounts.models import User
+from organization.models import Branch, Company, Region
 from transactions.models import Requisition
 from treasury.models import Payment, TreasuryFund
-from decimal import Decimal
-from datetime import timedelta
-import json
 
 
 class OTPValidationTest(TestCase):

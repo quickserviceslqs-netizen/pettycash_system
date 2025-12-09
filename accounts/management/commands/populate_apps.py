@@ -4,6 +4,7 @@ Run this after migration to create the 4 core apps.
 """
 
 from django.core.management.base import BaseCommand
+
 from accounts.models import App
 
 

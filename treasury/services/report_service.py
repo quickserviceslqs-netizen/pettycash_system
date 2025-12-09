@@ -2,22 +2,23 @@
 Report Service - Generates treasury reports, forecasts, and exports.
 """
 
-from decimal import Decimal
-from datetime import datetime, timedelta
-from django.utils import timezone
-from django.db.models import Sum, Count, Q, Avg
-from django.core.files.base import ContentFile
-from io import BytesIO, StringIO
 import csv
+from datetime import datetime, timedelta
+from decimal import Decimal
+from io import BytesIO, StringIO
+
+from django.core.files.base import ContentFile
+from django.db.models import Avg, Count, Q, Sum
+from django.utils import timezone
 
 from treasury.models import (
-    Payment,
+    DashboardMetric,
+    FundForecast,
     LedgerEntry,
-    VarianceAdjustment,
+    Payment,
     ReplenishmentRequest,
     TreasuryFund,
-    FundForecast,
-    DashboardMetric,
+    VarianceAdjustment,
 )
 
 
@@ -429,17 +430,17 @@ class ReportService:
         Uses ReportLab library.
         """
         try:
-            from reportlab.lib.pagesizes import letter, A4
             from reportlab.lib import colors
-            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.pagesizes import A4, letter
+            from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+            from reportlab.lib.units import inch
             from reportlab.platypus import (
+                Paragraph,
                 SimpleDocTemplate,
+                Spacer,
                 Table,
                 TableStyle,
-                Paragraph,
-                Spacer,
             )
-            from reportlab.lib.units import inch
 
             buffer = BytesIO()
             doc = SimpleDocTemplate(buffer, pagesize=A4)

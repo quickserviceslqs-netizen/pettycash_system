@@ -1,23 +1,24 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib import messages
-from django.db.models import Count, Q
-from django.utils import timezone
-from django.http import JsonResponse, HttpResponse
-from django.core.paginator import Paginator
-from datetime import timedelta
 import csv
+from datetime import timedelta
 
-from settings_manager.models import SystemSetting, ActivityLog, get_setting
-from accounts.models import User, App
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.paginator import Paginator
+from django.db.models import Count, Q
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
+from accounts.models import App, User
 from organization.models import (
-    Company,
-    Region,
     Branch,
-    Department,
+    Company,
     CostCenter,
+    Department,
     Position,
+    Region,
 )
+from settings_manager.models import ActivityLog, SystemSetting, get_setting
 
 
 def is_admin_user(user):
@@ -218,8 +219,9 @@ def activity_logs(request):
 @user_passes_test(is_admin_user)
 def system_info(request):
     """Display system information and diagnostics"""
-    import sys
     import platform
+    import sys
+
     from django import get_version as django_version
     from django.conf import settings as django_settings
 

@@ -4,6 +4,7 @@ Ensures all critical settings exist and are properly configured.
 """
 
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")

@@ -3,10 +3,11 @@ Device Authentication Middleware
 Restricts login to whitelisted devices only
 """
 
-from django.shortcuts import redirect
 from django.contrib import messages
+from django.shortcuts import redirect
 from django.urls import reverse
-from accounts.models_device import WhitelistedDevice, DeviceAccessAttempt
+
+from accounts.models_device import DeviceAccessAttempt, WhitelistedDevice
 from settings_manager.models import get_setting
 
 

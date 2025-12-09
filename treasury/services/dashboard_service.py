@@ -3,24 +3,26 @@ Dashboard Service - Aggregates metrics for Treasury Dashboard.
 Calculates real-time fund status, payment volume, alerts, and forecasts.
 """
 
-from decimal import Decimal
 from datetime import datetime, timedelta
-from django.utils import timezone
-from django.db.models import Sum, Count, Q, F
+from decimal import Decimal
+
+from django.db.models import Count, F, Q, Sum
 from django.db.models.functions import TruncDate
+from django.utils import timezone
+
+from organization.models import Company
+from transactions.models import Requisition
 from treasury.models import (
+    Alert,
+    DashboardMetric,
+    FundForecast,
+    LedgerEntry,
+    Payment,
+    ReplenishmentRequest,
     TreasuryDashboard,
     TreasuryFund,
-    Payment,
-    Alert,
-    LedgerEntry,
     VarianceAdjustment,
-    ReplenishmentRequest,
-    FundForecast,
-    DashboardMetric,
 )
-from transactions.models import Requisition
-from organization.models import Company
 
 
 class DashboardService:

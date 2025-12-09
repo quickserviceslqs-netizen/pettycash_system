@@ -2,6 +2,7 @@
 """Test script to debug filtering"""
 import os
 import sys
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")

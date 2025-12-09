@@ -2,18 +2,20 @@
 Restore service for recovering system from backups.
 """
 
-import os
 import json
-import zipfile
+import os
 import shutil
+import subprocess
 import tempfile
+import zipfile
 from pathlib import Path
+
 from django.conf import settings
 from django.core.management import call_command
-from django.db import transaction, connection
+from django.db import connection, transaction
 from django.utils import timezone
+
 from system_maintenance.models import BackupRecord, RestorePoint
-import subprocess
 
 
 class RestoreService:

@@ -1,11 +1,8 @@
-from django.urls import path
 from django.contrib.auth import views as auth_views
+from django.urls import path
+
+from . import views, views_admin, views_apps, views_bulk_import, views_invitation
 from .forms import LockoutAuthenticationForm
-from . import views
-from . import views_invitation
-from . import views_bulk_import
-from . import views_admin
-from . import views_apps
 
 app_name = "accounts"
 

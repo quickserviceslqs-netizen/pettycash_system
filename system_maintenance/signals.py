@@ -2,12 +2,13 @@
 Real-time backup signals for automatic backup creation.
 """
 
-from django.db.models.signals import post_save, pre_delete, post_delete
-from django.dispatch import receiver
-from django.conf import settings
-from django.utils import timezone
-from datetime import timedelta
 import logging
+from datetime import timedelta
+
+from django.conf import settings
+from django.db.models.signals import post_delete, post_save, pre_delete
+from django.dispatch import receiver
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +50,8 @@ class RealTimeBackupManager:
         try:
             self._is_backing_up = True
 
-            from system_maintenance.services.backup_service import BackupService
             from system_maintenance.models import BackupRecord
+            from system_maintenance.services.backup_service import BackupService
 
             backup_service = BackupService()
             backup = backup_service.create_backup(

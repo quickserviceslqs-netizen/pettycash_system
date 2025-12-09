@@ -4,19 +4,19 @@ User-friendly interface for managing users, permissions, and app access
 Admin stats are integrated into the main dashboard (accounts/views.py)
 """
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
-from django.db.models import Q, Count
-from django.http import JsonResponse
-from django.http import HttpResponse
-from django.contrib.auth.models import Permission, Group
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
-from django.utils.crypto import get_random_string
-from accounts.models import User, App, UserAuditLog
-from organization.models import Company, Branch, Department
 from django.contrib.sessions.models import Session
+from django.db.models import Count, Q
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.crypto import get_random_string
+
+from accounts.models import App, User, UserAuditLog
+from organization.models import Branch, Company, Department
 
 
 @login_required

@@ -2,9 +2,10 @@
 Maintenance mode middleware to block access during system maintenance.
 """
 
-from django.shortcuts import render
 from django.conf import settings
+from django.shortcuts import render
 from django.urls import reverse
+
 from system_maintenance.models import MaintenanceMode
 
 

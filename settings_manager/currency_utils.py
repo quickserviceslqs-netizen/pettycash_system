@@ -3,6 +3,7 @@ Currency formatting utilities using system settings
 """
 
 from decimal import Decimal
+
 from settings_manager.models import get_setting
 
 

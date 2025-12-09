@@ -3,9 +3,10 @@ Management command to sync role-based permissions.
 Usage: python manage.py sync_role_permissions
 """
 
-from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core.management.base import BaseCommand
+
 from accounts.models import User
 
 
@@ -13,7 +14,7 @@ class Command(BaseCommand):
     help = "Sync role-based groups and permissions based on ROLE_ACCESS mapping"
 
     def handle(self, *args, **options):
-        from accounts.views import ROLE_ACCESS, APPROVER_ROLES
+        from accounts.views import APPROVER_ROLES, ROLE_ACCESS
 
         self.stdout.write(
             self.style.SUCCESS("\n=== Syncing Role-Based Permissions ===\n")

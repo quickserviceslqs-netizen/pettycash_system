@@ -1,7 +1,8 @@
-from django.db import models
+import json
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-import json
+from django.db import models
 
 User = get_user_model()
 

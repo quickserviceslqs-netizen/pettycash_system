@@ -1,6 +1,6 @@
 from django.urls import path
-from . import views_bulk_import
-from . import views_admin
+
+from . import views_admin, views_bulk_import
 
 app_name = "organization"
 

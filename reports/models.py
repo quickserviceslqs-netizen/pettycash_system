@@ -1,7 +1,8 @@
 # reports/models.py
-from django.db import models
 from django.conf import settings
-from organization.models import Company, Branch, Department, CostCenter
+from django.db import models
+
+from organization.models import Branch, Company, CostCenter, Department
 from pettycash_system.managers import CompanyManager
 
 

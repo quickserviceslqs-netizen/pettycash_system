@@ -3,26 +3,27 @@ Bulk Import for Organization Entities
 Handles Excel uploads for Companies, Regions, Branches, Departments, Cost Centers, Positions
 """
 
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib import messages
-from django.http import HttpResponse
-from django.db import transaction
 import csv
 import io
+
 import openpyxl
-from openpyxl.styles import Font, PatternFill
 import pandas as pd
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
+from django.db import transaction
+from django.http import HttpResponse
+from django.shortcuts import redirect, render
+from openpyxl.styles import Font, PatternFill
+
 from organization.models import (
-    Company,
-    Region,
     Branch,
-    Department,
+    Company,
     CostCenter,
+    Department,
     Position,
+    Region,
 )
 from settings_manager.views import log_activity
-
 
 # ============================================
 # COMPANIES

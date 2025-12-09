@@ -3,17 +3,17 @@ Base test class and fixtures for integration testing
 Provides common setup for E2E tests
 """
 
-from django.test import TestCase, TransactionTestCase
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from decimal import Decimal
 from datetime import datetime, timedelta
+from decimal import Decimal
 
-from organization.models import Company, Region, Branch, Department
-from transactions.models import Requisition, ApprovalTrail
-from treasury.models import TreasuryFund, Payment, LedgerEntry, Alert
+from django.contrib.auth import get_user_model
+from django.test import TestCase, TransactionTestCase
+from django.utils import timezone
+
+from organization.models import Branch, Company, Department, Region
+from transactions.models import ApprovalTrail, Requisition
+from treasury.models import Alert, LedgerEntry, Payment, TreasuryFund
 from workflow.models import ApprovalThreshold
-
 
 User = get_user_model()
 

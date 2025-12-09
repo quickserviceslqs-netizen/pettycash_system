@@ -1,5 +1,6 @@
-from transactions.models import ApprovalThreshold, User
 import json
+
+from transactions.models import ApprovalThreshold, User
 
 
 def get_tier(amount):

@@ -5,12 +5,14 @@ Phase 7: Security Testing
 Tests CSRF token validation on all state-changing operations.
 """
 
-from django.test import TestCase, Client
-from accounts.models import User
-from organization.models import Company, Region, Branch
-from transactions.models import Requisition
-from decimal import Decimal
 import json
+from decimal import Decimal
+
+from django.test import Client, TestCase
+
+from accounts.models import User
+from organization.models import Branch, Company, Region
+from transactions.models import Requisition
 
 
 class CSRFProtectionTest(TestCase):

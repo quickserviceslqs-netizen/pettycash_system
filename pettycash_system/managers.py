@@ -6,6 +6,7 @@ data isolation between different companies.
 """
 
 from django.db import models
+
 from pettycash_system.middleware import get_current_company
 
 

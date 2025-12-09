@@ -4,11 +4,13 @@ Tests the resolve_workflow function and role assignment logic
 """
 
 from decimal import Decimal
-from django.test import TestCase
+
 from django.contrib.auth import get_user_model
-from organization.models import Company, Region, Branch, Department
-from workflow.models import ApprovalThreshold
+from django.test import TestCase
+
+from organization.models import Branch, Company, Department, Region
 from transactions.models import Requisition
+from workflow.models import ApprovalThreshold
 from workflow.services.resolver import resolve_workflow
 
 User = get_user_model()

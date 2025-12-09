@@ -1,17 +1,18 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+
 from organization.models import (
-    Company,
-    Region,
     Branch,
-    Department,
+    Company,
     CostCenter,
+    Department,
     Position,
+    Region,
 )
 
 # Import device management models
-from .models_device import UserInvitation, WhitelistedDevice, DeviceAccessAttempt
+from .models_device import DeviceAccessAttempt, UserInvitation, WhitelistedDevice
 
 
 class App(models.Model):

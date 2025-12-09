@@ -1,5 +1,6 @@
 from django.contrib import admin
-from settings_manager.models import SystemSetting, ActivityLog
+
+from settings_manager.models import ActivityLog, SystemSetting
 
 
 @admin.register(SystemSetting)

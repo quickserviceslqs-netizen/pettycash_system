@@ -1,8 +1,10 @@
-from django.contrib.auth import get_user_model
-from django.db.models import Q
-from workflow.models import ApprovalThreshold
-from django.core.exceptions import PermissionDenied
 import logging
+
+from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q
+
+from workflow.models import ApprovalThreshold
 
 User = get_user_model()
 logger = logging.getLogger(__name__)

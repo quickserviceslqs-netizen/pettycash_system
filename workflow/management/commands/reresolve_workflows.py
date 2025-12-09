@@ -4,6 +4,7 @@ This fixes requisitions that have incorrect next_approver assignments.
 """
 
 from django.core.management.base import BaseCommand
+
 from transactions.models import Requisition
 from workflow.services.resolver import resolve_workflow
 

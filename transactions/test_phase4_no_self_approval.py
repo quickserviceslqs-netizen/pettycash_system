@@ -11,20 +11,21 @@ Comprehensive test suite covering:
 - Audit trail completeness
 """
 
-from django.test import TestCase, Client
+from datetime import timedelta
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
+from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
-from decimal import Decimal
-from datetime import timedelta
 
-from organization.models import Company, Region, Branch, Department, CostCenter
+from organization.models import Branch, Company, CostCenter, Department, Region
+from transactions.models import ApprovalTrail, Requisition
 from workflow.models import ApprovalThreshold
-from transactions.models import Requisition, ApprovalTrail
 from workflow.services.resolver import (
-    resolve_workflow,
     can_approve,
     find_approval_threshold,
+    resolve_workflow,
 )
 
 User = get_user_model()

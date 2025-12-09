@@ -3,9 +3,10 @@ Signals for settings_manager app
 Clear cache when settings are modified
 """
 
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
 from django.core.cache import cache
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
+
 from .models import SystemSetting
 
 

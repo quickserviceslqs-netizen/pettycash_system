@@ -3,15 +3,17 @@ Export production users to local database
 Run this script on Render to export user data, then import locally
 """
 
-import os
-import django
 import json
+import os
 from datetime import datetime
+
+import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
 from django.contrib.auth import get_user_model
+
 from accounts.models import App
 
 User = get_user_model()

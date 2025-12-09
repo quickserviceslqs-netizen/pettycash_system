@@ -4,15 +4,18 @@ Tests actual behavior changes based on setting values
 """
 
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
-from settings_manager.models import SystemSetting, get_setting
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from datetime import timedelta
+
+from settings_manager.models import SystemSetting, get_setting
 
 User = get_user_model()
 
@@ -46,6 +49,7 @@ def test_security_lockout_integration():
     print_section("Code Integration Check")
 
     import inspect
+
     from accounts import signals
 
     # Check if signals.py uses the settings
@@ -160,6 +164,7 @@ def test_invitation_integration():
 
     # Check code integration
     import inspect
+
     from accounts import views_invitation
 
     source = inspect.getsource(views_invitation)
@@ -232,7 +237,7 @@ def test_settings_ui_access():
     print_header("LIVE TEST 7: Settings UI Integration")
 
     # Check URL configuration
-    from django.urls import reverse, NoReverseMatch
+    from django.urls import NoReverseMatch, reverse
 
     try:
         settings_url = reverse("settings_manager:settings_list")
@@ -249,6 +254,7 @@ def test_settings_ui_access():
 
     # Check admin integration
     from django.contrib import admin
+
     from settings_manager.models import SystemSetting
 
     is_registered = SystemSetting in admin.site._registry
@@ -282,8 +288,8 @@ def test_performance():
         print(f"  ⚠️  Performance: Needs optimization (> 500ms)")
 
     # Test database query count
-    from django.test.utils import override_settings
     from django.db import connection, reset_queries
+    from django.test.utils import override_settings
 
     reset_queries()
 

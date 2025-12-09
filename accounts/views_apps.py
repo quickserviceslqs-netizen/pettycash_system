@@ -3,16 +3,16 @@ App Management Views
 Provides UI for managing application modules and user app assignments.
 """
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
+import openpyxl
+import pandas as pd
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count, Q
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from openpyxl.styles import Font, PatternFill
 
 from accounts.models import App, User
-import openpyxl
-from openpyxl.styles import Font, PatternFill
-import pandas as pd
 
 
 def is_admin_user(user):

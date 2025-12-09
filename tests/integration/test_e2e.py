@@ -4,13 +4,13 @@ Phase 7: Complete workflow testing
 """
 
 from decimal import Decimal
-from django.test import TestCase
+
 from django.contrib.auth import get_user_model
+from django.test import TestCase
 
 from tests.integration.base import IntegrationTestBase
-from transactions.models import Requisition, ApprovalTrail
-from treasury.models import Payment, LedgerEntry, Alert
-
+from transactions.models import ApprovalTrail, Requisition
+from treasury.models import Alert, LedgerEntry, Payment
 
 User = get_user_model()
 

@@ -3,14 +3,16 @@ System health check service for identifying critical issues.
 """
 
 import os
-import psutil
 from datetime import timedelta
+from pathlib import Path
+
+import psutil
+from django.apps import apps
 from django.conf import settings
 from django.db import connection
 from django.utils import timezone
-from django.apps import apps
-from system_maintenance.models import SystemHealthCheck, BackupRecord
-from pathlib import Path
+
+from system_maintenance.models import BackupRecord, SystemHealthCheck
 
 
 class HealthCheckService:
@@ -243,9 +245,10 @@ class HealthCheckService:
     def _check_data_integrity(self):
         """Check data integrity across models"""
         try:
+            from django.contrib.auth import get_user_model
+
             from transactions.models import Requisition
             from treasury.models import Payment, TreasuryFund
-            from django.contrib.auth import get_user_model
 
             User = get_user_model()
 
@@ -297,7 +300,7 @@ class HealthCheckService:
         orphaned_items = []
 
         try:
-            from transactions.models import Requisition, ApprovalTrail
+            from transactions.models import ApprovalTrail, Requisition
             from treasury.models import Payment
 
             # Check for approval trails without requisitions
@@ -374,6 +377,7 @@ class HealthCheckService:
         """Check critical models have data"""
         try:
             from django.contrib.auth import get_user_model
+
             from organization.models import Company
 
             User = get_user_model()

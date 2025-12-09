@@ -1,16 +1,17 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
-from django.contrib import messages
-from django.utils import timezone
-from django.db import transaction
-from django.core.mail import send_mail
 from django.conf import settings
-
-from .models import Requisition, ApprovalTrail
-from treasury.models import Payment
+from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
+from django.db import transaction
+from django.http import HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
 from accounts.permissions import get_user_apps
+from treasury.models import Payment
+
+from .models import ApprovalTrail, Requisition
 
 User = get_user_model()
 

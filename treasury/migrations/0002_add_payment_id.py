@@ -1,4 +1,4 @@
-from django.db import migrations, connection
+from django.db import connection, migrations
 
 
 def add_payment_id_forward(apps, schema_editor):

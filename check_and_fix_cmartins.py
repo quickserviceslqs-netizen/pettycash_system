@@ -4,6 +4,7 @@ Run this on Render shell or locally after creating the user
 """
 
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
@@ -12,8 +13,9 @@ django.setup()
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+
 from accounts.models import App
-from treasury.models import TreasuryFund, Payment
+from treasury.models import Payment, TreasuryFund
 
 User = get_user_model()
 

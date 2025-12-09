@@ -3,6 +3,7 @@ Template tags for currency formatting using system settings
 """
 
 from django import template
+
 from settings_manager.currency_utils import format_currency as format_currency_util
 
 register = template.Library()

@@ -1,6 +1,6 @@
 from django.urls import path
-from settings_manager import views
-from settings_manager import views_admin
+
+from settings_manager import views, views_admin
 
 app_name = "settings_manager"
 

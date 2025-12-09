@@ -1,29 +1,31 @@
-from django.shortcuts import render
+import csv
+from datetime import timedelta
+
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from accounts.permissions import require_app_access, require_permission
+from django.core.paginator import Paginator
 from django.db.models import (
-    Sum,
-    Count,
-    Q,
     Avg,
-    F,
-    Min,
-    Subquery,
-    OuterRef,
-    ExpressionWrapper,
+    Count,
     DurationField,
     Exists,
+    ExpressionWrapper,
+    F,
+    Min,
+    OuterRef,
+    Q,
+    Subquery,
+    Sum,
 )
-from django.utils import timezone
-from datetime import timedelta
 from django.db.models.functions import TruncMonth
-from transactions.models import Requisition, ApprovalTrail
-from treasury.models import Payment, TreasuryFund, LedgerEntry, PaymentExecution
-from django.contrib.auth import get_user_model
 from django.http import HttpResponse
-from django.core.paginator import Paginator
-import csv
+from django.shortcuts import render
+from django.utils import timezone
 from openpyxl import Workbook
+
+from accounts.permissions import require_app_access, require_permission
+from transactions.models import ApprovalTrail, Requisition
+from treasury.models import LedgerEntry, Payment, PaymentExecution, TreasuryFund
 
 User = get_user_model()
 
@@ -1031,8 +1033,8 @@ def user_activity_report(request):
 @require_permission("view_budget_vs_actuals_report", app_label="reports")
 def budget_vs_actuals_report(request):
     """Budget vs Actuals by Cost Center (monthly), with variance."""
+    from organization.models import Branch, CostCenter, Department
     from reports.models import BudgetAllocation
-    from organization.models import CostCenter, Department, Branch
 
     try:
         year = int(request.GET.get("year", timezone.now().year))
@@ -1786,7 +1788,7 @@ def payment_method_analysis(request):
         )
 
     # Processing time (successful payments only)
-    from django.db.models import F, ExpressionWrapper, DurationField
+    from django.db.models import DurationField, ExpressionWrapper, F
 
     payments_with_time = Payment.objects.filter(
         created_at__gte=start_date,
@@ -1889,7 +1891,7 @@ def regional_comparison_report(request):
         )
 
     # Approval time by branch
-    from django.db.models import F, ExpressionWrapper, DurationField, Min
+    from django.db.models import DurationField, ExpressionWrapper, F, Min
 
     branch_approval_time_qs = (
         Requisition.objects.filter(created_at__gte=start_date, status="paid")
@@ -2069,7 +2071,7 @@ def average_metrics_report(request):
     by_user = user_paginator.get_page(user_page)
 
     # Approval time metrics
-    from django.db.models import F, ExpressionWrapper, DurationField, Min
+    from django.db.models import DurationField, ExpressionWrapper, F, Min
 
     paid_reqs = qs.filter(status="paid")
 

@@ -3,17 +3,18 @@ Admin views for Activity Log management.
 Provides comprehensive audit trail viewing, filtering, and export functionality.
 """
 
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import HttpResponse, JsonResponse
-from django.db.models import Q, Count
-from django.utils import timezone
-from datetime import timedelta
 import csv
 import json
+from datetime import timedelta
 
-from settings_manager.models import ActivityLog
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Count, Q
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
+
 from accounts.models import User
+from settings_manager.models import ActivityLog
 
 
 def is_admin_user(user):

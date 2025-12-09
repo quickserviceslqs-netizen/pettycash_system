@@ -1,9 +1,11 @@
+from datetime import timedelta
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from transactions.models import Requisition
 from django.utils import timezone
-from datetime import timedelta
+
 from settings_manager.models import get_setting
+from transactions.models import Requisition
 
 
 @receiver(post_save, sender=Requisition)

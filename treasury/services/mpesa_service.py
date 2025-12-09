@@ -3,9 +3,10 @@ M-Pesa Daraja API Integration Service
 Handles STK Push for payment execution after 2FA verification.
 """
 
-import requests
 import base64
 from datetime import datetime
+
+import requests
 from django.conf import settings
 from django.utils import timezone
 

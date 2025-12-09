@@ -1,11 +1,13 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse
-from accounts.permissions import get_user_apps
-from accounts.models import User
-from workflow.models import ApprovalThreshold
 import json
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+
+from accounts.models import User
+from accounts.permissions import get_user_apps
+from workflow.models import ApprovalThreshold
 
 
 @login_required

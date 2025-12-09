@@ -2,15 +2,17 @@
 """Test script to debug dashboard context"""
 import os
 import sys
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
+from django.contrib.auth.models import Group, User
 from django.test import RequestFactory
-from settings_manager.views import settings_dashboard
-from django.contrib.auth.models import User, Group
+
 from accounts.models import User as CustomUser
+from settings_manager.views import settings_dashboard
 
 # Create a mock request
 factory = RequestFactory()

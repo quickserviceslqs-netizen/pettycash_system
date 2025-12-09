@@ -1,27 +1,34 @@
-from django.urls import path
 from django.contrib.auth.decorators import login_required
+from django.urls import path
+
+from accounts.permissions import require_app_access
+from transactions.views import admin_override_approval  # Phase 4: Admin override
+from transactions.views import confirm_urgency  # Phase 3: Urgency confirmation
 from transactions.views import (
-    transactions_home,
-    create_requisition,
-    approve_requisition,
-    reject_requisition,
-    requisition_detail,
-    confirm_urgency,  # Phase 3: Urgency confirmation
-    admin_override_approval,  # Phase 4: Admin override
-    revert_fast_track,  # Revert fast-tracked requisition to normal flow
-    request_changes,  # Approver requests changes from requester
-    submit_changes,  # Requester submits requested changes
     my_requisitions,  # Separate view for user's own requisitions
+)
+from transactions.views import (
     pending_approvals,  # Separate view for requisitions awaiting approval
 )
-from transactions.views_admin import (
-    manage_requisitions,
-    create_requisition as create_req_admin,
-    view_requisition,
-    approve_requisition as approve_req_admin,
-    reject_requisition as reject_req_admin,
+from transactions.views import (
+    request_changes,  # Approver requests changes from requester
 )
-from accounts.permissions import require_app_access
+from transactions.views import (
+    revert_fast_track,  # Revert fast-tracked requisition to normal flow
+)
+from transactions.views import submit_changes  # Requester submits requested changes
+from transactions.views import (
+    approve_requisition,
+    create_requisition,
+    reject_requisition,
+    requisition_detail,
+    transactions_home,
+)
+from transactions.views_admin import approve_requisition as approve_req_admin
+from transactions.views_admin import create_requisition as create_req_admin
+from transactions.views_admin import manage_requisitions
+from transactions.views_admin import reject_requisition as reject_req_admin
+from transactions.views_admin import view_requisition
 
 app_name = "transactions"
 

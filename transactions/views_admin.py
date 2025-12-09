@@ -3,17 +3,19 @@ Transactions Admin Views
 User-friendly interface for managing requisitions and approval workflow
 """
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib import messages
-from django.db.models import Q, Count
-from django.utils import timezone
 from decimal import Decimal
-from transactions.models import Requisition, ApprovalTrail
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
+from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
+from accounts.models import User
+from organization.models import Branch, Company, Department, Region
+from transactions.models import ApprovalTrail, Requisition
 from workflow.models import ApprovalThreshold
 from workflow.services.resolver import find_approval_threshold, resolve_workflow
-from organization.models import Company, Region, Branch, Department
-from accounts.models import User
 
 
 @login_required

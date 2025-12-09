@@ -3,6 +3,7 @@ Test script to verify all settings are now properly wired into the system
 """
 
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")

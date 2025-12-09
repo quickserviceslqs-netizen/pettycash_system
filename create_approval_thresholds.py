@@ -4,6 +4,7 @@ Run this script after migrations to seed the workflow app.
 """
 
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")

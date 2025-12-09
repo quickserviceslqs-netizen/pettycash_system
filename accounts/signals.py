@@ -1,4 +1,6 @@
 from datetime import timedelta
+
+from django.contrib.auth import get_user_model
 from django.contrib.auth.signals import (
     user_logged_in,
     user_logged_out,
@@ -6,7 +8,6 @@ from django.contrib.auth.signals import (
 )
 from django.dispatch import receiver
 from django.utils import timezone
-from django.contrib.auth import get_user_model
 
 try:
     from settings_manager.models import get_setting

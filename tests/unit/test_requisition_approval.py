@@ -4,13 +4,15 @@ Tests the approval and rejection workflows
 """
 
 from decimal import Decimal
-from django.test import TestCase
+
 from django.contrib.auth import get_user_model
 from django.http import HttpResponseForbidden
-from organization.models import Company, Region, Branch, Department
-from workflow.models import ApprovalThreshold
-from transactions.models import Requisition, ApprovalTrail
+from django.test import TestCase
+
+from organization.models import Branch, Company, Department, Region
+from transactions.models import ApprovalTrail, Requisition
 from treasury.models import Payment
+from workflow.models import ApprovalThreshold
 
 User = get_user_model()
 

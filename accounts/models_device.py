@@ -3,13 +3,14 @@ Device and Invitation Management Models
 Handles user invitations and device whitelisting for security
 """
 
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
-from django.core.mail import send_mail
-from django.urls import reverse
-import uuid
 import secrets
+import uuid
+
+from django.conf import settings
+from django.core.mail import send_mail
+from django.db import models
+from django.urls import reverse
+from django.utils import timezone
 
 
 class UserInvitation(models.Model):

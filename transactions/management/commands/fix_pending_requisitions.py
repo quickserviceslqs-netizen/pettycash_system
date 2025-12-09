@@ -4,6 +4,7 @@ Run this after deploying the role-matching fix.
 """
 
 from django.core.management.base import BaseCommand
+
 from transactions.models import Requisition
 
 

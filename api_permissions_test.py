@@ -3,15 +3,17 @@ Test API permission enforcement by simulating requests
 """
 
 import os
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
-from django.test import RequestFactory
 from django.contrib.auth import get_user_model
+from django.test import RequestFactory
 from rest_framework.test import force_authenticate
-from treasury.views import TreasuryFundViewSet, PaymentViewSet
+
+from treasury.views import PaymentViewSet, TreasuryFundViewSet
 
 User = get_user_model()
 factory = RequestFactory()

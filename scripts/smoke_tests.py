@@ -3,10 +3,11 @@ Smoke Tests for Petty Cash Management System
 Quick validation tests to run after deployment
 """
 
-import requests
 import argparse
 import sys
 from datetime import datetime
+
+import requests
 
 
 class SmokeTestRunner:

@@ -1,12 +1,14 @@
 import uuid
-from django.db import models
+
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from organization.models import Company, Region, Branch, Department, CostCenter
+from django.db import models
+
+from organization.models import Branch, Company, CostCenter, Department, Region
+from pettycash_system.managers import RequisitionManager
 from workflow.models import ApprovalThreshold
 from workflow.services.resolver import find_approval_threshold
-from django.contrib.auth import get_user_model
-from pettycash_system.managers import RequisitionManager
 
 User = get_user_model()
 

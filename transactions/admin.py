@@ -1,6 +1,8 @@
 from django.contrib import admin, messages
-from .models import Requisition, ApprovalTrail
+
 from workflow.services.resolver import find_approval_threshold, resolve_workflow
+
+from .models import ApprovalTrail, Requisition
 
 
 @admin.action(description="Apply Approval Threshold to selected requisitions")

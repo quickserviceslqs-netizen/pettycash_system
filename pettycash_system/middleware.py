@@ -3,8 +3,9 @@ Multi-Tenancy Middleware
 Sets company context for each request based on authenticated user.
 """
 
-from django.utils.deprecation import MiddlewareMixin
 from threading import local
+
+from django.utils.deprecation import MiddlewareMixin
 
 # Thread-local storage for current company context
 _thread_locals = local()

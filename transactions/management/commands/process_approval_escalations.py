@@ -3,13 +3,15 @@ Management command to process approval escalations and notifications
 Run this periodically (e.g., hourly) via cron/scheduler
 """
 
+from datetime import timedelta
+
+from django.conf import settings as django_settings
+from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from datetime import timedelta
-from transactions.models import Requisition, ApprovalTrail
+
 from settings_manager.models import get_setting
-from django.core.mail import send_mail
-from django.conf import settings as django_settings
+from transactions.models import ApprovalTrail, Requisition
 
 
 class Command(BaseCommand):

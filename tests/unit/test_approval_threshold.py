@@ -4,7 +4,9 @@ Tests the find_approval_threshold function and tier selection logic
 """
 
 from decimal import Decimal
+
 from django.test import TestCase
+
 from workflow.models import ApprovalThreshold
 from workflow.services.resolver import find_approval_threshold
 

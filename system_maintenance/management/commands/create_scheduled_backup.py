@@ -3,11 +3,13 @@ Management command for creating scheduled backups.
 Use with cron/Task Scheduler for automated backups.
 """
 
-from django.core.management.base import BaseCommand
+import sys
+
 from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+
 from system_maintenance.services.backup_service import BackupService
 from system_maintenance.services.health_check_service import HealthCheckService
-import sys
 
 
 class Command(BaseCommand):

@@ -5,14 +5,16 @@ Phase 7: Security Testing
 Tests comprehensive permission enforcement across the application.
 """
 
-from django.test import TestCase, Client
-from accounts.models import User
-from django.contrib.auth.models import Permission
-from organization.models import Company, Region, Branch, Department
-from treasury.models import TreasuryFund
-from transactions.models import Requisition, ApprovalThreshold
-from decimal import Decimal
 import json
+from decimal import Decimal
+
+from django.contrib.auth.models import Permission
+from django.test import Client, TestCase
+
+from accounts.models import User
+from organization.models import Branch, Company, Department, Region
+from transactions.models import ApprovalThreshold, Requisition
+from treasury.models import TreasuryFund
 
 
 class RBACTestBase(TestCase):

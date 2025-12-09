@@ -3,12 +3,14 @@ Test data fixtures for UAT/Testing environment
 Load sample data for testing workflows
 """
 
+from decimal import Decimal
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
+
 from accounts.models import User
-from organization.models import Company, Region, Branch, Department
+from organization.models import Branch, Company, Department, Region
 from workflow.models import ApprovalThreshold
-from decimal import Decimal
 
 
 class Command(BaseCommand):

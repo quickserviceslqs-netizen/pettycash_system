@@ -3,16 +3,18 @@ Import production users into local database
 Run this locally after downloading production_users_export.json from Render
 """
 
-import os
-import django
 import json
+import os
+
+import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission, Group
+from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
+
 from accounts.models import App
 
 User = get_user_model()
