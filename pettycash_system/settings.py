@@ -27,7 +27,7 @@ SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 SITE_NAME = os.environ.get('SITE_NAME', 'Petty Cash System')
 
 # CSRF & Security for production
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000,https://*.onrender.com').split(',')
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,https://localhost:8000,http://127.0.0.1:8000,https://*.onrender.com').split(',')
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
@@ -119,10 +119,7 @@ WSGI_APPLICATION = 'pettycash_system.wsgi.application'
 # Use DATABASE_URL from environment or fallback to Supabase connection string
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get(
-            'DATABASE_URL',
-            'postgresql://postgres.oqzljyujxeqyprhskajk:35315619@Ian@aws-1-eu-west-3.pooler.supabase.com:5432/postgres'
-        ),
+        default=os.environ['DATABASE_URL'],
         conn_max_age=600,
         conn_health_checks=True,
     )
