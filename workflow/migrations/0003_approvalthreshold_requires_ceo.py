@@ -6,13 +6,16 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('workflow', '0002_alter_approvalthreshold_options_and_more'),
+        ("workflow", "0002_alter_approvalthreshold_options_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='approvalthreshold',
-            name='requires_ceo',
-            field=models.BooleanField(default=False, help_text='True if CEO approval is mandatory (usually very high amounts).'),
+            model_name="approvalthreshold",
+            name="requires_ceo",
+            field=models.BooleanField(
+                default=False,
+                help_text="True if CEO approval is mandatory (usually very high amounts).",
+            ),
         ),
     ]

@@ -2,40 +2,63 @@ from django.urls import path
 from settings_manager import views
 from settings_manager import views_admin
 
-app_name = 'settings_manager'
+app_name = "settings_manager"
 
 urlpatterns = [
     # Settings Management
-    path('', views.settings_dashboard, name='dashboard'),
-    path('edit/<int:setting_id>/', views.edit_setting, name='edit_setting'),
-    path('activity-logs/', views.activity_logs, name='activity_logs'),
-    path('system-info/', views.system_info, name='system_info'),
-    
+    path("", views.settings_dashboard, name="dashboard"),
+    path("edit/<int:setting_id>/", views.edit_setting, name="edit_setting"),
+    path("activity-logs/", views.activity_logs, name="activity_logs"),
+    path("system-info/", views.system_info, name="system_info"),
     # Activity Log Management (Admin)
-    path('admin/activity-logs/', views_admin.view_activity_logs, name='admin_activity_logs'),
-    path('admin/activity-logs/<int:log_id>/', views_admin.view_log_detail, name='view_log_detail'),
-    path('admin/activity-logs/export/', views_admin.export_logs, name='export_logs'),
-    path('admin/activity-logs/delete-old/', views_admin.delete_old_logs, name='delete_old_logs'),
-    
+    path(
+        "admin/activity-logs/",
+        views_admin.view_activity_logs,
+        name="admin_activity_logs",
+    ),
+    path(
+        "admin/activity-logs/<int:log_id>/",
+        views_admin.view_log_detail,
+        name="view_log_detail",
+    ),
+    path("admin/activity-logs/export/", views_admin.export_logs, name="export_logs"),
+    path(
+        "admin/activity-logs/delete-old/",
+        views_admin.delete_old_logs,
+        name="delete_old_logs",
+    ),
     # Data Operations
-    path('data/', views.data_operations_dashboard, name='data_operations'),
-    
+    path("data/", views.data_operations_dashboard, name="data_operations"),
     # User Management
-    path('data/users/', views.manage_users, name='manage_users'),
-    path('data/users/create/', views.create_user, name='create_user'),
-    path('data/users/edit/<int:user_id>/', views.edit_user, name='edit_user'),
-    path('data/users/toggle/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
-    path('data/users/export/', views.export_users_csv, name='export_users'),
-    
+    path("data/users/", views.manage_users, name="manage_users"),
+    path("data/users/create/", views.create_user, name="create_user"),
+    path("data/users/edit/<int:user_id>/", views.edit_user, name="edit_user"),
+    path(
+        "data/users/toggle/<int:user_id>/",
+        views.toggle_user_status,
+        name="toggle_user_status",
+    ),
+    path("data/users/export/", views.export_users_csv, name="export_users"),
     # Department Management
-    path('data/departments/', views.manage_departments, name='manage_departments'),
-    path('data/departments/create/', views.create_department, name='create_department'),
-    path('data/departments/edit/<int:department_id>/', views.edit_department, name='edit_department'),
-    path('data/departments/delete/<int:department_id>/', views.delete_department, name='delete_department'),
-    
+    path("data/departments/", views.manage_departments, name="manage_departments"),
+    path("data/departments/create/", views.create_department, name="create_department"),
+    path(
+        "data/departments/edit/<int:department_id>/",
+        views.edit_department,
+        name="edit_department",
+    ),
+    path(
+        "data/departments/delete/<int:department_id>/",
+        views.delete_department,
+        name="delete_department",
+    ),
     # Region Management
-    path('data/regions/', views.manage_regions, name='manage_regions'),
-    path('data/regions/create/', views.create_region, name='create_region'),
-    path('data/regions/edit/<int:region_id>/', views.edit_region, name='edit_region'),
-    path('data/regions/delete/<int:region_id>/', views.delete_region, name='delete_region'),
+    path("data/regions/", views.manage_regions, name="manage_regions"),
+    path("data/regions/create/", views.create_region, name="create_region"),
+    path("data/regions/edit/<int:region_id>/", views.edit_region, name="edit_region"),
+    path(
+        "data/regions/delete/<int:region_id>/",
+        views.delete_region,
+        name="delete_region",
+    ),
 ]

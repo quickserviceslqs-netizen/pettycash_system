@@ -17,8 +17,8 @@ def find_approval_threshold(amount, origin_type):
     """
     thresholds = (
         ApprovalThreshold.objects.filter(is_active=True)
-        .filter(Q(origin_type=origin_type.upper()) | Q(origin_type='ANY'))
-        .order_by('priority', 'min_amount')
+        .filter(Q(origin_type=origin_type.upper()) | Q(origin_type="ANY"))
+        .order_by("priority", "min_amount")
     )
 
     for thr in thresholds:
@@ -48,7 +48,9 @@ def resolve_workflow(requisition):
         requisition.tier = thr.name
         requisition.save(update_fields=["applied_threshold", "tier"])
 
-    base_roles = requisition.applied_threshold.roles_sequence  # e.g., ["BRANCH_MANAGER","TREASURY"]
+    base_roles = (
+        requisition.applied_threshold.roles_sequence
+    )  # e.g., ["BRANCH_MANAGER","TREASURY"]
     resolved = []
 
     # 2️⃣ Treasury special case override
@@ -70,7 +72,9 @@ def resolve_workflow(requisition):
 
         # Candidate users (case-insensitive, normalize role to lowercase for DB lookup)
         normalized_role = role.lower().replace("_", "_")  # Keep as-is for DB
-        candidates = User.objects.filter(role=normalized_role, is_active=True).exclude(id=requisition.requested_by.id)
+        candidates = User.objects.filter(role=normalized_role, is_active=True).exclude(
+            id=requisition.requested_by.id
+        )
 
         # Apply scoping only for non-centralized roles
         if role.lower() not in CENTRALIZED_ROLES:
@@ -83,33 +87,35 @@ def resolve_workflow(requisition):
 
         candidate = candidates.first()
         if candidate:
-            resolved.append({
-                "user_id": candidate.id,
-                "role": role,
-                "auto_escalated": False
-            })
+            resolved.append(
+                {"user_id": candidate.id, "role": role, "auto_escalated": False}
+            )
         else:
             # Auto-escalation flag if no candidate
-            logger.warning(f"No {role} found for requisition {requisition.transaction_id}, auto-escalation needed")
-            resolved.append({
-                "user_id": None,
-                "role": role,
-                "auto_escalated": True
-            })
+            logger.warning(
+                f"No {role} found for requisition {requisition.transaction_id}, auto-escalation needed"
+            )
+            resolved.append({"user_id": None, "role": role, "auto_escalated": True})
 
     # 4️⃣ Phase 4: Auto-escalation with audit trail (no valid approvers found)
     if not resolved or all(r["user_id"] is None for r in resolved):
-        admin = User.objects.filter(role='admin', is_active=True).first()
+        admin = User.objects.filter(role="admin", is_active=True).first()
         if not admin:
-            raise ValueError("No ADMIN user exists. Please create one with role='admin'.")
+            raise ValueError(
+                "No ADMIN user exists. Please create one with role='admin'."
+            )
         escalation_reason = f"No approvers found in roles: {base_roles}"
-        logger.warning(f"Auto-escalating {requisition.transaction_id} to admin: {escalation_reason}")
-        resolved = [{
-            "user_id": admin.id,
-            "role": "ADMIN",
-            "auto_escalated": True,
-            "escalation_reason": escalation_reason
-        }]
+        logger.warning(
+            f"Auto-escalating {requisition.transaction_id} to admin: {escalation_reason}"
+        )
+        resolved = [
+            {
+                "user_id": admin.id,
+                "role": "ADMIN",
+                "auto_escalated": True,
+                "escalation_reason": escalation_reason,
+            }
+        ]
 
     # 5️⃣ Phase 3: Urgent fast-track (if enabled and Tier ≠ 4)
     if (
@@ -135,12 +141,16 @@ def resolve_workflow(requisition):
                 if resolved[j]["user_id"] is not None:
                     next_approver = resolved[j]
                     break
-            
+
             if next_approver:
                 r["user_id"] = next_approver["user_id"]
                 r["auto_escalated"] = True
-                r["escalation_reason"] = f"No {r['role']} found, escalated to {next_approver['role']}"
-                logger.warning(f"Auto-escalated {requisition.transaction_id}: {r['escalation_reason']}")
+                r["escalation_reason"] = (
+                    f"No {r['role']} found, escalated to {next_approver['role']}"
+                )
+                logger.warning(
+                    f"Auto-escalated {requisition.transaction_id}: {r['escalation_reason']}"
+                )
             else:
                 # Last resort: escalate to admin
                 admin = User.objects.filter(is_superuser=True, is_active=True).first()
@@ -148,7 +158,9 @@ def resolve_workflow(requisition):
                 r["role"] = "ADMIN"
                 r["auto_escalated"] = True
                 r["escalation_reason"] = f"No {r['role']} found, escalated to ADMIN"
-                logger.warning(f"Admin escalation for {requisition.transaction_id}: {r['escalation_reason']}")
+                logger.warning(
+                    f"Admin escalation for {requisition.transaction_id}: {r['escalation_reason']}"
+                )
 
     # 7️⃣ Save workflow to requisition
     requisition.workflow_sequence = resolved
@@ -167,17 +179,17 @@ def can_approve(user, requisition):
     - Only next approver can act
     """
     # Only pending requisitions can be approved
-    if requisition.status != 'pending':
+    if requisition.status != "pending":
         return False
-    
+
     # No-self-approval
     if user.id == requisition.requested_by.id:
         return False
-    
+
     # Must be the next approver
     if not requisition.next_approver or user.id != requisition.next_approver.id:
         return False
-    
+
     return True
 
 

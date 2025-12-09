@@ -6,13 +6,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0001_initial'),
+        ("accounts", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='user',
-            name='role',
-            field=models.CharField(choices=[('admin', 'Admin'), ('staff', 'Staff'), ('treasury', 'Treasury'), ('fp&a', 'FP&A'), ('department_head', 'Department Head'), ('branch_manager', 'Branch Manager'), ('regional_manager', 'Regional Manager'), ('group_finance_manager', 'Group Finance Manager'), ('cfo', 'CFO'), ('ceo', 'CEO')], default='staff', max_length=30),
+            model_name="user",
+            name="role",
+            field=models.CharField(
+                choices=[
+                    ("admin", "Admin"),
+                    ("staff", "Staff"),
+                    ("treasury", "Treasury"),
+                    ("fp&a", "FP&A"),
+                    ("department_head", "Department Head"),
+                    ("branch_manager", "Branch Manager"),
+                    ("regional_manager", "Regional Manager"),
+                    ("group_finance_manager", "Group Finance Manager"),
+                    ("cfo", "CFO"),
+                    ("ceo", "CEO"),
+                ],
+                default="staff",
+                max_length=30,
+            ),
         ),
     ]

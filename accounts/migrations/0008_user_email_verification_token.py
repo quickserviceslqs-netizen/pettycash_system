@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0007_userinvitation_deviceaccessattempt_whitelisteddevice'),
+        ("accounts", "0007_userinvitation_deviceaccessattempt_whitelisteddevice"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='email_verification_token',
+            model_name="user",
+            name="email_verification_token",
             field=models.UUIDField(blank=True, null=True, unique=True),
         ),
     ]

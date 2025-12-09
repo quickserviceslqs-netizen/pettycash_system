@@ -11,30 +11,25 @@ admin.site.index_title = "Welcome to Petty Cash System Admin"
 admin.site.site_url = "/dashboard/"  # "View Site" link goes to user dashboard
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-
+    path("admin/", admin.site.urls),
     # Django built-in auth URLs (login/logout/password reset)
-    path('accounts/', include('django.contrib.auth.urls')),
-
+    path("accounts/", include("django.contrib.auth.urls")),
     # Your own accounts app URLs
-    path('accounts/', include('accounts.urls')),
-
+    path("accounts/", include("accounts.urls")),
     # Explicit dashboard route
-    path('dashboard/', account_views.dashboard, name='dashboard'),
-
+    path("dashboard/", account_views.dashboard, name="dashboard"),
     # Optional: root redirects to dashboard
-    path('', account_views.dashboard, name='home'),
-
+    path("", account_views.dashboard, name="home"),
     # Other apps
-    path('transactions/', include('transactions.urls')),
-    path('treasury/', include('treasury.urls')),
-    path('workflow/', include('workflow.urls')),
-    path('reports/', include('reports.urls')),
-    path('settings/', include('settings_manager.urls')),
-    path('organization/', include('organization.urls')),
-    path('maintenance/', include('system_maintenance.urls')),
+    path("transactions/", include("transactions.urls")),
+    path("treasury/", include("treasury.urls")),
+    path("workflow/", include("workflow.urls")),
+    path("reports/", include("reports.urls")),
+    path("settings/", include("settings_manager.urls")),
+    path("organization/", include("organization.urls")),
+    path("maintenance/", include("system_maintenance.urls")),
     # API alias for reporting endpoints (keeps legacy JS and templates working)
-    path('api/reporting/', include('reports.api_urls')),
+    path("api/reporting/", include("reports.api_urls")),
 ]
 
 # Serve media files in development

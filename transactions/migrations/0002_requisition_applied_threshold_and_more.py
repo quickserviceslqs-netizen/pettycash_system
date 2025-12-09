@@ -7,24 +7,30 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transactions', '0001_initial'),
-        ('workflow', '0002_alter_approvalthreshold_options_and_more'),
+        ("transactions", "0001_initial"),
+        ("workflow", "0002_alter_approvalthreshold_options_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='requisition',
-            name='applied_threshold',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='requisitions', to='workflow.approvalthreshold'),
+            model_name="requisition",
+            name="applied_threshold",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="requisitions",
+                to="workflow.approvalthreshold",
+            ),
         ),
         migrations.AlterField(
-            model_name='requisition',
-            name='amount',
+            model_name="requisition",
+            name="amount",
             field=models.DecimalField(decimal_places=2, max_digits=14),
         ),
         migrations.AlterField(
-            model_name='requisition',
-            name='tier',
+            model_name="requisition",
+            name="tier",
             field=models.CharField(blank=True, max_length=64, null=True),
         ),
     ]

@@ -2,23 +2,27 @@
 Create sample approval thresholds for production deployment.
 Run this script after migrations to seed the workflow app.
 """
+
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pettycash_system.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
 from workflow.models import ApprovalThreshold
 
+
 def create_sample_thresholds():
     """Create default approval thresholds if they don't exist."""
-    
+
     if ApprovalThreshold.objects.exists():
-        print(f"✓ {ApprovalThreshold.objects.count()} approval thresholds already exist")
+        print(
+            f"✓ {ApprovalThreshold.objects.count()} approval thresholds already exist"
+        )
         return
-    
+
     print("Creating sample approval thresholds...")
-    
+
     thresholds = [
         {
             "name": "Tier 1 - Small Amounts",
@@ -29,7 +33,7 @@ def create_sample_thresholds():
             "allow_urgent_fasttrack": True,
             "requires_cfo": False,
             "priority": 1,
-            "is_active": True
+            "is_active": True,
         },
         {
             "name": "Tier 2 - Medium Amounts",
@@ -40,7 +44,7 @@ def create_sample_thresholds():
             "allow_urgent_fasttrack": True,
             "requires_cfo": False,
             "priority": 2,
-            "is_active": True
+            "is_active": True,
         },
         {
             "name": "Tier 3 - Large Amounts",
@@ -51,7 +55,7 @@ def create_sample_thresholds():
             "allow_urgent_fasttrack": False,
             "requires_cfo": False,
             "priority": 3,
-            "is_active": True
+            "is_active": True,
         },
         {
             "name": "Tier 4 - Very Large Amounts",
@@ -63,15 +67,16 @@ def create_sample_thresholds():
             "requires_cfo": True,
             "requires_ceo": True,
             "priority": 4,
-            "is_active": True
-        }
+            "is_active": True,
+        },
     ]
-    
+
     for data in thresholds:
         threshold = ApprovalThreshold.objects.create(**data)
         print(f"✓ Created: {threshold.name}")
-    
+
     print(f"\n✓ Successfully created {len(thresholds)} approval thresholds")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     create_sample_thresholds()

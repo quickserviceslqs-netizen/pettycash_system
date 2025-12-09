@@ -8,9 +8,9 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('organization', '0001_initial'),
-        ('transactions', '0010_add_sla_fields'),
-        ('treasury', '0010_payment_fields_safe_add'),
+        ("organization", "0001_initial"),
+        ("transactions", "0010_add_sla_fields"),
+        ("treasury", "0010_payment_fields_safe_add"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -38,41 +38,78 @@ class Migration(migrations.Migration):
             ],
             state_operations=[
                 migrations.AddField(
-                    model_name='payment',
-                    name='created_by',
-                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_payments', to=settings.AUTH_USER_MODEL),
+                    model_name="payment",
+                    name="created_by",
+                    field=models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="created_payments",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
                 ),
                 migrations.AddField(
-                    model_name='payment',
-                    name='description',
-                    field=models.TextField(blank=True, help_text='Purpose of payment', null=True),
+                    model_name="payment",
+                    name="description",
+                    field=models.TextField(
+                        blank=True, help_text="Purpose of payment", null=True
+                    ),
                 ),
                 migrations.AddField(
-                    model_name='payment',
-                    name='voucher_number',
-                    field=models.CharField(blank=True, help_text='Unique voucher/document number for M-Pesa bulk payments', max_length=50, null=True, unique=True),
+                    model_name="payment",
+                    name="voucher_number",
+                    field=models.CharField(
+                        blank=True,
+                        help_text="Unique voucher/document number for M-Pesa bulk payments",
+                        max_length=50,
+                        null=True,
+                        unique=True,
+                    ),
                 ),
                 migrations.AddField(
-                    model_name='treasuryfund',
-                    name='auto_replenish',
-                    field=models.BooleanField(blank=True, help_text='Override auto-replenishment for this fund. If null, uses system default.', null=True),
+                    model_name="treasuryfund",
+                    name="auto_replenish",
+                    field=models.BooleanField(
+                        blank=True,
+                        help_text="Override auto-replenishment for this fund. If null, uses system default.",
+                        null=True,
+                    ),
                 ),
                 migrations.AddField(
-                    model_name='treasuryfund',
-                    name='department',
-                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='treasury_funds', to='organization.department'),
+                    model_name="treasuryfund",
+                    name="department",
+                    field=models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="treasury_funds",
+                        to="organization.department",
+                    ),
                 ),
                 migrations.AddField(
-                    model_name='treasuryfund',
-                    name='min_balance',
-                    field=models.DecimalField(blank=True, decimal_places=2, help_text='Minimum allowed balance for this fund. Overrides system default if set.', max_digits=14, null=True),
+                    model_name="treasuryfund",
+                    name="min_balance",
+                    field=models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        help_text="Minimum allowed balance for this fund. Overrides system default if set.",
+                        max_digits=14,
+                        null=True,
+                    ),
                 ),
             ],
         ),
         migrations.AlterField(
-            model_name='payment',
-            name='requisition',
-            field=models.ForeignKey(blank=True, help_text='Associated requisition (optional for bulk uploads)', null=True, on_delete=django.db.models.deletion.CASCADE, related_name='payments', to='transactions.requisition'),
+            model_name="payment",
+            name="requisition",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Associated requisition (optional for bulk uploads)",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="payments",
+                to="transactions.requisition",
+            ),
         ),
         migrations.RunSQL(
             sql="""

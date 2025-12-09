@@ -6,23 +6,41 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transactions', '0007_requisition_receipt'),
+        ("transactions", "0007_requisition_receipt"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='requisition',
-            name='is_fast_tracked',
-            field=models.BooleanField(default=False, help_text='True if requisition skipped intermediate approvers'),
+            model_name="requisition",
+            name="is_fast_tracked",
+            field=models.BooleanField(
+                default=False,
+                help_text="True if requisition skipped intermediate approvers",
+            ),
         ),
         migrations.AddField(
-            model_name='requisition',
-            name='original_workflow_sequence',
-            field=models.JSONField(blank=True, help_text='Original full workflow before fast-tracking', null=True),
+            model_name="requisition",
+            name="original_workflow_sequence",
+            field=models.JSONField(
+                blank=True,
+                help_text="Original full workflow before fast-tracking",
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='approvaltrail',
-            name='action',
-            field=models.CharField(choices=[('approved', 'Approved'), ('validated', 'Validated'), ('paid', 'Paid'), ('reviewed', 'Reviewed'), ('rejected', 'Rejected'), ('urgency_confirmed', 'Urgency Confirmed'), ('reverted_to_normal', 'Reverted to Normal Flow')], max_length=30),
+            model_name="approvaltrail",
+            name="action",
+            field=models.CharField(
+                choices=[
+                    ("approved", "Approved"),
+                    ("validated", "Validated"),
+                    ("paid", "Paid"),
+                    ("reviewed", "Reviewed"),
+                    ("rejected", "Rejected"),
+                    ("urgency_confirmed", "Urgency Confirmed"),
+                    ("reverted_to_normal", "Reverted to Normal Flow"),
+                ],
+                max_length=30,
+            ),
         ),
     ]

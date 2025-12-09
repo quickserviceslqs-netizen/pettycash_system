@@ -7,14 +7,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('organization', '0001_initial'),
-        ('transactions', '0005_add_treasury_validation_actions'),
+        ("organization", "0001_initial"),
+        ("transactions", "0005_add_treasury_validation_actions"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='requisition',
-            name='cost_center',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='organization.costcenter'),
+            model_name="requisition",
+            name="cost_center",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="organization.costcenter",
+            ),
         ),
     ]

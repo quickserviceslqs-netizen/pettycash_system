@@ -1,9 +1,11 @@
 """
 Quick script to create Cmartins user locally for testing
 """
+
 import os
 import django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pettycash_system.settings')
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
 from django.contrib.auth import get_user_model
@@ -16,14 +18,14 @@ User = get_user_model()
 
 # Create or update Cmartins
 try:
-    cmartins = User.objects.get(username='Cmartins')
+    cmartins = User.objects.get(username="Cmartins")
     print("Updating existing Cmartins user...")
 except User.DoesNotExist:
     cmartins = User.objects.create_user(
-        username='Cmartins',
-        email='cmartins@example.com',
-        password='Cmartins@123',
-        role='staff'
+        username="Cmartins",
+        email="cmartins@example.com",
+        password="Cmartins@123",
+        role="staff",
     )
     print("Created new Cmartins user")
 
@@ -33,16 +35,18 @@ cmartins.is_staff = True
 cmartins.save()
 
 # Assign treasury app
-treasury_app = App.objects.get(name='treasury')
+treasury_app = App.objects.get(name="treasury")
 cmartins.assigned_apps.add(treasury_app)
 
 # Assign permissions
 ct_fund = ContentType.objects.get_for_model(TreasuryFund)
 ct_payment = ContentType.objects.get_for_model(Payment)
 
-view_fund = Permission.objects.get(codename='view_treasuryfund', content_type=ct_fund)
-view_payment = Permission.objects.get(codename='view_payment', content_type=ct_payment)
-change_payment = Permission.objects.get(codename='change_payment', content_type=ct_payment)
+view_fund = Permission.objects.get(codename="view_treasuryfund", content_type=ct_fund)
+view_payment = Permission.objects.get(codename="view_payment", content_type=ct_payment)
+change_payment = Permission.objects.get(
+    codename="change_payment", content_type=ct_payment
+)
 
 cmartins.user_permissions.add(view_fund, view_payment, change_payment)
 

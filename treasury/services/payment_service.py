@@ -25,29 +25,33 @@ from django.conf import settings
 
 from transactions.models import Requisition
 from treasury.models import (
-    Payment, PaymentExecution, LedgerEntry, 
-    VarianceAdjustment, ReplenishmentRequest, TreasuryFund
+    Payment,
+    PaymentExecution,
+    LedgerEntry,
+    VarianceAdjustment,
+    ReplenishmentRequest,
+    TreasuryFund,
 )
 
 
 class OTPService:
     """Generate and validate one-time passwords for 2FA."""
-    
+
     OTP_LENGTH = 6
     OTP_VALIDITY_MINUTES = 5
-    
+
     @staticmethod
     def generate_otp() -> str:
         """Generate 6-digit OTP."""
-        return ''.join(random.choices(string.digits, k=OTPService.OTP_LENGTH))
-    
+        return "".join(random.choices(string.digits, k=OTPService.OTP_LENGTH))
+
     @staticmethod
     def hash_otp(otp: str, payment_id: str) -> str:
         """Hash OTP with payment ID as salt using SHA-256."""
         # Use payment_id as salt for additional security
         salted_otp = f"{otp}{payment_id}{settings.SECRET_KEY}"
         return hashlib.sha256(salted_otp.encode()).hexdigest()
-    
+
     @staticmethod
     def send_otp_email(email: str, otp: str) -> bool:
         """Send OTP via email. Returns True if successful."""
@@ -74,46 +78,48 @@ Do not share this code with anyone.
         except Exception as e:
             print(f"Failed to send OTP email to {email}: {str(e)}")
             return False
-    
+
     @staticmethod
     def is_otp_expired(payment: Payment) -> bool:
         """Check if OTP has expired (>5 minutes old)."""
         if not payment.otp_sent_timestamp:
             return True
         now = timezone.now()
-        expiry = payment.otp_sent_timestamp + timedelta(minutes=OTPService.OTP_VALIDITY_MINUTES)
+        expiry = payment.otp_sent_timestamp + timedelta(
+            minutes=OTPService.OTP_VALIDITY_MINUTES
+        )
         return now > expiry
 
 
 class PaymentExecutionService:
     """Orchestrate atomic payment execution with all safeguards."""
-    
+
     @staticmethod
     def assign_executor(payment: Payment):
         """
         Phase 5: Assign executor for payment, ensuring executor ≠ requester.
         For Treasury-originated requests, assign different treasury officer or escalate to CFO.
-        
+
         Returns: (executor_user, escalation_message)
         """
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
-        
+
         requester = payment.requisition.requested_by
-        
+
         # Find alternate treasury officer (exclude requester)
         treasury_officers = User.objects.filter(
-            role='treasury',
-            is_active=True
+            role="treasury", is_active=True
         ).exclude(id=requester.id)
-        
+
         if treasury_officers.exists():
             # Assign first available alternate officer
             executor = treasury_officers.first()
             return executor, None
         else:
             # No alternate treasury officer available - escalate to CFO
-            cfo = User.objects.filter(role='cfo', is_active=True).first()
+            cfo = User.objects.filter(role="cfo", is_active=True).first()
             if cfo:
                 escalation_msg = (
                     f"No alternate Treasury officer available for payment {payment.payment_id}. "
@@ -129,7 +135,7 @@ class PaymentExecutionService:
                     f"Admin must assign executor for payment {payment.payment_id}."
                 )
                 return None, escalation_msg
-    
+
     @staticmethod
     def can_execute_payment(payment: Payment, executor_user) -> tuple[bool, str]:
         """
@@ -137,45 +143,53 @@ class PaymentExecutionService:
         Returns (can_execute, error_message)
         """
         # Check 1: Payment not already executed
-        if payment.status in ['success', 'reconciled']:
+        if payment.status in ["success", "reconciled"]:
             return False, "Payment already completed"
-        
+
         # Check 2: Executor segregation - executor cannot be requester
         if payment.requisition.requester == executor_user:
             return False, "Executor cannot approve their own requisition"
-        
+
         # Check 3: 2FA verification if required
         if payment.otp_required and not payment.otp_verified:
             return False, "OTP verification required before execution"
-        
+
         # Check 4: OTP not expired
         if payment.otp_required and OTPService.is_otp_expired(payment):
             return False, "OTP has expired. Request new OTP."
-        
+
         # Check 5: Retry limit not exceeded
         if payment.retry_count >= payment.max_retries:
             return False, f"Max retries ({payment.max_retries}) exceeded"
-        
+
         # Check 6: Fund balance available
         requisition = payment.requisition
         fund = TreasuryFund.objects.filter(
             company=requisition.company,
             region=requisition.region,
-            branch=requisition.branch
+            branch=requisition.branch,
         ).first()
-        
+
         if not fund or fund.current_balance < payment.amount:
-            return False, f"Insufficient fund balance. Available: {fund.current_balance if fund else 0}"
-        
+            return (
+                False,
+                f"Insufficient fund balance. Available: {fund.current_balance if fund else 0}",
+            )
+
         return True, ""
-    
+
     @staticmethod
     @transaction.atomic
-    def execute_payment(payment: Payment, executor_user, phone_number: str = None,
-                       ip_address: str = "", user_agent: str = "") -> tuple[bool, str]:
+    def execute_payment(
+        payment: Payment,
+        executor_user,
+        phone_number: str = None,
+        ip_address: str = "",
+        user_agent: str = "",
+    ) -> tuple[bool, str]:
         """
         Execute payment atomically with M-Pesa STK Push after OTP verification.
-        
+
         Steps:
         1. Validate executor permissions
         2. Lock fund and verify balance
@@ -186,145 +200,155 @@ class PaymentExecutionService:
         7. Create PaymentExecution record
         8. Mark payment as success
         9. Check replenishment trigger
-        
+
         Args:
             payment: Payment object
             executor_user: User executing payment
             phone_number: M-Pesa phone number (format: 254XXXXXXXXX or 0XXXXXXXXX)
             ip_address: Executor's IP address
             user_agent: Executor's user agent
-        
+
         Returns (success, message)
         """
         # Step 1: Validation
-        can_execute, error = PaymentExecutionService.can_execute_payment(payment, executor_user)
+        can_execute, error = PaymentExecutionService.can_execute_payment(
+            payment, executor_user
+        )
         if not can_execute:
             return False, error
-        
+
         try:
             # Step 2: Get and lock fund
             fund = TreasuryFund.objects.select_for_update().get(
                 company=payment.requisition.company,
                 region=payment.requisition.region,
-                branch=payment.requisition.branch
+                branch=payment.requisition.branch,
             )
-            
+
             # Verify balance again (in case concurrent payment occurred)
             if fund.current_balance < payment.amount:
-                return False, f"Insufficient fund balance (concurrent deduction detected)"
-            
+                return (
+                    False,
+                    f"Insufficient fund balance (concurrent deduction detected)",
+                )
+
             # Step 3: Mark as executing
-            payment.status = 'executing'
+            payment.status = "executing"
             payment.execution_timestamp = timezone.now()
-            payment.save(update_fields=['status', 'execution_timestamp'])
-            
+            payment.save(update_fields=["status", "execution_timestamp"])
+
             # Step 4: Initiate M-Pesa STK Push
             mpesa_receipt = None
             gateway_reference = str(uuid.uuid4())
-            
-            if phone_number and payment.method == 'mpesa':
+
+            if phone_number and payment.method == "mpesa":
                 from treasury.services.mpesa_service import MPesaService
-                
+
                 # Use sandbox for development, production for live
                 use_sandbox = settings.DEBUG
                 mpesa = MPesaService(use_sandbox=use_sandbox)
-                
+
                 # Initiate STK Push
                 result = mpesa.initiate_stk_push(
                     phone_number=phone_number,
                     amount=float(payment.amount),
                     account_reference=str(payment.requisition.transaction_id)[:12],
-                    transaction_desc=f"Payment {payment.payment_id}"[:13]
+                    transaction_desc=f"Payment {payment.payment_id}"[:13],
                 )
-                
-                if not result.get('success'):
+
+                if not result.get("success"):
                     # M-Pesa initiation failed
-                    payment.status = 'failed'
-                    payment.last_error = result.get('error', 'M-Pesa STK Push failed')
+                    payment.status = "failed"
+                    payment.last_error = result.get("error", "M-Pesa STK Push failed")
                     payment.retry_count += 1
-                    payment.save(update_fields=['status', 'last_error', 'retry_count'])
+                    payment.save(update_fields=["status", "last_error", "retry_count"])
                     return False, f"M-Pesa payment failed: {result.get('error')}"
-                
+
                 # Store checkout request ID for tracking
-                gateway_reference = result.get('checkout_request_id', gateway_reference)
-                
+                gateway_reference = result.get("checkout_request_id", gateway_reference)
+
                 # NOTE: In production, you would wait for M-Pesa callback to confirm
                 # For now, we proceed assuming success (callback will update later)
                 # TODO: Implement callback handler to update payment with M-Pesa receipt
-            
+
             # Step 5: Deduct from fund
             fund.current_balance -= payment.amount
-            fund.save(update_fields=['current_balance', 'updated_at'])
-            
+            fund.save(update_fields=["current_balance", "updated_at"])
+
             # Step 6: Create LedgerEntry
             description = f"Payment for {payment.requisition.transaction_id}"
             if mpesa_receipt:
                 description += f" (M-Pesa: {mpesa_receipt})"
-            
+
             ledger = LedgerEntry.objects.create(
                 ledger_id=uuid.uuid4(),
                 fund=fund,
-                entry_type='debit',
+                entry_type="debit",
                 amount=payment.amount,
                 payment=payment,
                 description=description,
                 created_by=executor_user,
             )
-            
+
             # Step 7: Create PaymentExecution record
             execution = PaymentExecution.objects.create(
                 execution_id=uuid.uuid4(),
                 payment=payment,
                 executor=executor_user,
                 gateway_reference=gateway_reference,
-                gateway_status='pending' if payment.method == 'mpesa' else 'success',
+                gateway_status="pending" if payment.method == "mpesa" else "success",
                 otp_verified_at=payment.otp_verified_timestamp,
                 otp_verified_by=executor_user,
                 ip_address=ip_address,
                 user_agent=user_agent[:500],
             )
-            
+
             # Step 8: Mark payment as success (or pending for M-Pesa)
-            if payment.method == 'mpesa':
-                payment.status = 'pending_confirmation'  # Wait for M-Pesa callback
+            if payment.method == "mpesa":
+                payment.status = "pending_confirmation"  # Wait for M-Pesa callback
             else:
-                payment.status = 'success'
-            
+                payment.status = "success"
+
             payment.executor = executor_user
-            payment.save(update_fields=['status', 'executor'])
-            
+            payment.save(update_fields=["status", "executor"])
+
             # Step 9: Check if replenishment needed (Phase 5: Auto-trigger)
             if fund.current_balance < fund.reorder_level:
                 # Check if replenishment already pending
                 pending = ReplenishmentRequest.objects.filter(
-                    fund=fund,
-                    status__in=['pending', 'approved']
+                    fund=fund, status__in=["pending", "approved"]
                 ).exists()
-                
+
                 if not pending:
                     # Auto-create replenishment request
                     replenishment = ReplenishmentRequest.objects.create(
                         request_id=uuid.uuid4(),
                         fund=fund,
                         current_balance=fund.current_balance,
-                        requested_amount=fund.reorder_level * Decimal('2'),  # Request 2x reorder level
-                        status='pending',
+                        requested_amount=fund.reorder_level
+                        * Decimal("2"),  # Request 2x reorder level
+                        status="pending",
                         auto_triggered=True,
                     )
                     # TODO: Send notification to treasury head about replenishment need
-                    print(f"Auto-triggered replenishment request {replenishment.request_id} for fund {fund.fund_id}")
-            
-            return True, f"Payment executed successfully. Reference: {execution.gateway_reference}"
-        
+                    print(
+                        f"Auto-triggered replenishment request {replenishment.request_id} for fund {fund.fund_id}"
+                    )
+
+            return (
+                True,
+                f"Payment executed successfully. Reference: {execution.gateway_reference}",
+            )
+
         except Exception as e:
             # Atomic transaction will automatically rollback
             payment.retry_count += 1
             payment.last_error = str(e)
-            payment.status = 'failed'
-            payment.save(update_fields=['retry_count', 'last_error', 'status'])
-            
+            payment.status = "failed"
+            payment.save(update_fields=["retry_count", "last_error", "status"])
+
             return False, f"Payment execution failed: {str(e)}"
-    
+
     @staticmethod
     def send_otp(payment: Payment) -> tuple[bool, str]:
         """
@@ -333,22 +357,31 @@ class PaymentExecutionService:
         """
         # Generate OTP
         otp = OTPService.generate_otp()
-        
+
         # Hash OTP with payment_id as salt and store securely
         otp_hash = OTPService.hash_otp(otp, str(payment.payment_id))
         payment.otp_hash = otp_hash
         payment.otp_sent_timestamp = timezone.now()
         payment.otp_verified = False  # Reset verification status
         payment.otp_verified_timestamp = None
-        payment.save(update_fields=['otp_hash', 'otp_sent_timestamp', 'otp_verified', 'otp_verified_timestamp'])
-        
+        payment.save(
+            update_fields=[
+                "otp_hash",
+                "otp_sent_timestamp",
+                "otp_verified",
+                "otp_verified_timestamp",
+            ]
+        )
+
         # Send via email
-        executor_email = payment.requisition.requester.email  # In real scenario, different user
+        executor_email = (
+            payment.requisition.requester.email
+        )  # In real scenario, different user
         if OTPService.send_otp_email(executor_email, otp):
             return True, f"OTP sent to {executor_email}"
         else:
             return False, f"Failed to send OTP to {executor_email}"
-    
+
     @staticmethod
     def verify_otp(payment: Payment, provided_otp: str) -> tuple[bool, str]:
         """
@@ -358,65 +391,75 @@ class PaymentExecutionService:
         # Check if OTP exists
         if not payment.otp_hash:
             return False, "No OTP has been sent for this payment"
-        
+
         # Check if already verified (prevent replay attacks)
         if payment.otp_verified:
             return False, "OTP has already been used"
-        
+
         # Check if OTP has expired
         if OTPService.is_otp_expired(payment):
             return False, "OTP has expired. Please request a new one."
-        
+
         # Hash provided OTP and compare with stored hash
         provided_hash = OTPService.hash_otp(provided_otp, str(payment.payment_id))
-        
+
         # Constant-time comparison to prevent timing attacks
         if not hmac.compare_digest(provided_hash, payment.otp_hash):
             return False, "Invalid OTP. Please check and try again."
-        
+
         # OTP is valid - mark as verified
         payment.otp_verified = True
         payment.otp_verified_timestamp = timezone.now()
-        payment.save(update_fields=['otp_verified', 'otp_verified_timestamp'])
-        
+        payment.save(update_fields=["otp_verified", "otp_verified_timestamp"])
+
         return True, "OTP verified successfully"
 
 
 class ReconciliationService:
     """Handle payment reconciliation and variance tracking."""
-    
+
     @staticmethod
     def reconcile_payment(payment: Payment, reconciled_by_user) -> tuple[bool, str]:
         """
         Mark payment as reconciled after gateway confirmation.
         Returns (success, message)
         """
-        if payment.status != 'success':
+        if payment.status != "success":
             return False, "Only successful payments can be reconciled"
-        
-        payment.status = 'reconciled'
-        payment.save(update_fields=['status'])
-        
+
+        payment.status = "reconciled"
+        payment.save(update_fields=["status"])
+
         # Mark ledger entry as reconciled
         ledger = LedgerEntry.objects.filter(payment=payment).first()
         if ledger:
             ledger.reconciled = True
             ledger.reconciled_by = reconciled_by_user
             ledger.reconciliation_timestamp = timezone.now()
-            ledger.save(update_fields=['reconciled', 'reconciled_by', 'reconciliation_timestamp'])
-        
+            ledger.save(
+                update_fields=[
+                    "reconciled",
+                    "reconciled_by",
+                    "reconciliation_timestamp",
+                ]
+            )
+
         return True, "Payment reconciled successfully"
-    
+
     @staticmethod
-    def record_variance(payment: Payment, original_amount: Decimal, adjusted_amount: Decimal, 
-                       reason: str) -> tuple[bool, str]:
+    def record_variance(
+        payment: Payment,
+        original_amount: Decimal,
+        adjusted_amount: Decimal,
+        reason: str,
+    ) -> tuple[bool, str]:
         """
         Record payment amount variance for CFO review.
         Returns (success, message)
         """
         if abs(adjusted_amount - original_amount) == 0:
             return False, "No variance to record"
-        
+
         variance = VarianceAdjustment.objects.create(
             variance_id=uuid.uuid4(),
             payment=payment,
@@ -424,32 +467,34 @@ class ReconciliationService:
             adjusted_amount=adjusted_amount,
             variance_amount=adjusted_amount - original_amount,
             reason=reason,
-            status='pending',
+            status="pending",
         )
-        
+
         return True, f"Variance recorded: {variance.variance_amount}"
-    
+
     @staticmethod
-    def approve_variance(variance: VarianceAdjustment, approved_by_user) -> tuple[bool, str]:
+    def approve_variance(
+        variance: VarianceAdjustment, approved_by_user
+    ) -> tuple[bool, str]:
         """
         CFO approval for payment variance.
         Returns (success, message)
         """
         # Verify approver is CFO
-        if not hasattr(approved_by_user, 'groups'):
+        if not hasattr(approved_by_user, "groups"):
             return False, "Invalid user"
-        
-        if not approved_by_user.groups.filter(name__icontains='cfo').exists():
+
+        if not approved_by_user.groups.filter(name__icontains="cfo").exists():
             return False, "Only CFO can approve variance"
-        
-        variance.status = 'approved'
+
+        variance.status = "approved"
         variance.approved_by = approved_by_user
         variance.approved_at = timezone.now()
-        variance.save(update_fields=['status', 'approved_by', 'approved_at'])
-        
+        variance.save(update_fields=["status", "approved_by", "approved_at"])
+
         # Phase 5: Apply variance adjustment to fund balance
         if variance.fund and variance.variance_amount != 0:
             variance.fund.current_balance += variance.variance_amount
-            variance.fund.save(update_fields=['current_balance', 'updated_at'])
-        
+            variance.fund.save(update_fields=["current_balance", "updated_at"])
+
         return True, "Variance approved by CFO"

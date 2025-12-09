@@ -6,18 +6,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('settings_manager', '0004_activitylog_device_name'),
+        ("settings_manager", "0004_activitylog_device_name"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='activitylog',
-            name='location',
-            field=models.CharField(blank=True, help_text='Geographic location (City, Country)', max_length=255),
+            model_name="activitylog",
+            name="location",
+            field=models.CharField(
+                blank=True,
+                help_text="Geographic location (City, Country)",
+                max_length=255,
+            ),
         ),
         migrations.AlterField(
-            model_name='activitylog',
-            name='user_agent',
-            field=models.TextField(blank=True, help_text='Browser user agent string'),
+            model_name="activitylog",
+            name="user_agent",
+            field=models.TextField(blank=True, help_text="Browser user agent string"),
         ),
     ]

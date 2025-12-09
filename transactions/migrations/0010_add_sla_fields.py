@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transactions', '0009_requisition_change_request_deadline_and_more'),
+        ("transactions", "0009_requisition_change_request_deadline_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='requisition',
-            name='approval_deadline',
+            model_name="requisition",
+            name="approval_deadline",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='requisition',
-            name='end_to_end_sla_deadline',
+            model_name="requisition",
+            name="end_to_end_sla_deadline",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='requisition',
-            name='payment_sla_deadline',
+            model_name="requisition",
+            name="payment_sla_deadline",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

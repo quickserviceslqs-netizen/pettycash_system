@@ -6,41 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transactions', '0011_requisition_validation_deadline_and_more'),
+        ("transactions", "0011_requisition_validation_deadline_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='requisition',
-            name='expense_category',
+            model_name="requisition",
+            name="expense_category",
             field=models.CharField(
                 blank=True,
                 choices=[
-                    ('travel', 'Travel & Transport'),
-                    ('supplies', 'Office Supplies'),
-                    ('services', 'Professional Services'),
-                    ('utilities', 'Utilities'),
-                    ('maintenance', 'Maintenance & Repairs'),
-                    ('communication', 'Communication'),
-                    ('marketing', 'Marketing & Advertising'),
-                    ('training', 'Training & Development'),
-                    ('entertainment', 'Entertainment & Hospitality'),
-                    ('equipment', 'Equipment & Assets'),
-                    ('other', 'Other Expenses'),
+                    ("travel", "Travel & Transport"),
+                    ("supplies", "Office Supplies"),
+                    ("services", "Professional Services"),
+                    ("utilities", "Utilities"),
+                    ("maintenance", "Maintenance & Repairs"),
+                    ("communication", "Communication"),
+                    ("marketing", "Marketing & Advertising"),
+                    ("training", "Training & Development"),
+                    ("entertainment", "Entertainment & Hospitality"),
+                    ("equipment", "Equipment & Assets"),
+                    ("other", "Other Expenses"),
                 ],
-                help_text='Category of expense',
+                help_text="Category of expense",
                 max_length=50,
-                null=True
+                null=True,
             ),
         ),
         migrations.AddField(
-            model_name='requisition',
-            name='vendor_name',
+            model_name="requisition",
+            name="vendor_name",
             field=models.CharField(
-                blank=True,
-                help_text='Vendor/Payee name',
-                max_length=200,
-                null=True
+                blank=True, help_text="Vendor/Payee name", max_length=200, null=True
             ),
         ),
     ]

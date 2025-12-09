@@ -6,18 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('treasury', '0005_payment_otp_hash'),
+        ("treasury", "0005_payment_otp_hash"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='payment',
-            name='mpesa_checkout_request_id',
+            model_name="payment",
+            name="mpesa_checkout_request_id",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='payment',
-            name='mpesa_receipt',
-            field=models.CharField(blank=True, help_text='M-Pesa confirmation code', max_length=20, null=True),
+            model_name="payment",
+            name="mpesa_receipt",
+            field=models.CharField(
+                blank=True,
+                help_text="M-Pesa confirmation code",
+                max_length=20,
+                null=True,
+            ),
         ),
     ]

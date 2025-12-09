@@ -9,31 +9,113 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0008_user_email_verification_token'),
+        ("accounts", "0008_user_email_verification_token"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='user',
-            name='email_verification_token',
+            model_name="user",
+            name="email_verification_token",
         ),
         migrations.CreateModel(
-            name='UserAuditLog',
+            name="UserAuditLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('action', models.CharField(choices=[('create', 'User Created'), ('update', 'User Updated'), ('delete', 'User Deleted'), ('activate', 'User Activated'), ('deactivate', 'User Deactivated'), ('password_reset', 'Password Reset Sent'), ('role_change', 'Role Changed'), ('app_assign', 'Apps Assigned'), ('permission_change', 'Permissions Changed'), ('group_change', 'Groups Changed')], help_text='Type of action performed', max_length=30)),
-                ('timestamp', models.DateTimeField(default=django.utils.timezone.now, help_text='When the action occurred')),
-                ('changes', models.JSONField(blank=True, help_text='Details of what changed (before/after values)', null=True)),
-                ('notes', models.TextField(blank=True, help_text='Additional context or reason for the change')),
-                ('ip_address', models.GenericIPAddressField(blank=True, help_text='IP address of the admin who made the change', null=True)),
-                ('performed_by', models.ForeignKey(blank=True, help_text='Admin who performed the action', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='performed_audits', to=settings.AUTH_USER_MODEL)),
-                ('target_user', models.ForeignKey(help_text='User who was affected by this action', on_delete=django.db.models.deletion.CASCADE, related_name='audit_logs', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "action",
+                    models.CharField(
+                        choices=[
+                            ("create", "User Created"),
+                            ("update", "User Updated"),
+                            ("delete", "User Deleted"),
+                            ("activate", "User Activated"),
+                            ("deactivate", "User Deactivated"),
+                            ("password_reset", "Password Reset Sent"),
+                            ("role_change", "Role Changed"),
+                            ("app_assign", "Apps Assigned"),
+                            ("permission_change", "Permissions Changed"),
+                            ("group_change", "Groups Changed"),
+                        ],
+                        help_text="Type of action performed",
+                        max_length=30,
+                    ),
+                ),
+                (
+                    "timestamp",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now,
+                        help_text="When the action occurred",
+                    ),
+                ),
+                (
+                    "changes",
+                    models.JSONField(
+                        blank=True,
+                        help_text="Details of what changed (before/after values)",
+                        null=True,
+                    ),
+                ),
+                (
+                    "notes",
+                    models.TextField(
+                        blank=True,
+                        help_text="Additional context or reason for the change",
+                    ),
+                ),
+                (
+                    "ip_address",
+                    models.GenericIPAddressField(
+                        blank=True,
+                        help_text="IP address of the admin who made the change",
+                        null=True,
+                    ),
+                ),
+                (
+                    "performed_by",
+                    models.ForeignKey(
+                        blank=True,
+                        help_text="Admin who performed the action",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="performed_audits",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "target_user",
+                    models.ForeignKey(
+                        help_text="User who was affected by this action",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="audit_logs",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'User Audit Log',
-                'verbose_name_plural': 'User Audit Logs',
-                'ordering': ['-timestamp'],
-                'indexes': [models.Index(fields=['-timestamp'], name='accounts_us_timesta_b897ba_idx'), models.Index(fields=['target_user', '-timestamp'], name='accounts_us_target__beaf3c_idx'), models.Index(fields=['performed_by', '-timestamp'], name='accounts_us_perform_93cf73_idx')],
+                "verbose_name": "User Audit Log",
+                "verbose_name_plural": "User Audit Logs",
+                "ordering": ["-timestamp"],
+                "indexes": [
+                    models.Index(
+                        fields=["-timestamp"], name="accounts_us_timesta_b897ba_idx"
+                    ),
+                    models.Index(
+                        fields=["target_user", "-timestamp"],
+                        name="accounts_us_target__beaf3c_idx",
+                    ),
+                    models.Index(
+                        fields=["performed_by", "-timestamp"],
+                        name="accounts_us_perform_93cf73_idx",
+                    ),
+                ],
             },
         ),
     ]

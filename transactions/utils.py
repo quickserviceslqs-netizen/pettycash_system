@@ -1,6 +1,7 @@
 from transactions.models import ApprovalThreshold, User
 import json
 
+
 def get_tier(amount):
     """Determine tier based on amount."""
     thresholds = ApprovalThreshold.objects.all()
@@ -8,6 +9,7 @@ def get_tier(amount):
         if t.min_amount <= amount <= t.max_amount:
             return t
     return None
+
 
 def resolve_workflow_sequence(requisition):
     """
@@ -34,14 +36,26 @@ def resolve_workflow_sequence(requisition):
         # Exclude requester
         candidates = candidates.exclude(id=requisition.requested_by.id)
         if candidates.exists():
-            resolved.append({"user_id": candidates.first().id, "role": role, "auto_escalated": False})
+            resolved.append(
+                {
+                    "user_id": candidates.first().id,
+                    "role": role,
+                    "auto_escalated": False,
+                }
+            )
         else:
             # Auto escalate to admin if no candidate
             admin = User.objects.filter(role="ADMIN").first()
-            resolved.append({"user_id": admin.id, "role": "ADMIN", "auto_escalated": True})
+            resolved.append(
+                {"user_id": admin.id, "role": "ADMIN", "auto_escalated": True}
+            )
 
     # Handle urgency fast-track if allowed
-    if requisition.is_urgent and tier_obj.allow_urgent_fasttrack and requisition.tier != 4:
+    if (
+        requisition.is_urgent
+        and tier_obj.allow_urgent_fasttrack
+        and requisition.tier != 4
+    ):
         # Simplified: fast-track to last approver in list (can be customized)
         resolved = [resolved[-1]]
 

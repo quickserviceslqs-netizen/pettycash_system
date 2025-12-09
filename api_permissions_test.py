@@ -1,9 +1,11 @@
 """
 Test API permission enforcement by simulating requests
 """
+
 import os
 import django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pettycash_system.settings')
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
 from django.test import RequestFactory
@@ -21,11 +23,11 @@ print("=" * 80)
 # Test 1: test_basic (no app, no permissions) - should be DENIED
 print("\n1. Testing test_basic (No App Assignment, No Permissions)")
 print("-" * 80)
-test_basic = User.objects.get(username='test_basic')
-request = factory.get('/api/treasury/funds/')
+test_basic = User.objects.get(username="test_basic")
+request = factory.get("/api/treasury/funds/")
 force_authenticate(request, user=test_basic)
 
-viewset = TreasuryFundViewSet.as_view({'get': 'list'})
+viewset = TreasuryFundViewSet.as_view({"get": "list"})
 try:
     response = viewset(request)
     print(f"   Status Code: {response.status_code}")
@@ -40,12 +42,12 @@ except Exception as e:
 # Test 2: test_treasury (has app, has view_payment only) - should SEE funds but not execute
 print("\n2. Testing test_treasury (Has App, View Permission Only)")
 print("-" * 80)
-test_treasury = User.objects.get(username='test_treasury')
+test_treasury = User.objects.get(username="test_treasury")
 
 # Test viewing treasury funds
-request = factory.get('/api/treasury/funds/')
+request = factory.get("/api/treasury/funds/")
 force_authenticate(request, user=test_treasury)
-viewset = TreasuryFundViewSet.as_view({'get': 'list'})
+viewset = TreasuryFundViewSet.as_view({"get": "list"})
 try:
     response = viewset(request)
     print(f"   List Funds - Status: {response.status_code}")
@@ -53,7 +55,9 @@ try:
         print(f"      ❌ BLOCKED - Should be able to view (has treasury app)")
         print(f"      Response: {response.data}")
     elif response.status_code == 200:
-        print(f"      ⚠️  ALLOWED but might fail - User has app but lacks view_treasuryfund permission")
+        print(
+            f"      ⚠️  ALLOWED but might fail - User has app but lacks view_treasuryfund permission"
+        )
     else:
         print(f"      Status: {response.status_code}")
 except Exception as e:
@@ -62,10 +66,10 @@ except Exception as e:
 # Test 3: test_treasury_full (has app, has all permissions) - should have FULL ACCESS
 print("\n3. Testing test_treasury_full (Has App, All Permissions)")
 print("-" * 80)
-test_full = User.objects.get(username='test_treasury_full')
-request = factory.get('/api/treasury/funds/')
+test_full = User.objects.get(username="test_treasury_full")
+request = factory.get("/api/treasury/funds/")
 force_authenticate(request, user=test_full)
-viewset = TreasuryFundViewSet.as_view({'get': 'list'})
+viewset = TreasuryFundViewSet.as_view({"get": "list"})
 try:
     response = viewset(request)
     print(f"   Status Code: {response.status_code}")
@@ -73,17 +77,19 @@ try:
         print(f"   ✅ ALLOWED - Full access (Expected)")
     else:
         print(f"   ❌ BLOCKED - This is an ERROR! User has all permissions")
-        print(f"   Response: {response.data if hasattr(response, 'data') else response}")
+        print(
+            f"   Response: {response.data if hasattr(response, 'data') else response}"
+        )
 except Exception as e:
     print(f"   ❌ Exception: {type(e).__name__}: {e}")
 
 # Test 4: Superuser - should BYPASS everything
 print("\n4. Testing superadmin (Superuser)")
 print("-" * 80)
-superuser = User.objects.get(username='superadmin')
-request = factory.get('/api/treasury/funds/')
+superuser = User.objects.get(username="superadmin")
+request = factory.get("/api/treasury/funds/")
 force_authenticate(request, user=superuser)
-viewset = TreasuryFundViewSet.as_view({'get': 'list'})
+viewset = TreasuryFundViewSet.as_view({"get": "list"})
 try:
     response = viewset(request)
     print(f"   Status Code: {response.status_code}")
@@ -97,7 +103,8 @@ except Exception as e:
 print("\n" + "=" * 80)
 print("SUMMARY")
 print("=" * 80)
-print("""
+print(
+    """
 Expected Results:
   1. test_basic       → BLOCKED (no app assignment)
   2. test_treasury    → BLOCKED or LIMITED (has app but missing view_treasuryfund perm)
@@ -106,4 +113,5 @@ Expected Results:
 
 If test_basic is ALLOWED, there's a permission bypass vulnerability.
 If test_treasury_full is BLOCKED, permission checks are too strict.
-""")
+"""
+)

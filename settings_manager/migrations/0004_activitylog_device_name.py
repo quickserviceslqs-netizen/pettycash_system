@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('settings_manager', '0003_alter_systemsetting_category'),
+        ("settings_manager", "0003_alter_systemsetting_category"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='activitylog',
-            name='device_name',
-            field=models.CharField(blank=True, help_text='Device hostname/name', max_length=255),
+            model_name="activitylog",
+            name="device_name",
+            field=models.CharField(
+                blank=True, help_text="Device hostname/name", max_length=255
+            ),
         ),
     ]

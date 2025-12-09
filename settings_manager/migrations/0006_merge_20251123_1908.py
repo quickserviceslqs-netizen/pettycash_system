@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('settings_manager', '0002_add_treasury_settings'),
-        ('settings_manager', '0005_activitylog_location_alter_activitylog_user_agent'),
+        ("settings_manager", "0002_add_treasury_settings"),
+        ("settings_manager", "0005_activitylog_location_alter_activitylog_user_agent"),
     ]
 
-    operations = [
-    ]
+    operations = []

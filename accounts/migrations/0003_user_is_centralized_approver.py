@@ -6,13 +6,16 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_alter_user_role'),
+        ("accounts", "0002_alter_user_role"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='is_centralized_approver',
-            field=models.BooleanField(default=False, help_text='If True, this user can approve requisitions for the whole company regardless of branch/region/department.'),
+            model_name="user",
+            name="is_centralized_approver",
+            field=models.BooleanField(
+                default=False,
+                help_text="If True, this user can approve requisitions for the whole company regardless of branch/region/department.",
+            ),
         ),
     ]

@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transactions', '0002_requisition_applied_threshold_and_more'),
+        ("transactions", "0002_requisition_applied_threshold_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='approvaltrail',
-            name='skipped_roles',
+            model_name="approvaltrail",
+            name="skipped_roles",
             field=models.JSONField(blank=True, null=True),
         ),
     ]

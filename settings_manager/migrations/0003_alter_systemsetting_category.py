@@ -6,13 +6,29 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('settings_manager', '0002_alter_systemsetting_category'),
+        ("settings_manager", "0002_alter_systemsetting_category"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='systemsetting',
-            name='category',
-            field=models.CharField(choices=[('email', 'Email Configuration'), ('approval', 'Approval Workflow'), ('payment', 'Payment Settings'), ('security', 'Security & Authentication'), ('notifications', 'Notifications'), ('general', 'General Settings'), ('reporting', 'Reports & Analytics'), ('requisition', 'Requisition Management'), ('treasury', 'Treasury Operations'), ('workflow', 'Workflow Automation'), ('organization', 'Users & Organization')], default='general', max_length=50),
+            model_name="systemsetting",
+            name="category",
+            field=models.CharField(
+                choices=[
+                    ("email", "Email Configuration"),
+                    ("approval", "Approval Workflow"),
+                    ("payment", "Payment Settings"),
+                    ("security", "Security & Authentication"),
+                    ("notifications", "Notifications"),
+                    ("general", "General Settings"),
+                    ("reporting", "Reports & Analytics"),
+                    ("requisition", "Requisition Management"),
+                    ("treasury", "Treasury Operations"),
+                    ("workflow", "Workflow Automation"),
+                    ("organization", "Users & Organization"),
+                ],
+                default="general",
+                max_length=50,
+            ),
         ),
     ]

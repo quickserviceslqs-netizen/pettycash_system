@@ -6,13 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transactions', '0004_phase3_phase4_reengineering'),
+        ("transactions", "0004_phase3_phase4_reengineering"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='approvaltrail',
-            name='action',
-            field=models.CharField(choices=[('approved', 'Approved'), ('validated', 'Validated'), ('paid', 'Paid'), ('reviewed', 'Reviewed'), ('rejected', 'Rejected'), ('urgency_confirmed', 'Urgency Confirmed')], max_length=20),
+            model_name="approvaltrail",
+            name="action",
+            field=models.CharField(
+                choices=[
+                    ("approved", "Approved"),
+                    ("validated", "Validated"),
+                    ("paid", "Paid"),
+                    ("reviewed", "Reviewed"),
+                    ("rejected", "Rejected"),
+                    ("urgency_confirmed", "Urgency Confirmed"),
+                ],
+                max_length=20,
+            ),
         ),
     ]

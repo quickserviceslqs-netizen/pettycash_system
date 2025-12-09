@@ -21,7 +21,11 @@ from datetime import timedelta
 from organization.models import Company, Region, Branch, Department, CostCenter
 from workflow.models import ApprovalThreshold
 from transactions.models import Requisition, ApprovalTrail
-from workflow.services.resolver import resolve_workflow, can_approve, find_approval_threshold
+from workflow.services.resolver import (
+    resolve_workflow,
+    can_approve,
+    find_approval_threshold,
+)
 
 User = get_user_model()
 
@@ -32,10 +36,14 @@ class Phase4ModelLayerTests(TestCase):
     def setUp(self):
         """Create test data: company, users, threshold, requisition."""
         self.company = Company.objects.create(name="Test Corp", code="TC")
-        self.region = Region.objects.create(name="North", code="N", company=self.company)
-        self.branch = Branch.objects.create(name="Branch A", code="BA", region=self.region)
+        self.region = Region.objects.create(
+            name="North", code="N", company=self.company
+        )
+        self.branch = Branch.objects.create(
+            name="Branch A", code="BA", region=self.region
+        )
         self.department = Department.objects.create(name="Finance", branch=self.branch)
-        
+
         # Create an admin user for escalation fallback
         self.admin = User.objects.create_user(
             username="admin",
@@ -99,7 +107,11 @@ class Phase4ModelLayerTests(TestCase):
         self.requisition.applied_threshold = self.threshold
         self.requisition.tier = "Tier 1"
         self.requisition.workflow_sequence = [
-            {"user_id": self.approver.id, "role": "branch_manager", "auto_escalated": False}
+            {
+                "user_id": self.approver.id,
+                "role": "branch_manager",
+                "auto_escalated": False,
+            }
         ]
         self.requisition.next_approver = self.approver
         self.requisition.save()
@@ -107,7 +119,9 @@ class Phase4ModelLayerTests(TestCase):
     def test_can_approve_requester_returns_false(self):
         """Requester cannot approve their own requisition."""
         can_act = self.requisition.can_approve(self.requester)
-        self.assertFalse(can_act, "Requester should NOT be able to approve their own requisition")
+        self.assertFalse(
+            can_act, "Requester should NOT be able to approve their own requisition"
+        )
 
     def test_can_approve_correct_approver_returns_true(self):
         """Correct next approver can approve."""
@@ -131,9 +145,11 @@ class Phase4ModelLayerTests(TestCase):
         # Simulate direct DB manipulation: set requester as next_approver
         self.requisition.next_approver = self.requester
         self.requisition.save()
-        
+
         can_act = self.requisition.can_approve(self.requester)
-        self.assertFalse(can_act, "can_approve should still reject requester even if DB manipulated")
+        self.assertFalse(
+            can_act, "can_approve should still reject requester even if DB manipulated"
+        )
 
 
 class Phase4RoutingEngineTests(TestCase):
@@ -142,8 +158,12 @@ class Phase4RoutingEngineTests(TestCase):
     def setUp(self):
         """Create test company hierarchy and users."""
         self.company = Company.objects.create(name="Test Corp", code="TC")
-        self.region = Region.objects.create(name="North", code="N", company=self.company)
-        self.branch = Branch.objects.create(name="Branch A", code="BA", region=self.region)
+        self.region = Region.objects.create(
+            name="North", code="N", company=self.company
+        )
+        self.branch = Branch.objects.create(
+            name="Branch A", code="BA", region=self.region
+        )
         self.department = Department.objects.create(name="Finance", branch=self.branch)
 
         # Create admin for escalation
@@ -319,8 +339,12 @@ class Phase4TreasurySpecialCaseTests(TestCase):
     def setUp(self):
         """Create Treasury user and approvers."""
         self.company = Company.objects.create(name="Test Corp", code="TC")
-        self.region = Region.objects.create(name="North", code="N", company=self.company)
-        self.branch = Branch.objects.create(name="Branch A", code="BA", region=self.region)
+        self.region = Region.objects.create(
+            name="North", code="N", company=self.company
+        )
+        self.branch = Branch.objects.create(
+            name="Branch A", code="BA", region=self.region
+        )
         self.department = Department.objects.create(name="Finance", branch=self.branch)
 
         self.admin = User.objects.create_user(
@@ -385,10 +409,16 @@ class Phase4TreasurySpecialCaseTests(TestCase):
         # Should route to Group Finance (first role in overridden sequence for Treasury Tier 1)
         # Or CFO if department_head doesn't exist
         resolved_roles = [r["role"].lower() for r in resolved]
-        self.assertIn("group_finance_manager", resolved_roles, 
-                      f"Expected group_finance_manager in {resolved_roles}, got: {resolved}")
-        self.assertNotEqual(resolved[0]["user_id"], self.treasury_user.id,
-                           "Treasury should NOT be in its own approval chain")
+        self.assertIn(
+            "group_finance_manager",
+            resolved_roles,
+            f"Expected group_finance_manager in {resolved_roles}, got: {resolved}",
+        )
+        self.assertNotEqual(
+            resolved[0]["user_id"],
+            self.treasury_user.id,
+            "Treasury should NOT be in its own approval chain",
+        )
 
     def test_treasury_tier4_routed_to_cfo(self):
         """Treasury Tier 4 request routes to CFO."""
@@ -429,8 +459,12 @@ class Phase4AuditTrailTests(TestCase):
     def setUp(self):
         """Create test scenario."""
         self.company = Company.objects.create(name="Test Corp", code="TC")
-        self.region = Region.objects.create(name="North", code="N", company=self.company)
-        self.branch = Branch.objects.create(name="Branch A", code="BA", region=self.region)
+        self.region = Region.objects.create(
+            name="North", code="N", company=self.company
+        )
+        self.branch = Branch.objects.create(
+            name="Branch A", code="BA", region=self.region
+        )
         self.department = Department.objects.create(name="Finance", branch=self.branch)
 
         self.requester = User.objects.create_user(
@@ -487,7 +521,9 @@ class Phase4AuditTrailTests(TestCase):
             auto_escalated=False,
         )
 
-        self.assertEqual(trail.requisition.transaction_id, self.requisition.transaction_id)
+        self.assertEqual(
+            trail.requisition.transaction_id, self.requisition.transaction_id
+        )
         self.assertEqual(trail.user.id, self.approver.id)
         self.assertEqual(trail.action, "approved")
         self.assertFalse(trail.auto_escalated)
@@ -525,7 +561,9 @@ class Phase4AuditTrailTests(TestCase):
             timestamp=timezone.now() + timedelta(hours=1),
         )
 
-        trails = ApprovalTrail.objects.filter(requisition=self.requisition).order_by('timestamp')
+        trails = ApprovalTrail.objects.filter(requisition=self.requisition).order_by(
+            "timestamp"
+        )
         self.assertEqual(trails.count(), 2)
         self.assertEqual(trails[0].role, "branch_manager")
         self.assertEqual(trails[1].role, "treasury")
@@ -533,4 +571,5 @@ class Phase4AuditTrailTests(TestCase):
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

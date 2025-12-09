@@ -6,14 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transactions', '0006_requisition_cost_center'),
+        ("transactions", "0006_requisition_cost_center"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='requisition',
-            name='receipt',
-            field=models.FileField(default='', help_text='Upload receipt/supporting document', upload_to='receipts/'),
+            model_name="requisition",
+            name="receipt",
+            field=models.FileField(
+                default="",
+                help_text="Upload receipt/supporting document",
+                upload_to="receipts/",
+            ),
             preserve_default=False,
         ),
     ]

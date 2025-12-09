@@ -7,28 +7,58 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transactions', '0003_approvaltrail_skipped_roles'),
+        ("transactions", "0003_approvaltrail_skipped_roles"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='approvaltrail',
-            name='escalation_reason',
+            model_name="approvaltrail",
+            name="escalation_reason",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='approvaltrail',
-            name='action',
-            field=models.CharField(choices=[('approved', 'Approved'), ('rejected', 'Rejected'), ('urgency_confirmed', 'Urgency Confirmed')], max_length=20),
+            model_name="approvaltrail",
+            name="action",
+            field=models.CharField(
+                choices=[
+                    ("approved", "Approved"),
+                    ("rejected", "Rejected"),
+                    ("urgency_confirmed", "Urgency Confirmed"),
+                ],
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='requisition',
-            name='status',
-            field=models.CharField(choices=[('draft', 'Draft'), ('pending', 'Pending'), ('pending_urgency_confirmation', 'Pending Urgency Confirmation'), ('pending_dept_approval', 'Pending Department Approval'), ('pending_branch_approval', 'Pending Branch Approval'), ('pending_regional_review', 'Pending Regional Review'), ('pending_finance_review', 'Pending Finance Review'), ('pending_treasury_validation', 'Pending Treasury Validation'), ('pending_cfo_approval', 'Pending CFO Approval'), ('paid', 'Paid'), ('reviewed', 'Reviewed'), ('rejected', 'Rejected')], default='draft', max_length=50),
+            model_name="requisition",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("draft", "Draft"),
+                    ("pending", "Pending"),
+                    ("pending_urgency_confirmation", "Pending Urgency Confirmation"),
+                    ("pending_dept_approval", "Pending Department Approval"),
+                    ("pending_branch_approval", "Pending Branch Approval"),
+                    ("pending_regional_review", "Pending Regional Review"),
+                    ("pending_finance_review", "Pending Finance Review"),
+                    ("pending_treasury_validation", "Pending Treasury Validation"),
+                    ("pending_cfo_approval", "Pending CFO Approval"),
+                    ("paid", "Paid"),
+                    ("reviewed", "Reviewed"),
+                    ("rejected", "Rejected"),
+                ],
+                default="draft",
+                max_length=50,
+            ),
         ),
         migrations.AlterField(
-            model_name='requisition',
-            name='transaction_id',
-            field=models.CharField(default=transactions.models.generate_transaction_id, editable=False, max_length=64, primary_key=True, serialize=False),
+            model_name="requisition",
+            name="transaction_id",
+            field=models.CharField(
+                default=transactions.models.generate_transaction_id,
+                editable=False,
+                max_length=64,
+                primary_key=True,
+                serialize=False,
+            ),
         ),
     ]

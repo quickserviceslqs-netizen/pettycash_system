@@ -4,10 +4,11 @@ from django.db import migrations, connection
 def add_payment_id_forward(apps, schema_editor):
     """Add payment_id column with UUID values"""
     db_vendor = connection.vendor
-    
-    if db_vendor == 'postgresql':
+
+    if db_vendor == "postgresql":
         # PostgreSQL-specific SQL
-        schema_editor.execute("""
+        schema_editor.execute(
+            """
 -- Ensure uuid extension exists (try pgcrypto then uuid-ossp)
 DO $$
 BEGIN
@@ -44,8 +45,9 @@ WHERE payment_id IS NULL;
 
 -- Add a unique index if not exists
 CREATE UNIQUE INDEX IF NOT EXISTS idx_treasury_payment_payment_id ON treasury_payment(payment_id);
-""")
-    elif db_vendor == 'sqlite':
+"""
+        )
+    elif db_vendor == "sqlite":
         # SQLite doesn't have UUID extension, but Payment model already has payment_id as UUIDField with default
         # So we just need to ensure the column exists - Django will handle UUID generation
         pass  # Django's schema editor will create the column from the model
@@ -56,13 +58,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_treasury_payment_payment_id ON treasury_pa
 def add_payment_id_reverse(apps, schema_editor):
     """Remove payment_id column"""
     db_vendor = connection.vendor
-    
-    if db_vendor == 'postgresql':
-        schema_editor.execute("""
+
+    if db_vendor == "postgresql":
+        schema_editor.execute(
+            """
 DROP INDEX IF EXISTS idx_treasury_payment_payment_id;
 ALTER TABLE treasury_payment DROP COLUMN IF EXISTS payment_id;
-""")
-    elif db_vendor == 'sqlite':
+"""
+        )
+    elif db_vendor == "sqlite":
         pass  # Django will handle column removal
     else:
         raise NotImplementedError(f"Migration reversal not supported for {db_vendor}")
@@ -70,10 +74,9 @@ ALTER TABLE treasury_payment DROP COLUMN IF EXISTS payment_id;
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('treasury', '0001_initial'),
+        ("treasury", "0001_initial"),
     ]
 
     operations = [
         migrations.RunPython(add_payment_id_forward, add_payment_id_reverse),
     ]
-

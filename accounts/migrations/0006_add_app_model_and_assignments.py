@@ -6,29 +6,75 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0005_remove_superuser_role'),
+        ("accounts", "0005_remove_superuser_role"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='App',
+            name="App",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(choices=[('transactions', 'Transactions'), ('treasury', 'Treasury'), ('workflow', 'Workflow'), ('reports', 'Reports')], help_text='Internal app name (lowercase)', max_length=50, unique=True)),
-                ('display_name', models.CharField(help_text='User-friendly display name', max_length=100)),
-                ('url', models.CharField(help_text='URL path for this app (e.g., /transactions/)', max_length=200)),
-                ('description', models.TextField(blank=True, help_text='What this app does')),
-                ('is_active', models.BooleanField(default=True, help_text='Whether this app is currently available')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(
+                        choices=[
+                            ("transactions", "Transactions"),
+                            ("treasury", "Treasury"),
+                            ("workflow", "Workflow"),
+                            ("reports", "Reports"),
+                        ],
+                        help_text="Internal app name (lowercase)",
+                        max_length=50,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "display_name",
+                    models.CharField(
+                        help_text="User-friendly display name", max_length=100
+                    ),
+                ),
+                (
+                    "url",
+                    models.CharField(
+                        help_text="URL path for this app (e.g., /transactions/)",
+                        max_length=200,
+                    ),
+                ),
+                (
+                    "description",
+                    models.TextField(blank=True, help_text="What this app does"),
+                ),
+                (
+                    "is_active",
+                    models.BooleanField(
+                        default=True,
+                        help_text="Whether this app is currently available",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Application',
-                'verbose_name_plural': 'Applications',
-                'ordering': ['display_name'],
+                "verbose_name": "Application",
+                "verbose_name_plural": "Applications",
+                "ordering": ["display_name"],
             },
         ),
         migrations.AddField(
-            model_name='user',
-            name='assigned_apps',
-            field=models.ManyToManyField(blank=True, help_text='Applications this user has access to. Use Django permissions to control add/view/change/delete within each app.', related_name='users', to='accounts.app'),
+            model_name="user",
+            name="assigned_apps",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text="Applications this user has access to. Use Django permissions to control add/view/change/delete within each app.",
+                related_name="users",
+                to="accounts.app",
+            ),
         ),
     ]

@@ -7,20 +7,30 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='ApprovalThreshold',
+            name="ApprovalThreshold",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('min_amount', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('max_amount', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('roles_sequence', models.JSONField(help_text='List of roles in approval order')),
-                ('allow_urgent_fasttrack', models.BooleanField(default=False)),
-                ('requires_cfo', models.BooleanField(default=False)),
-                ('description', models.TextField(blank=True, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("min_amount", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("max_amount", models.DecimalField(decimal_places=2, max_digits=12)),
+                (
+                    "roles_sequence",
+                    models.JSONField(help_text="List of roles in approval order"),
+                ),
+                ("allow_urgent_fasttrack", models.BooleanField(default=False)),
+                ("requires_cfo", models.BooleanField(default=False)),
+                ("description", models.TextField(blank=True, null=True)),
             ],
         ),
     ]

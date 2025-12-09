@@ -8,39 +8,84 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('transactions', '0008_requisition_is_fast_tracked_and_more'),
+        ("transactions", "0008_requisition_is_fast_tracked_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='requisition',
-            name='change_request_deadline',
-            field=models.DateTimeField(blank=True, help_text='Deadline for requester to respond', null=True),
+            model_name="requisition",
+            name="change_request_deadline",
+            field=models.DateTimeField(
+                blank=True, help_text="Deadline for requester to respond", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='requisition',
-            name='change_request_details',
-            field=models.TextField(blank=True, help_text='Specific changes requested by approver', null=True),
+            model_name="requisition",
+            name="change_request_details",
+            field=models.TextField(
+                blank=True,
+                help_text="Specific changes requested by approver",
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='requisition',
-            name='change_requested',
-            field=models.BooleanField(default=False, help_text='True if approver requested changes'),
+            model_name="requisition",
+            name="change_requested",
+            field=models.BooleanField(
+                default=False, help_text="True if approver requested changes"
+            ),
         ),
         migrations.AddField(
-            model_name='requisition',
-            name='change_requested_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='change_requests_made', to=settings.AUTH_USER_MODEL),
+            model_name="requisition",
+            name="change_requested_by",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="change_requests_made",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AlterField(
-            model_name='approvaltrail',
-            name='action',
-            field=models.CharField(choices=[('approved', 'Approved'), ('validated', 'Validated'), ('paid', 'Paid'), ('reviewed', 'Reviewed'), ('rejected', 'Rejected'), ('urgency_confirmed', 'Urgency Confirmed'), ('reverted_to_normal', 'Reverted to Normal Flow'), ('changes_requested', 'Changes Requested'), ('changes_submitted', 'Changes Submitted')], max_length=30),
+            model_name="approvaltrail",
+            name="action",
+            field=models.CharField(
+                choices=[
+                    ("approved", "Approved"),
+                    ("validated", "Validated"),
+                    ("paid", "Paid"),
+                    ("reviewed", "Reviewed"),
+                    ("rejected", "Rejected"),
+                    ("urgency_confirmed", "Urgency Confirmed"),
+                    ("reverted_to_normal", "Reverted to Normal Flow"),
+                    ("changes_requested", "Changes Requested"),
+                    ("changes_submitted", "Changes Submitted"),
+                ],
+                max_length=30,
+            ),
         ),
         migrations.AlterField(
-            model_name='requisition',
-            name='status',
-            field=models.CharField(choices=[('draft', 'Draft'), ('pending', 'Pending'), ('pending_changes', 'Pending Changes from Requester'), ('pending_urgency_confirmation', 'Pending Urgency Confirmation'), ('pending_dept_approval', 'Pending Department Approval'), ('pending_branch_approval', 'Pending Branch Approval'), ('pending_regional_review', 'Pending Regional Review'), ('pending_finance_review', 'Pending Finance Review'), ('pending_treasury_validation', 'Pending Treasury Validation'), ('pending_cfo_approval', 'Pending CFO Approval'), ('paid', 'Paid'), ('reviewed', 'Reviewed'), ('rejected', 'Rejected')], default='draft', max_length=50),
+            model_name="requisition",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("draft", "Draft"),
+                    ("pending", "Pending"),
+                    ("pending_changes", "Pending Changes from Requester"),
+                    ("pending_urgency_confirmation", "Pending Urgency Confirmation"),
+                    ("pending_dept_approval", "Pending Department Approval"),
+                    ("pending_branch_approval", "Pending Branch Approval"),
+                    ("pending_regional_review", "Pending Regional Review"),
+                    ("pending_finance_review", "Pending Finance Review"),
+                    ("pending_treasury_validation", "Pending Treasury Validation"),
+                    ("pending_cfo_approval", "Pending CFO Approval"),
+                    ("paid", "Paid"),
+                    ("reviewed", "Reviewed"),
+                    ("rejected", "Rejected"),
+                ],
+                default="draft",
+                max_length=50,
+            ),
         ),
     ]

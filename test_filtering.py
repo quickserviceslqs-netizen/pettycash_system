@@ -4,14 +4,16 @@ import os
 import sys
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pettycash_system.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pettycash_system.settings")
 django.setup()
 
 from settings_manager.models import SystemSetting
 
 # Test: filter by email category
 print("=== Testing Email Category Filter ===")
-email_settings = SystemSetting.objects.filter(category='email', is_active=True).order_by('display_name')
+email_settings = SystemSetting.objects.filter(
+    category="email", is_active=True
+).order_by("display_name")
 print(f"Email settings found: {email_settings.count()}")
 for s in email_settings:
     print(f"  - {s.display_name} ({s.key})")

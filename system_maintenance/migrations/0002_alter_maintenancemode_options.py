@@ -6,12 +6,21 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('system_maintenance', '0001_initial'),
+        ("system_maintenance", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='maintenancemode',
-            options={'get_latest_by': 'activated_at', 'ordering': ['-activated_at'], 'permissions': (('manage_maintenance', 'Can manage maintenance sessions and settings'),)},
+            name="maintenancemode",
+            options={
+                "get_latest_by": "activated_at",
+                "ordering": ["-activated_at"],
+                "permissions": (
+                    (
+                        "manage_maintenance",
+                        "Can manage maintenance sessions and settings",
+                    ),
+                ),
+            },
         ),
     ]
