@@ -116,10 +116,13 @@ WSGI_APPLICATION = 'pettycash_system.wsgi.application'
 # ---------------------------------------------------------------------
 # DATABASE
 # ---------------------------------------------------------------------
-# Use DATABASE_URL from environment (Railway/Render) or fallback to local PostgreSQL
+# Use DATABASE_URL from environment or fallback to Supabase connection string
 DATABASES = {
     'default': dj_database_url.config(
-        default=f"postgresql://chelotian:35315619@Ian@localhost:5432/pettycash_db",
+        default=os.environ.get(
+            'DATABASE_URL',
+            'postgresql://postgres.oqzljyujxeqyprhskajk:35315619@Ian@aws-1-eu-west-3.pooler.supabase.com:5432/postgres'
+        ),
         conn_max_age=600,
         conn_health_checks=True,
     )

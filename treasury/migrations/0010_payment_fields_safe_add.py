@@ -12,9 +12,16 @@ def check_and_add_fields(apps, schema_editor):
     from django.db import connection
     
     with connection.cursor() as cursor:
-        # Check if columns exist (SQLite compatible)
-        cursor.execute("PRAGMA table_info('treasury_payment')")
-        existing_columns = {row[1] for row in cursor.fetchall()}
+        # Check if columns exist, backend-aware
+        if connection.vendor == 'postgresql':
+            cursor.execute("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name='treasury_payment'
+            """)
+            existing_columns = {row[0] for row in cursor.fetchall()}
+        else:
+            cursor.execute("PRAGMA table_info('treasury_payment')")
+            existing_columns = {row[1] for row in cursor.fetchall()}
         
         # Add created_by_id if it doesn't exist
         if 'created_by_id' not in existing_columns:
@@ -40,7 +47,7 @@ def check_and_add_fields(apps, schema_editor):
         if 'voucher_number' not in existing_columns:
             cursor.execute("""
                 ALTER TABLE treasury_payment 
-                ADD COLUMN voucher_number VARCHAR(50) NULL UNIQUE;
+                ADD COLUMN voucher_number VARCHAR(50) NULL;
             """)
 
 
@@ -51,12 +58,21 @@ def make_requisition_optional(apps, schema_editor):
     from django.db import connection
     
     with connection.cursor() as cursor:
-        # Check if requisition_id is nullable (SQLite compatible)
-        cursor.execute("PRAGMA table_info('treasury_payment')")
-        columns = cursor.fetchall()
-        for col in columns:
-            if col[1] == 'requisition_id' and col[3] == 1:  # 1 means NOT NULL
+        # Check if requisition_id is nullable, backend-aware
+        if connection.vendor == 'postgresql':
+            cursor.execute("""
+                SELECT is_nullable FROM information_schema.columns 
+                WHERE table_name='treasury_payment' AND column_name='requisition_id';
+            """)
+            result = cursor.fetchone()
+            if result and result[0] == 'NO':
                 cursor.execute("ALTER TABLE treasury_payment ALTER COLUMN requisition_id DROP NOT NULL;")
+        else:
+            cursor.execute("PRAGMA table_info('treasury_payment')")
+            columns = cursor.fetchall()
+            for col in columns:
+                if col[1] == 'requisition_id' and col[3] == 1:  # 1 means NOT NULL
+                    cursor.execute("ALTER TABLE treasury_payment ALTER COLUMN requisition_id DROP NOT NULL;")
 
 
 class Migration(migrations.Migration):
