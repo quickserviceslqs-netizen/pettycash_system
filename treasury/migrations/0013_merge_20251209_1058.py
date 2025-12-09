@@ -6,7 +6,6 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("treasury", "0011_voucher_number_unique_constraint"),
         ("treasury", "0012_alter_treasuryfund_unique_together_and_more"),
     ]
 
