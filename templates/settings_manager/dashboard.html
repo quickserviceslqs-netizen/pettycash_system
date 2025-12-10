@@ -7,13 +7,50 @@
 {% block extra_head %}
 <style>
     .category-card {
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: all 0.3s ease;
         cursor: pointer;
         border-left: 4px solid;
+        position: relative;
+        overflow: hidden;
+    }
+    .category-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
     }
     .category-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .category-card:hover::before {
+        opacity: 1;
+    }
+    .category-card.selected {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        border-width: 5px;
+    }
+    .category-card.selected::after {
+        content: '✓';
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #198754;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
     }
     .category-card.email { border-left-color: #0d6efd; }
     .category-card.approval { border-left-color: #198754; }
@@ -116,155 +153,192 @@
                 </div>
             </div>
 
-            <!-- Category Cards (only show when no filter) -->
-            {% if not selected_category %}
+            <!-- Category Cards (always show, but highlight selected) -->
             <div class="card mb-4">
-                <div class="card-header bg-light">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="bi bi-grid-3x3-gap"></i> Browse by Category
                     </h5>
+                    {% if selected_category %}
+                        <span class="badge bg-primary">
+                            <i class="bi bi-funnel"></i> Filtered: {{ selected_category|title }}
+                        </span>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <div class="card category-card email" onclick="filterByCategory('email', 'Email Configuration')">
+                            <div class="card category-card email{% if selected_category == 'email' %} selected{% endif %}" onclick="filterByCategory('email', 'Email Configuration')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-envelope-fill fs-2 text-primary me-3"></i>
-                                        <div>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">Email Configuration</h6>
                                             <small class="text-muted">{{ category_counts.email|default:"0" }} setting{{ category_counts.email|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'email' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card approval" onclick="filterByCategory('approval', 'Approval Workflow')">
+                            <div class="card category-card approval{% if selected_category == 'approval' %} selected{% endif %}" onclick="filterByCategory('approval', 'Approval Workflow')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-check-circle-fill fs-2 text-success me-3"></i>
-                                        <div>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">Approval Workflow</h6>
                                             <small class="text-muted">{{ category_counts.approval|default:"0" }} setting{{ category_counts.approval|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'approval' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card payment" onclick="filterByCategory('payment', 'Payment Settings')">
+                            <div class="card category-card payment{% if selected_category == 'payment' %} selected{% endif %}" onclick="filterByCategory('payment', 'Payment Settings')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
-                                        <i class="bi bi-currency-dollar fs-2 text-warning me-3"></i>
-                                        <div>
+                                        <i class="bi bi-credit-card-fill fs-2 text-warning me-3"></i>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">Payment Settings</h6>
                                             <small class="text-muted">{{ category_counts.payment|default:"0" }} setting{{ category_counts.payment|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'payment' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card security" onclick="filterByCategory('security', 'Security & Auth')">
+                            <div class="card category-card security{% if selected_category == 'security' %} selected{% endif %}" onclick="filterByCategory('security', 'Security & Auth')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-shield-lock-fill fs-2 text-danger me-3"></i>
-                                        <div>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">Security & Auth</h6>
                                             <small class="text-muted">{{ category_counts.security|default:"0" }} setting{{ category_counts.security|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'security' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card notifications" onclick="filterByCategory('notifications', 'Notifications')">
+                            <div class="card category-card notifications{% if selected_category == 'notifications' %} selected{% endif %}" onclick="filterByCategory('notifications', 'Notifications')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-bell-fill fs-2 text-info me-3"></i>
-                                        <div>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">Notifications</h6>
                                             <small class="text-muted">{{ category_counts.notifications|default:"0" }} setting{{ category_counts.notifications|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'notifications' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card general" onclick="filterByCategory('general', 'General Settings')">
+                            <div class="card category-card general{% if selected_category == 'general' %} selected{% endif %}" onclick="filterByCategory('general', 'General Settings')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-gear-fill fs-2 text-secondary me-3"></i>
-                                        <div>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">General Settings</h6>
                                             <small class="text-muted">{{ category_counts.general|default:"0" }} setting{{ category_counts.general|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'general' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card reporting" onclick="filterByCategory('reporting', 'Reports & Analytics')">
+                            <div class="card category-card reporting{% if selected_category == 'reporting' %} selected{% endif %}" onclick="filterByCategory('reporting', 'Reports & Analytics')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
-                                        <i class="bi bi-graph-up fs-2 text-purple me-3" style="color: #6f42c1;"></i>
-                                        <div>
+                                        <i class="bi bi-bar-chart-fill fs-2 text-purple me-3"></i>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">Reports & Analytics</h6>
                                             <small class="text-muted">{{ category_counts.reporting|default:"0" }} setting{{ category_counts.reporting|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'reporting' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card requisition" onclick="filterByCategory('requisition', 'Requisition Mgmt')">
+                            <div class="card category-card requisition{% if selected_category == 'requisition' %} selected{% endif %}" onclick="filterByCategory('requisition', 'Requisition Mgmt')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
-                                        <i class="bi bi-file-text-fill fs-2 me-3" style="color: #fd7e14;"></i>
-                                        <div>
+                                        <i class="bi bi-clipboard-check-fill fs-2 text-orange me-3"></i>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">Requisition Mgmt</h6>
                                             <small class="text-muted">{{ category_counts.requisition|default:"0" }} setting{{ category_counts.requisition|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'requisition' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card treasury" onclick="filterByCategory('treasury', 'Treasury Operations')">
+                            <div class="card category-card treasury{% if selected_category == 'treasury' %} selected{% endif %}" onclick="filterByCategory('treasury', 'Treasury Operations')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
-                                        <i class="bi bi-piggy-bank-fill fs-2 me-3" style="color: #20c997;"></i>
-                                        <div>
+                                        <i class="bi bi-cash-stack fs-2 text-teal me-3"></i>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">Treasury Operations</h6>
                                             <small class="text-muted">{{ category_counts.treasury|default:"0" }} setting{{ category_counts.treasury|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'treasury' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card workflow" onclick="filterByCategory('workflow', 'Workflow Automation')">
+                            <div class="card category-card workflow{% if selected_category == 'workflow' %} selected{% endif %}" onclick="filterByCategory('workflow', 'Workflow Automation')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
-                                        <i class="bi bi-diagram-3-fill fs-2 me-3" style="color: #d63384;"></i>
-                                        <div>
+                                        <i class="bi bi-diagram-3-fill fs-2 text-pink me-3"></i>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">Workflow Automation</h6>
                                             <small class="text-muted">{{ category_counts.workflow|default:"0" }} setting{{ category_counts.workflow|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'workflow' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card category-card organization" onclick="filterByCategory('organization', 'Users & Organization')">
+                            <div class="card category-card organization{% if selected_category == 'organization' %} selected{% endif %}" onclick="filterByCategory('organization', 'Users & Organization')">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-people-fill fs-2 text-primary me-3"></i>
-                                        <div>
+                                        <div class="flex-grow-1">
                                             <h6 class="mb-0">Users & Organization</h6>
                                             <small class="text-muted">{{ category_counts.organization|default:"0" }} setting{{ category_counts.organization|pluralize }}</small>
                                         </div>
+                                        {% if selected_category == 'organization' %}
+                                            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -272,7 +346,6 @@
                     </div>
                 </div>
             </div>
-            {% endif %}
 
             <!-- Settings Display: Per-Category without Pagination -->
             {% if selected_category %}
@@ -286,18 +359,24 @@
             <!-- Search/Filter Bar -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <form method="get" class="d-flex gap-2" id="searchForm" onsubmit="return false">
+                    <form method="get" class="d-flex gap-2" id="searchForm">
+                        {% if selected_category %}
+                            <input type="hidden" name="category" value="{{ selected_category }}">
+                        {% endif %}
                         <input type="text" 
                                id="filterInput" 
+                               name="filter"
                                class="form-control" 
                                placeholder="Filter by setting name, key, or description..."
+                               value="{{ text_filter }}"
                                autocomplete="off">
-                        <button type="button" class="btn btn-primary" onclick="applyFilter(event)">
+                        <button type="submit" class="btn btn-primary">
                             <i class="bi bi-funnel"></i> Filter
                         </button>
-                        <button type="button" class="btn btn-outline-secondary" onclick="clearFilter(event)">
+                        <a href="{% if selected_category %}?category={{ selected_category }}{% else %}{% url 'settings_manager:dashboard' %}{% endif %}" 
+                           class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-clockwise"></i> Clear
-                        </button>
+                        </a>
                     </form>
                 </div>
             </div>
@@ -414,63 +493,33 @@ window.addEventListener('load', function() {
     }
 });
 
-// Client-side filtering
-function applyFilter(event) {
-    if (event) event.preventDefault();
-    const filterText = document.getElementById('filterInput').value.toLowerCase().trim();
-    const rows = document.querySelectorAll('tbody tr');
-    let visibleCount = 0;
-    
-    if (!filterText) {
-        rows.forEach(row => {
-            row.style.display = '';
-        });
-        return;
-    }
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        if (text.includes(filterText)) {
-            row.style.display = '';
-            visibleCount++;
-        } else {
-            row.style.display = 'none';
-        }
-    });
-    
-    // Show empty message if no results
-    rows.forEach(row => {
-        if (row.innerHTML.includes('No settings in this category') && visibleCount === 0) {
-            row.style.display = '';
-        }
-    });
-}
-
-function clearFilter(event) {
-    if (event) event.preventDefault();
-    document.getElementById('filterInput').value = '';
-    const rows = document.querySelectorAll('tbody tr');
-    rows.forEach(row => {
-        row.style.display = '';
-    });
-}
-
-// Allow Enter key to trigger filter
+// Handle Enter key in filter input and form submission
 document.addEventListener('DOMContentLoaded', function() {
     const filterInput = document.getElementById('filterInput');
     if (filterInput) {
         filterInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                applyFilter();
+                // Submit the form
+                document.getElementById('searchForm').submit();
             }
         });
     }
 });
 
-// Filter by category - populate the filter input and apply
+// Filter by category - preserve existing filter and apply category
 function filterByCategory(categoryKey, categoryName) {
-    window.location.href = '?category=' + categoryKey;
+    // Create URL with category parameter
+    let url = '?category=' + categoryKey;
+    
+    // If there's a current text filter, preserve it
+    const currentFilter = document.getElementById('filterInput');
+    if (currentFilter && currentFilter.value.trim()) {
+        url += '&filter=' + encodeURIComponent(currentFilter.value.trim());
+    }
+    
+    // Navigate to the filtered view
+    window.location.href = url;
 }
 </script>
 {% endblock %}

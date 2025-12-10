@@ -41,6 +41,8 @@ def settings_dashboard(request):
 
     # Get category filter from URL if provided
     category_filter = request.GET.get("category")
+    # Get text filter from URL if provided
+    text_filter = request.GET.get("filter", "").strip()
 
     # Get all settings grouped by category - NO PAGINATION
     categories = SystemSetting.CATEGORY_CHOICES
@@ -54,6 +56,15 @@ def settings_dashboard(request):
                 all_settings = SystemSetting.objects.filter(
                     category=category_key, is_active=True
                 ).order_by("display_name")
+                
+                # Apply text filter if provided
+                if text_filter:
+                    all_settings = all_settings.filter(
+                        Q(display_name__icontains=text_filter) |
+                        Q(key__icontains=text_filter) |
+                        Q(description__icontains=text_filter)
+                    )
+                
                 if all_settings.exists():
                     category_counts[category_key] = all_settings.count()
                     # Store with tuple (key, name, settings) for template access
@@ -64,12 +75,21 @@ def settings_dashboard(request):
             all_settings = SystemSetting.objects.filter(
                 category=category_key, is_active=True
             ).order_by("display_name")
+            
+            # Apply text filter if provided
+            if text_filter:
+                all_settings = all_settings.filter(
+                    Q(display_name__icontains=text_filter) |
+                    Q(key__icontains=text_filter) |
+                    Q(description__icontains=text_filter)
+                )
+            
             if all_settings.exists():
                 category_counts[category_key] = all_settings.count()
                 # Store with tuple (key, name, settings) for template access
                 settings_by_category[(category_key, category_name)] = all_settings
 
-    # Get all active settings
+    # Get all active settings (for stats)
     all_settings = SystemSetting.objects.filter(is_active=True)
 
     context = {
@@ -78,6 +98,7 @@ def settings_dashboard(request):
         "all_settings": all_settings,
         "categories": categories,
         "selected_category": category_filter,
+        "text_filter": text_filter,
         "total_settings": SystemSetting.objects.filter(is_active=True).count(),
     }
 
