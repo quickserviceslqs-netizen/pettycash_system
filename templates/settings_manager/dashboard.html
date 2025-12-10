@@ -548,7 +548,7 @@
                         </div>
 
                         <!-- Pagination and Per-Page Controls -->
-                        {% if page_obj.has_other_pages %}
+                        {% if page_obj.paginator.count >= 5 %}
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
                             <!-- Per-page selector -->
                             <div class="d-flex align-items-center gap-2">
@@ -563,6 +563,7 @@
                                 <small class="text-muted">per page</small>
                             </div>
 
+                            {% if page_obj.has_other_pages %}
                             <!-- Pagination -->
                             <nav aria-label="Settings pagination for {{ cat_name }}">
                                 <ul class="pagination pagination-sm mb-0">
@@ -603,9 +604,13 @@
                                     {% endif %}
                                 </ul>
                             </nav>
+                            {% endif %}
 
                             <!-- Page info -->
                             <div class="small text-muted">
+                                {% if page_obj.paginator.num_pages > 1 %}
+                                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} • 
+                                {% endif %}
                                 Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} settings
                             </div>
                         </div>
