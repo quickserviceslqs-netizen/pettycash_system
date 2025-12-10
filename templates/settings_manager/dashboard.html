@@ -106,6 +106,45 @@
         color: #6c757d;
         margin-left: 0.5rem;
     }
+
+    /* Scroll bar styling */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    /* Sticky table header */
+    .sticky-top {
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Pagination styling */
+    .pagination-sm .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    /* Per-page selector styling */
+    .form-select-sm {
+        font-size: 0.875rem;
+        padding: 0.25rem 1.5rem 0.25rem 0.5rem;
+    }
 </style>
 {% endblock %}
 
@@ -418,29 +457,34 @@
             </div>
             
             <!-- Settings by Category -->
-            {% for cat_info, settings_list in settings_by_category.items %}
-                {% with cat_key=cat_info.0 cat_name=cat_info.1 %}
+            {% for cat_info, page_obj in settings_by_category.items %}
+                {% with cat_key=cat_info.0 cat_name=cat_info.1 pag_info=paginated_settings|get_item:cat_key %}
                 <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             <i class="bi bi-{% if cat_key == 'email' %}envelope{% elif cat_key == 'approval' %}check-circle{% elif cat_key == 'payment' %}currency-dollar{% elif cat_key == 'security' %}shield-lock{% elif cat_key == 'notifications' %}bell{% elif cat_key == 'reporting' %}graph-up{% elif cat_key == 'requisition' %}file-text{% elif cat_key == 'treasury' %}piggy-bank{% elif cat_key == 'workflow' %}diagram-3{% elif cat_key == 'organization' %}people{% else %}gear{% endif %}"></i>
-                            {{ cat_name|title }} ({{ settings_list|length }} settings)
+                            {{ cat_name|title }} ({{ pag_info.total_count }} settings)
                         </h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <small class="text-white-50">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </small>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive" style="overflow-x: auto;">
-                            <table class="table table-hover">
-                                <thead>
+                        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-light sticky-top">
                                     <tr>
-                                        <th style="white-space: nowrap;">Setting</th>
-                                        <th style="white-space: nowrap;">Description</th>
-                                        <th style="white-space: nowrap;">Current Value</th>
-                                        <th style="white-space: nowrap;">Status</th>
-                                        <th style="white-space: nowrap;">Actions</th>
+                                        <th style="white-space: nowrap; min-width: 200px;">Setting</th>
+                                        <th style="white-space: nowrap; min-width: 250px;">Description</th>
+                                        <th style="white-space: nowrap; min-width: 150px;">Current Value</th>
+                                        <th style="white-space: nowrap; min-width: 80px;">Status</th>
+                                        <th style="white-space: nowrap; min-width: 100px;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for setting in settings_list %}
+                                    {% for setting in page_obj %}
                                         <tr>
                                             <td style="white-space: nowrap;">
                                                 <strong>{{ setting.display_name }}</strong>
@@ -453,7 +497,7 @@
                                                     </span>
                                                 {% endif %}
                                             </td>
-                                            <td style="white-space: nowrap;">
+                                            <td>
                                                 <small>{{ setting.description }}</small>
                                             </td>
                                             <td style="white-space: nowrap;">
@@ -462,7 +506,7 @@
                                                         <i class="bi bi-eye-slash"></i> ••••••••
                                                     </span>
                                                 {% else %}
-                                                    <code>{{ setting.value|truncatewords:5 }}</code>
+                                                    <code style="word-break: break-all;">{{ setting.value|truncatewords:3 }}</code>
                                                 {% endif %}
                                                 {% if setting.value != setting.default_value %}
                                                     <br>
@@ -495,13 +539,77 @@
                                     {% empty %}
                                         <tr>
                                             <td colspan="5" class="text-center text-muted py-3">
-                                                No settings in this category
+                                                No settings found in this category
                                             </td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- Pagination and Per-Page Controls -->
+                        {% if pag_info.has_other_pages %}
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                            <!-- Per-page selector -->
+                            <div class="d-flex align-items-center gap-2">
+                                <label for="per_page_{{ cat_key }}" class="form-label mb-0 small">Show:</label>
+                                <select class="form-select form-select-sm" id="per_page_{{ cat_key }}" style="width: auto;" onchange="changePerPage('{{ cat_key }}', this.value)">
+                                    <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
+                                    <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
+                                    <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
+                                    <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
+                                    <option value="100" {% if per_page == 100 %}selected{% endif %}>100</option>
+                                </select>
+                                <small class="text-muted">per page</small>
+                            </div>
+
+                            <!-- Pagination -->
+                            <nav aria-label="Settings pagination for {{ cat_name }}">
+                                <ul class="pagination pagination-sm mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if text_filter %}filter={{ text_filter|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}&per_page={{ per_page }}" aria-label="Previous">
+                                                <span aria-hidden="true">&laquo;</span>
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">&laquo;</span>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in page_obj.paginator.page_range %}
+                                        {% if page_obj.number == num %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if text_filter %}filter={{ text_filter|urlencode }}&{% endif %}page={{ num }}&per_page={{ per_page }}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if text_filter %}filter={{ text_filter|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}&per_page={{ per_page }}" aria-label="Next">
+                                                <span aria-hidden="true">&raquo;</span>
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">&raquo;</span>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+
+                            <!-- Page info -->
+                            <div class="small text-muted">
+                                Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ pag_info.total_count }} settings
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 {% endwith %}
@@ -553,7 +661,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Real-time client-side filtering
+// Real-time client-side filtering (works within current page)
 function applyRealTimeFilter(filterText) {
     const categoryCards = document.querySelectorAll('.card.mb-4');
     let totalVisibleSettings = 0;
@@ -566,7 +674,8 @@ function applyRealTimeFilter(filterText) {
 
         if (!table) return; // Skip cards without tables
 
-        const rows = table.querySelectorAll('tbody tr');
+        const tbody = table.querySelector('tbody');
+        const rows = tbody.querySelectorAll('tr');
         let visibleRows = 0;
 
         rows.forEach(row => {
@@ -587,16 +696,16 @@ function applyRealTimeFilter(filterText) {
             }
         });
 
-        // Update category header with filtered count
+        // Update category header with filtered count for current page
         const headerText = cardHeader.querySelector('h5');
         if (headerText) {
             const originalText = headerText.textContent;
-            const match = originalText.match(/^(.+?)\s*\((\d+)\s*settings?\)$/i);
+            const match = originalText.match(/^(.+?)\s*\((\d+)\s*settings?\)/i);
 
             if (match) {
                 const categoryName = match[1];
                 const totalSettings = parseInt(match[2]);
-                headerText.innerHTML = `${categoryName} (${visibleRows} of ${totalSettings} settings)`;
+                headerText.innerHTML = `${categoryName} (${visibleRows} of ${totalSettings} settings shown)`;
             }
         }
 
@@ -612,7 +721,7 @@ function applyRealTimeFilter(filterText) {
     // Update the Clear Search button visibility
     updateClearButton(filterText);
 
-    // Update stats if they exist
+    // Update stats if they exist (but note these are for current page only)
     updateStatsDisplay(totalVisibleSettings, visibleCategories);
 }
 
@@ -663,6 +772,25 @@ function filterByCategory(categoryKey, categoryName) {
 // Clear all filters and show all categories
 function clearAllFilters() {
     window.location.href = '{% url "settings_manager:dashboard" %}';
+}
+
+// Change items per page
+function changePerPage(category, perPage) {
+    // Build URL with current parameters
+    let url = '?per_page=' + perPage;
+    
+    {% if selected_category %}
+        url += '&category={{ selected_category }}';
+    {% endif %}
+    
+    {% if text_filter %}
+        url += '&filter={{ text_filter|urlencode }}';
+    {% endif %}
+    
+    // Reset to page 1 when changing per_page
+    url += '&page=1';
+    
+    window.location.href = url;
 }
 </script>
 {% endblock %}

@@ -43,11 +43,22 @@ def settings_dashboard(request):
     category_filter = request.GET.get("category")
     # Get text filter from URL if provided
     text_filter = request.GET.get("filter", "").strip()
+    # Get pagination parameters
+    page_number = request.GET.get('page', 1)
+    per_page = request.GET.get('per_page', 10)  # Default 10 items per page
 
-    # Get all settings grouped by category - NO PAGINATION
+    try:
+        per_page = int(per_page)
+        if per_page not in [5, 10, 25, 50, 100]:
+            per_page = 10  # Default fallback
+    except (ValueError, TypeError):
+        per_page = 10
+
+    # Get all settings grouped by category with pagination
     categories = SystemSetting.CATEGORY_CHOICES
     settings_by_category = {}
     category_counts = {}
+    paginated_settings = {}
 
     if category_filter:
         # Show only the filtered category
@@ -67,10 +78,21 @@ def settings_dashboard(request):
                 
                 if all_settings.exists():
                     category_counts[category_key] = all_settings.count()
-                    # Store with tuple (key, name, settings) for template access
-                    settings_by_category[(category_key, category_name)] = all_settings
+                    
+                    # Create paginator for this category
+                    paginator = Paginator(all_settings, per_page)
+                    page_obj = paginator.get_page(page_number)
+                    
+                    # Store with tuple (key, name, paginated_settings, total_count) for template access
+                    settings_by_category[(category_key, category_name)] = page_obj
+                    paginated_settings[category_key] = {
+                        'page_obj': page_obj,
+                        'total_count': all_settings.count(),
+                        'has_other_pages': page_obj.has_other_pages(),
+                        'paginator': paginator
+                    }
     else:
-        # Show all categories
+        # Show all categories with pagination
         for category_key, category_name in categories:
             all_settings = SystemSetting.objects.filter(
                 category=category_key, is_active=True
@@ -86,8 +108,19 @@ def settings_dashboard(request):
             
             if all_settings.exists():
                 category_counts[category_key] = all_settings.count()
-                # Store with tuple (key, name, settings) for template access
-                settings_by_category[(category_key, category_name)] = all_settings
+                
+                # Create paginator for this category
+                paginator = Paginator(all_settings, per_page)
+                page_obj = paginator.get_page(page_number)
+                
+                # Store with tuple (key, name, paginated_settings) for template access
+                settings_by_category[(category_key, category_name)] = page_obj
+                paginated_settings[category_key] = {
+                    'page_obj': page_obj,
+                    'total_count': all_settings.count(),
+                    'has_other_pages': page_obj.has_other_pages(),
+                    'paginator': paginator
+                }
 
     # Get all active settings (for stats)
     all_settings = SystemSetting.objects.filter(is_active=True)
@@ -95,10 +128,13 @@ def settings_dashboard(request):
     context = {
         "settings_by_category": settings_by_category,
         "category_counts": category_counts,
+        "paginated_settings": paginated_settings,
         "all_settings": all_settings,
         "categories": categories,
         "selected_category": category_filter,
         "text_filter": text_filter,
+        "per_page": per_page,
+        "page_number": page_number,
         "total_settings": SystemSetting.objects.filter(is_active=True).count(),
     }
 
