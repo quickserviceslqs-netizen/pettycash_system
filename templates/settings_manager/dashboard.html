@@ -458,12 +458,12 @@
             
             <!-- Settings by Category -->
             {% for cat_info, page_obj in settings_by_category.items %}
-                {% with cat_key=cat_info.0 cat_name=cat_info.1 pag_info=paginated_settings|get_item:cat_key %}
+                {% with cat_key=cat_info.0 cat_name=cat_info.1 %}
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             <i class="bi bi-{% if cat_key == 'email' %}envelope{% elif cat_key == 'approval' %}check-circle{% elif cat_key == 'payment' %}currency-dollar{% elif cat_key == 'security' %}shield-lock{% elif cat_key == 'notifications' %}bell{% elif cat_key == 'reporting' %}graph-up{% elif cat_key == 'requisition' %}file-text{% elif cat_key == 'treasury' %}piggy-bank{% elif cat_key == 'workflow' %}diagram-3{% elif cat_key == 'organization' %}people{% else %}gear{% endif %}"></i>
-                            {{ cat_name|title }} ({{ pag_info.total_count }} settings)
+                            {{ cat_name|title }} ({{ page_obj.paginator.count }} settings)
                         </h5>
                         <div class="d-flex align-items-center gap-2">
                             <small class="text-white-50">
@@ -548,7 +548,7 @@
                         </div>
 
                         <!-- Pagination and Per-Page Controls -->
-                        {% if pag_info.has_other_pages %}
+                        {% if page_obj.has_other_pages %}
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
                             <!-- Per-page selector -->
                             <div class="d-flex align-items-center gap-2">
@@ -606,7 +606,7 @@
 
                             <!-- Page info -->
                             <div class="small text-muted">
-                                Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ pag_info.total_count }} settings
+                                Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} settings
                             </div>
                         </div>
                         {% endif %}
