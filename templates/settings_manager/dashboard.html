@@ -76,6 +76,36 @@
         background: linear-gradient(45deg, #ffc107, #fd7e14);
         color: #000;
     }
+
+    .filtering-active {
+        position: relative;
+    }
+
+    .filtering-active::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+    }
+
+    .filtering-active::after {
+        content: '🔍 Filtering...';
+        color: #0d6efd;
+        font-weight: bold;
+    }
+
+    .filtered-count {
+        font-size: 0.9em;
+        color: #6c757d;
+        margin-left: 0.5rem;
+    }
 </style>
 {% endblock %}
 
@@ -503,29 +533,136 @@ window.addEventListener('load', function() {
 document.addEventListener('DOMContentLoaded', function() {
     const filterInput = document.getElementById('filterInput');
     if (filterInput) {
+        // Real-time filtering as user types
+        let filterTimeout;
+        filterInput.addEventListener('input', function() {
+            clearTimeout(filterTimeout);
+            filterTimeout = setTimeout(function() {
+                applyRealTimeFilter(filterInput.value.trim().toLowerCase());
+            }, 300); // Debounce for 300ms
+        });
+
+        // Handle Enter key for form submission (fallback)
         filterInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                // Submit the form
+                // Submit the form for server-side filtering
                 document.getElementById('searchForm').submit();
             }
         });
     }
 });
 
+// Real-time client-side filtering
+function applyRealTimeFilter(filterText) {
+    const categoryCards = document.querySelectorAll('.card.mb-4');
+    let totalVisibleSettings = 0;
+    let visibleCategories = 0;
+
+    categoryCards.forEach(card => {
+        const cardHeader = card.querySelector('.card-header');
+        const cardBody = card.querySelector('.card-body');
+        const table = cardBody ? cardBody.querySelector('table') : null;
+
+        if (!table) return; // Skip cards without tables
+
+        const rows = table.querySelectorAll('tbody tr');
+        let visibleRows = 0;
+
+        rows.forEach(row => {
+            if (row.querySelector('td[colspan]')) {
+                // Skip "No settings found" rows
+                return;
+            }
+
+            const text = row.textContent.toLowerCase();
+            const shouldShow = !filterText || text.includes(filterText);
+
+            if (shouldShow) {
+                row.style.display = '';
+                visibleRows++;
+                totalVisibleSettings++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Update category header with filtered count
+        const headerText = cardHeader.querySelector('h5');
+        if (headerText) {
+            const originalText = headerText.textContent;
+            const match = originalText.match(/^(.+?)\s*\((\d+)\s*settings?\)$/i);
+
+            if (match) {
+                const categoryName = match[1];
+                const totalSettings = parseInt(match[2]);
+                headerText.innerHTML = `${categoryName} (${visibleRows} of ${totalSettings} settings)`;
+            }
+        }
+
+        // Show/hide entire category card based on whether it has visible settings
+        if (visibleRows > 0) {
+            card.style.display = '';
+            visibleCategories++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    // Update the Clear Search button visibility
+    updateClearButton(filterText);
+
+    // Update stats if they exist
+    updateStatsDisplay(totalVisibleSettings, visibleCategories);
+}
+
+// Update Clear Search button visibility
+function updateClearButton(filterText) {
+    const clearButton = document.querySelector('a[href*="?"].btn-outline-secondary, a[href*="dashboard"].btn-outline-secondary');
+    if (clearButton) {
+        if (filterText) {
+            clearButton.style.display = '';
+        } else {
+            clearButton.style.display = 'none';
+        }
+    }
+}
+
+// Update statistics display
+function updateStatsDisplay(visibleSettings, visibleCategories) {
+    // Update total settings count if it exists
+    const totalSettingsElement = document.querySelector('.stat-card h3');
+    if (totalSettingsElement && visibleSettings !== undefined) {
+        const originalTotal = {{ total_settings }};
+        totalSettingsElement.innerHTML = visibleSettings < originalTotal ? `${visibleSettings} <small class="text-muted">of ${originalTotal}</small>` : originalTotal;
+    }
+
+    // Update categories count if it exists
+    const categoriesElement = document.querySelector('.card[style*="border-left: 4px solid #ffc107"] h3');
+    if (categoriesElement && visibleCategories !== undefined) {
+        const originalCategories = {{ categories|length }};
+        categoriesElement.innerHTML = visibleCategories < originalCategories ? `${visibleCategories} <small class="text-muted">of ${originalCategories}</small>` : originalCategories;
+    }
+}
+
 // Filter by category - preserve existing filter and apply category
 function filterByCategory(categoryKey, categoryName) {
     // Create URL with category parameter
     let url = '?category=' + categoryKey;
-    
+
     // If there's a current text filter, preserve it
     const currentFilter = document.getElementById('filterInput');
     if (currentFilter && currentFilter.value.trim()) {
         url += '&filter=' + encodeURIComponent(currentFilter.value.trim());
     }
-    
+
     // Navigate to the filtered view
     window.location.href = url;
+}
+
+// Clear all filters and show all categories
+function clearAllFilters() {
+    window.location.href = '{% url "settings_manager:dashboard" %}';
 }
 </script>
 {% endblock %}
