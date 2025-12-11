@@ -7,6 +7,7 @@ import string
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.paginator import Paginator
 from django.db.models import Count, Sum
 from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -138,6 +139,11 @@ def backup_management(request):
         else:
             backup.created_by_display = "System"
 
+    # Pagination
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(backups, 10)  # Show 10 backups per page
+    page_obj = paginator.get_page(page_number)
+
     # Statistics
     total_backups = backups.count()
     total_size = (
@@ -148,12 +154,55 @@ def backup_management(request):
     )
 
     context = {
-        "backups": backups,
+        "backups": page_obj,
         "total_backups": total_backups,
         "total_size_bytes": total_size,
+        "page_obj": page_obj,
+        "paginator": paginator,
     }
 
     return render(request, "system_maintenance/backup_management.html", context)
+
+
+@login_required
+@user_passes_test(is_admin_user)
+def download_backup(request, backup_id):
+    """Download backup files"""
+    backup = get_object_or_404(BackupRecord, backup_id=backup_id)
+
+    # Only allow download of completed backups
+    if backup.status != "completed":
+        raise Http404("Backup not available for download")
+
+    download_type = request.GET.get("type")
+    if not download_type:
+        raise Http404("Download type not specified")
+
+    if download_type == "database":
+        if not backup.database_file:
+            raise Http404("Database file not available")
+        file_field = backup.database_file
+        filename = f"database_{backup.backup_id}.json"
+
+    elif download_type == "media":
+        if not backup.media_archive:
+            raise Http404("Media archive not available")
+        file_field = backup.media_archive
+        filename = f"media_{backup.backup_id}.zip"
+
+    elif download_type == "settings":
+        if not backup.settings_file:
+            raise Http404("Settings file not available")
+        file_field = backup.settings_file
+        filename = f"settings_{backup.backup_id}.json"
+
+    else:
+        raise Http404("Invalid download type")
+
+    # Return file response
+    response = FileResponse(file_field.open(), as_attachment=True, filename=filename)
+    response["Content-Type"] = "application/octet-stream"
+    return response
 
 
 @login_required
