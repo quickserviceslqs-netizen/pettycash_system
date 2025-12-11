@@ -121,35 +121,119 @@
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     {% if backup.status == 'completed' %}
-                                        <!-- Download Dropdown -->
-                                        <div class="dropdown">
-                                            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                <i aria-hidden="true" class="bi bi-download"></i>
-                                            </button>
-                                            <ul class="dropdown-menu">
-                                                {% if backup.database_file %}
+                                        <!-- Download Button/Dropdown -->
+                                        {% if backup.database_file and backup.media_archive and backup.settings_file %}
+                                            <!-- Full backup - show dropdown with all options -->
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-primary dropdown-toggle" type="button" 
+                                                        id="downloadDropdown{{ backup.backup_id }}" 
+                                                        data-bs-toggle="dropdown" 
+                                                        aria-expanded="false">
+                                                    <i aria-hidden="true" class="bi bi-download"></i>
+                                                </button>
+                                                <ul class="dropdown-menu" aria-labelledby="downloadDropdown{{ backup.backup_id }}">
                                                     <li>
                                                         <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=database">
                                                             <i aria-hidden="true" class="bi bi-database"></i> Database
                                                         </a>
                                                     </li>
-                                                {% endif %}
-                                                {% if backup.media_archive %}
                                                     <li>
                                                         <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=media">
                                                             <i aria-hidden="true" class="bi bi-file-earmark-image"></i> Media
                                                         </a>
                                                     </li>
-                                                {% endif %}
-                                                {% if backup.settings_file %}
                                                     <li>
                                                         <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=settings">
                                                             <i aria-hidden="true" class="bi bi-gear"></i> Settings
                                                         </a>
                                                     </li>
-                                                {% endif %}
-                                            </ul>
-                                        </div>
+                                                </ul>
+                                            </div>
+                                        {% elif backup.database_file and backup.media_archive %}
+                                            <!-- Database + Media - show dropdown -->
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-primary dropdown-toggle" type="button" 
+                                                        id="downloadDropdown{{ backup.backup_id }}" 
+                                                        data-bs-toggle="dropdown" 
+                                                        aria-expanded="false">
+                                                    <i aria-hidden="true" class="bi bi-download"></i>
+                                                </button>
+                                                <ul class="dropdown-menu" aria-labelledby="downloadDropdown{{ backup.backup_id }}">
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=database">
+                                                            <i aria-hidden="true" class="bi bi-database"></i> Database
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=media">
+                                                            <i aria-hidden="true" class="bi bi-file-earmark-image"></i> Media
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        {% elif backup.database_file and backup.settings_file %}
+                                            <!-- Database + Settings - show dropdown -->
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-primary dropdown-toggle" type="button" 
+                                                        id="downloadDropdown{{ backup.backup_id }}" 
+                                                        data-bs-toggle="dropdown" 
+                                                        aria-expanded="false">
+                                                    <i aria-hidden="true" class="bi bi-download"></i>
+                                                </button>
+                                                <ul class="dropdown-menu" aria-labelledby="downloadDropdown{{ backup.backup_id }}">
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=database">
+                                                            <i aria-hidden="true" class="bi bi-database"></i> Database
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=settings">
+                                                            <i aria-hidden="true" class="bi bi-gear"></i> Settings
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        {% elif backup.media_archive and backup.settings_file %}
+                                            <!-- Media + Settings - show dropdown -->
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-primary dropdown-toggle" type="button" 
+                                                        id="downloadDropdown{{ backup.backup_id }}" 
+                                                        data-bs-toggle="dropdown" 
+                                                        aria-expanded="false">
+                                                    <i aria-hidden="true" class="bi bi-download"></i>
+                                                </button>
+                                                <ul class="dropdown-menu" aria-labelledby="downloadDropdown{{ backup.backup_id }}">
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=media">
+                                                            <i aria-hidden="true" class="bi bi-file-earmark-image"></i> Media
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=settings">
+                                                            <i aria-hidden="true" class="bi bi-gear"></i> Settings
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        {% else %}
+                                            <!-- Single file - show direct download button -->
+                                            {% if backup.database_file %}
+                                                <a href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=database" 
+                                                   class="btn btn-outline-primary" title="Download Database">
+                                                    <i aria-hidden="true" class="bi bi-database"></i>
+                                                </a>
+                                            {% elif backup.media_archive %}
+                                                <a href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=media" 
+                                                   class="btn btn-outline-primary" title="Download Media">
+                                                    <i aria-hidden="true" class="bi bi-file-earmark-image"></i>
+                                                </a>
+                                            {% elif backup.settings_file %}
+                                                <a href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=settings" 
+                                                   class="btn btn-outline-primary" title="Download Settings">
+                                                    <i aria-hidden="true" class="bi bi-gear"></i>
+                                                </a>
+                                            {% endif %}
+                                        {% endif %}
 
                                         <!-- Verify Button -->
                                         <form method="post" class="d-inline">
