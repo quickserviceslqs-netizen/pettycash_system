@@ -17,9 +17,10 @@
     transform: translateY(-50%);
     width: 0;
     height: 0;
-    border-left: 0.3em solid transparent;
-    border-right: 0.3em solid transparent;
     border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-bottom: 0;
+    border-left: 0.3em solid transparent;
 }
 </style>
 {% endblock %}
@@ -182,19 +183,19 @@
                                                 <a href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=database" 
                                                    class="btn btn-outline-primary dropdown-toggle-static" 
                                                    title="Download Database">
-                                                    <i aria-hidden="true" class="bi bi-database"></i>
+                                                    <i aria-hidden="true" class="bi bi-download"></i>
                                                 </a>
                                             {% elif backup.media_archive %}
                                                 <a href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=media" 
                                                    class="btn btn-outline-primary dropdown-toggle-static" 
                                                    title="Download Media">
-                                                    <i aria-hidden="true" class="bi bi-file-earmark-image"></i>
+                                                    <i aria-hidden="true" class="bi bi-download"></i>
                                                 </a>
                                             {% elif backup.settings_file %}
                                                 <a href="{% url 'system_maintenance:download_backup' backup.backup_id %}?type=settings" 
                                                    class="btn btn-outline-primary dropdown-toggle-static" 
                                                    title="Download Settings">
-                                                    <i aria-hidden="true" class="bi bi-gear"></i>
+                                                    <i aria-hidden="true" class="bi bi-download"></i>
                                                 </a>
                                             {% endif %}
                                         {% endif %}
