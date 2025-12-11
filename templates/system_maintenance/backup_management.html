@@ -108,7 +108,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ backup.get_size_display }}</td>
-                            <td>{{ backup.created_by.get_full_name|default:backup.created_by.username }}</td>
+                            <td>{{ backup.created_by_display }}</td>
                             <td>{{ backup.created_at|date:"M d, Y H:i" }}</td>
                             <td>
                                 {% if backup.expires_at %}

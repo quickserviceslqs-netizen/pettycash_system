@@ -26,7 +26,7 @@ from system_maintenance.services.restore_service import RestoreService
 
 def is_admin_user(user):
     """Check if user is admin or superuser"""
-    return user.is_superuser or user.role in ["Admin", "Super Admin"]
+    return user.is_superuser or user.role in ["admin"]
 
 
 @login_required
@@ -74,7 +74,7 @@ def backup_management(request):
     if request.method == "POST":
         action = request.POST.get("action")
 
-        if action == "create_backup":
+        if action == "create":
             backup_type = request.POST.get("backup_type", "full")
             description = request.POST.get("description", "")
 
@@ -130,6 +130,13 @@ def backup_management(request):
 
     # GET request
     backups = BackupRecord.objects.all().order_by("-created_at")
+
+    # Add display name for created_by
+    for backup in backups:
+        if backup.created_by:
+            backup.created_by_display = backup.created_by.get_full_name() or backup.created_by.username
+        else:
+            backup.created_by_display = "System"
 
     # Statistics
     total_backups = backups.count()

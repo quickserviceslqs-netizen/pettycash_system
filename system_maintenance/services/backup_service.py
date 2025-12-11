@@ -126,9 +126,22 @@ class BackupService:
                 backup_record.database_file.save(filename, f, save=True)
 
         finally:
-            # Clean up temp file
-            if os.path.exists(temp_file.name):
-                os.unlink(temp_file.name)
+            # Clean up temp file with better error handling for Windows
+            try:
+                if os.path.exists(temp_file.name):
+                    os.unlink(temp_file.name)
+            except (OSError, PermissionError) as e:
+                # On Windows, file might be locked by antivirus or other processes
+                # Log the issue but don't fail the backup
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Could not delete temp file {temp_file.name}: {e}")
+                # On Windows, temp files will be cleaned up by OS eventually
+                if platform.system() == 'Windows':
+                    logger.info("Temp file cleanup will be handled by Windows OS")
+                else:
+                    # On other systems, this is unexpected - re-raise
+                    raise
 
     def _backup_media_files(self, backup_record):
         """Backup media files to compressed archive"""
@@ -158,8 +171,21 @@ class BackupService:
                 backup_record.media_archive.save(filename, f, save=True)
 
         finally:
-            if os.path.exists(temp_zip.name):
-                os.unlink(temp_zip.name)
+            # Clean up temp zip file with better error handling for Windows
+            try:
+                if os.path.exists(temp_zip.name):
+                    os.unlink(temp_zip.name)
+            except (OSError, PermissionError) as e:
+                # On Windows, file might be locked by antivirus or other processes
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Could not delete temp zip file {temp_zip.name}: {e}")
+                # On Windows, temp files will be cleaned up by OS eventually
+                if platform.system() == 'Windows':
+                    logger.info("Temp zip file cleanup will be handled by Windows OS")
+                else:
+                    # On other systems, this is unexpected - re-raise
+                    raise
 
     def _backup_settings(self, backup_record):
         """Backup critical settings and configurations"""
@@ -185,8 +211,21 @@ class BackupService:
                 backup_record.settings_file.save(filename, f, save=True)
 
         finally:
-            if os.path.exists(temp_file.name):
-                os.unlink(temp_file.name)
+            # Clean up temp file with better error handling for Windows
+            try:
+                if os.path.exists(temp_file.name):
+                    os.unlink(temp_file.name)
+            except (OSError, PermissionError) as e:
+                # On Windows, file might be locked by antivirus or other processes
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Could not delete temp settings file {temp_file.name}: {e}")
+                # On Windows, temp files will be cleaned up by OS eventually
+                if platform.system() == 'Windows':
+                    logger.info("Temp settings file cleanup will be handled by Windows OS")
+                else:
+                    # On other systems, this is unexpected - re-raise
+                    raise
 
     def _get_record_counts(self):
         """Get count of records for each model"""
