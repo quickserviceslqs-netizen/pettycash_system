@@ -20,6 +20,9 @@ python manage.py migrate treasury 0006 --fake 2>/dev/null || true
 python manage.py migrate treasury 0007 --fake 2>/dev/null || true
 python manage.py migrate treasury 0008 --fake 2>/dev/null || true
 
+# Reset accounts migrations to handle inconsistent state (table exists in migration table but not in DB)
+python manage.py migrate accounts zero --noinput || echo "accounts zero migrate failed, continuing"
+
 # Ensure accounts initial migration runs first to create accounts_user table
 python manage.py migrate accounts 0001 --noinput || echo "accounts 0001 migrate failed, continuing"
 
