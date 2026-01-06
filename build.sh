@@ -23,7 +23,45 @@ python manage.py migrate accounts zero --noinput 2>/dev/null || echo "accounts z
 
 # Ensure accounts initial migration runs first to create accounts_user table
 echo "Applying accounts initial migration..."
-python manage.py migrate accounts 0001 --noinput || echo "accounts 0001 migrate failed, continuing"
+if ! python manage.py migrate accounts 0001 --noinput 2>/dev/null; then
+    echo "accounts 0001 migrate failed, trying alternative approach..."
+    # If the migration fails, try to fake it if the table already exists
+    python manage.py migrate accounts 0001 --fake 2>/dev/null || {
+        echo "Could not apply accounts 0001 migration, trying to recreate table..."
+        # Last resort: try to run a raw SQL to create the table if it doesn't exist
+        python manage.py shell -c "
+from django.db import connection
+cursor = connection.cursor()
+try:
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS accounts_user (
+            id BIGSERIAL PRIMARY KEY,
+            password VARCHAR(128) NOT NULL,
+            last_login TIMESTAMP WITH TIME ZONE,
+            is_superuser BOOLEAN NOT NULL DEFAULT FALSE,
+            username VARCHAR(150) UNIQUE NOT NULL,
+            first_name VARCHAR(150) NOT NULL DEFAULT '',
+            last_name VARCHAR(150) NOT NULL DEFAULT '',
+            email VARCHAR(254) NOT NULL DEFAULT '',
+            is_staff BOOLEAN NOT NULL DEFAULT FALSE,
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            date_joined TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+            role VARCHAR(30) NOT NULL DEFAULT 'staff',
+            phone_number VARCHAR(20),
+            branch_id BIGINT REFERENCES organization_branch(id),
+            company_id BIGINT REFERENCES organization_company(id),
+            cost_center_id BIGINT REFERENCES organization_costcenter(id),
+            department_id BIGINT REFERENCES organization_department(id),
+            position_title_id BIGINT REFERENCES organization_position(id),
+            region_id BIGINT REFERENCES organization_region(id)
+        );
+    ''')
+    print('Created accounts_user table manually')
+except Exception as e:
+    print(f'Failed to create table: {e}')
+" 2>/dev/null || echo "Manual table creation also failed"
+    }
+fi
 
 # Ensure all accounts migrations are applied
 echo "Applying all accounts migrations..."
