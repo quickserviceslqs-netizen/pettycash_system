@@ -86,9 +86,9 @@ def make_requisition_optional(apps, schema_editor):
             columns = cursor.fetchall()
             for col in columns:
                 if col[1] == "requisition_id" and col[3] == 1:  # 1 means NOT NULL
-                    cursor.execute(
-                        "ALTER TABLE treasury_payment ALTER COLUMN requisition_id DROP NOT NULL;"
-                    )
+                    # SQLite does not support altering column nullability (requires table rebuild).
+                    # Skip this step on SQLite and warn so local dev doesn't fail migrations.
+                    print("SQLite detected: skipping altering requisition_id nullability (requires table rebuild)")
 
 
 class Migration(migrations.Migration):
