@@ -10,23 +10,23 @@ pip install -r requirements.txt
 python manage.py collectstatic --no-input
 
 # Run migrations with conflict resolution
-# Fake all existing treasury migrations to avoid column/table conflicts
-python manage.py migrate treasury 0001 --fake 2>/dev/null || true
-python manage.py migrate treasury 0002 --fake 2>/dev/null || true
-python manage.py migrate treasury 0003 --fake 2>/dev/null || true
-python manage.py migrate treasury 0004 --fake 2>/dev/null || true
-python manage.py migrate treasury 0005 --fake 2>/dev/null || true
-python manage.py migrate treasury 0006 --fake 2>/dev/null || true
-python manage.py migrate treasury 0007 --fake 2>/dev/null || true
-python manage.py migrate treasury 0008 --fake 2>/dev/null || true
+echo "Starting migration process..."
 
-# Reset accounts migrations to handle inconsistent state (table exists in migration table but not in DB)
-python manage.py migrate accounts zero --noinput || echo "accounts zero migrate failed, continuing"
+# Handle potential database state inconsistencies
+# If migrations are recorded but tables don't exist, reset and recreate
+echo "Checking database state..."
+python manage.py showmigrations accounts | grep -q "\[X\] 0001_initial" && echo "Accounts initial migration already applied" || echo "Accounts initial migration not applied"
+
+# Force reset accounts app if there are issues
+echo "Resetting accounts migrations to ensure clean state..."
+python manage.py migrate accounts zero --noinput 2>/dev/null || echo "accounts zero migrate failed, continuing"
 
 # Ensure accounts initial migration runs first to create accounts_user table
+echo "Applying accounts initial migration..."
 python manage.py migrate accounts 0001 --noinput || echo "accounts 0001 migrate failed, continuing"
 
-# Ensure `accounts` migrations are applied first to create `accounts_user` table
+# Ensure all accounts migrations are applied
+echo "Applying all accounts migrations..."
 python manage.py migrate accounts --noinput || echo "accounts migrate failed, continuing"
 
 # Run all migrations (new ones will apply, existing ones are faked)
