@@ -135,12 +135,14 @@ def backup_management(request):
     # Add display name for created_by
     for backup in backups:
         if backup.created_by:
-            backup.created_by_display = backup.created_by.get_full_name() or backup.created_by.username
+            backup.created_by_display = (
+                backup.created_by.get_full_name() or backup.created_by.username
+            )
         else:
             backup.created_by_display = "System"
 
     # Pagination
-    page_number = request.GET.get('page', 1)
+    page_number = request.GET.get("page", 1)
     paginator = Paginator(backups, 10)  # Show 10 backups per page
     page_obj = paginator.get_page(page_number)
 

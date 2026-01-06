@@ -20,7 +20,8 @@ load_dotenv(BASE_DIR / ".env")
 # SECURITY
 # ---------------------------------------------------------------------
 SECRET_KEY = os.environ.get(
-    "SECRET_KEY", "django-insecure-change-this-in-production-to-a-secure-random-key-with-at-least-50-characters"
+    "SECRET_KEY",
+    "django-insecure-change-this-in-production-to-a-secure-random-key-with-at-least-50-characters",
 )
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 ALLOWED_HOSTS = os.environ.get(

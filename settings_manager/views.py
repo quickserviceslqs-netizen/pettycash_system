@@ -44,8 +44,8 @@ def settings_dashboard(request):
     # Get text filter from URL if provided
     text_filter = request.GET.get("filter", "").strip()
     # Get pagination parameters
-    page_number = request.GET.get('page', 1)
-    per_page = request.GET.get('per_page', 10)  # Default 10 items per page
+    page_number = request.GET.get("page", 1)
+    per_page = request.GET.get("per_page", 10)  # Default 10 items per page
 
     try:
         per_page = int(per_page)
@@ -67,29 +67,29 @@ def settings_dashboard(request):
                 all_settings = SystemSetting.objects.filter(
                     category=category_key, is_active=True
                 ).order_by("display_name")
-                
+
                 # Apply text filter if provided
                 if text_filter:
                     all_settings = all_settings.filter(
-                        Q(display_name__icontains=text_filter) |
-                        Q(key__icontains=text_filter) |
-                        Q(description__icontains=text_filter)
+                        Q(display_name__icontains=text_filter)
+                        | Q(key__icontains=text_filter)
+                        | Q(description__icontains=text_filter)
                     )
-                
+
                 if all_settings.exists():
                     category_counts[category_key] = all_settings.count()
-                    
+
                     # Create paginator for this category
                     paginator = Paginator(all_settings, per_page)
                     page_obj = paginator.get_page(page_number)
-                    
+
                     # Store with tuple (key, name, paginated_settings, total_count) for template access
                     settings_by_category[(category_key, category_name)] = page_obj
                     paginated_settings[category_key] = {
-                        'page_obj': page_obj,
-                        'total_count': all_settings.count(),
-                        'has_other_pages': page_obj.has_other_pages(),
-                        'paginator': paginator
+                        "page_obj": page_obj,
+                        "total_count": all_settings.count(),
+                        "has_other_pages": page_obj.has_other_pages(),
+                        "paginator": paginator,
                     }
     else:
         # Show all categories with pagination
@@ -97,29 +97,29 @@ def settings_dashboard(request):
             all_settings = SystemSetting.objects.filter(
                 category=category_key, is_active=True
             ).order_by("display_name")
-            
+
             # Apply text filter if provided
             if text_filter:
                 all_settings = all_settings.filter(
-                    Q(display_name__icontains=text_filter) |
-                    Q(key__icontains=text_filter) |
-                    Q(description__icontains=text_filter)
+                    Q(display_name__icontains=text_filter)
+                    | Q(key__icontains=text_filter)
+                    | Q(description__icontains=text_filter)
                 )
-            
+
             if all_settings.exists():
                 category_counts[category_key] = all_settings.count()
-                
+
                 # Create paginator for this category
                 paginator = Paginator(all_settings, per_page)
                 page_obj = paginator.get_page(page_number)
-                
+
                 # Store with tuple (key, name, paginated_settings) for template access
                 settings_by_category[(category_key, category_name)] = page_obj
                 paginated_settings[category_key] = {
-                    'page_obj': page_obj,
-                    'total_count': all_settings.count(),
-                    'has_other_pages': page_obj.has_other_pages(),
-                    'paginator': paginator
+                    "page_obj": page_obj,
+                    "total_count": all_settings.count(),
+                    "has_other_pages": page_obj.has_other_pages(),
+                    "paginator": paginator,
                 }
 
     # Get all active settings (for stats)

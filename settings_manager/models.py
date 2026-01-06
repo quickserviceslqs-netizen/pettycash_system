@@ -1,10 +1,10 @@
 import json
 
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
-User = get_user_model()
+User = settings.AUTH_USER_MODEL
 
 
 class SystemSetting(models.Model):
@@ -69,7 +69,10 @@ class SystemSetting(models.Model):
     )
 
     last_modified_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name="settings_modified"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="settings_modified",
     )
     last_modified_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -157,7 +160,10 @@ class ActivityLog(models.Model):
     ]
 
     user = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name="activity_logs"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="activity_logs",
     )
     action = models.CharField(max_length=50, choices=ACTION_CHOICES)
     content_type = models.CharField(

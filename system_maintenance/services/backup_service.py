@@ -134,10 +134,11 @@ class BackupService:
                 # On Windows, file might be locked by antivirus or other processes
                 # Log the issue but don't fail the backup
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Could not delete temp file {temp_file.name}: {e}")
                 # On Windows, temp files will be cleaned up by OS eventually
-                if platform.system() == 'Windows':
+                if platform.system() == "Windows":
                     logger.info("Temp file cleanup will be handled by Windows OS")
                 else:
                     # On other systems, this is unexpected - re-raise
@@ -178,10 +179,11 @@ class BackupService:
             except (OSError, PermissionError) as e:
                 # On Windows, file might be locked by antivirus or other processes
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Could not delete temp zip file {temp_zip.name}: {e}")
                 # On Windows, temp files will be cleaned up by OS eventually
-                if platform.system() == 'Windows':
+                if platform.system() == "Windows":
                     logger.info("Temp zip file cleanup will be handled by Windows OS")
                 else:
                     # On other systems, this is unexpected - re-raise
@@ -218,11 +220,16 @@ class BackupService:
             except (OSError, PermissionError) as e:
                 # On Windows, file might be locked by antivirus or other processes
                 import logging
+
                 logger = logging.getLogger(__name__)
-                logger.warning(f"Could not delete temp settings file {temp_file.name}: {e}")
+                logger.warning(
+                    f"Could not delete temp settings file {temp_file.name}: {e}"
+                )
                 # On Windows, temp files will be cleaned up by OS eventually
-                if platform.system() == 'Windows':
-                    logger.info("Temp settings file cleanup will be handled by Windows OS")
+                if platform.system() == "Windows":
+                    logger.info(
+                        "Temp settings file cleanup will be handled by Windows OS"
+                    )
                 else:
                     # On other systems, this is unexpected - re-raise
                     raise
