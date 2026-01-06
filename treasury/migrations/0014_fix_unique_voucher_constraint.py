@@ -8,22 +8,22 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL(
-            sql="""
-                DO $$
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM pg_constraint
-                        WHERE conname = 'unique_voucher_number'
-                    ) THEN
-                        ALTER TABLE treasury_payment
-                        ADD CONSTRAINT unique_voucher_number UNIQUE (voucher_number);
-                    END IF;
-                END $$;
-            """,
-            reverse_sql="""
-                ALTER TABLE treasury_payment
-                DROP CONSTRAINT IF EXISTS unique_voucher_number;
-            """,
+        migrations.RunPython(
+            code=lambda apps, schema_editor: (
+                schema_editor.execute("""
+                    ALTER TABLE treasury_payment
+                    ADD CONSTRAINT unique_voucher_number UNIQUE (voucher_number);
+                """)
+                if schema_editor.connection.vendor == "postgresql"
+                else print("Non-postgres DB detected: skipping unique_voucher_number constraint addition")
+            ),
+            reverse_code=lambda apps, schema_editor: (
+                schema_editor.execute("""
+                    ALTER TABLE treasury_payment
+                    DROP CONSTRAINT IF EXISTS unique_voucher_number;
+                """)
+                if schema_editor.connection.vendor == "postgresql"
+                else print("Non-postgres DB detected: skipping unique_voucher_number constraint drop")
+            ),
         ),
     ]
