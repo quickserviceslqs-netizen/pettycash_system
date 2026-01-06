@@ -17,23 +17,32 @@ class Migration(migrations.Migration):
     operations = [
         migrations.SeparateDatabaseAndState(
             database_operations=[
-                migrations.RunSQL(
-                    sql="""
-                        ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS created_by_id integer;
-                        ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS description text;
-                        ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS voucher_number varchar(50);
-                        ALTER TABLE treasury_treasuryfund ADD COLUMN IF NOT EXISTS auto_replenish boolean;
-                        ALTER TABLE treasury_treasuryfund ADD COLUMN IF NOT EXISTS department_id integer;
-                        ALTER TABLE treasury_treasuryfund ADD COLUMN IF NOT EXISTS min_balance numeric(14,2);
-                    """,
-                    reverse_sql="""
-                        ALTER TABLE treasury_payment DROP COLUMN IF EXISTS created_by_id;
-                        ALTER TABLE treasury_payment DROP COLUMN IF EXISTS description;
-                        ALTER TABLE treasury_payment DROP COLUMN IF EXISTS voucher_number;
-                        ALTER TABLE treasury_treasuryfund DROP COLUMN IF EXISTS auto_replenish;
-                        ALTER TABLE treasury_treasuryfund DROP COLUMN IF EXISTS department_id;
-                        ALTER TABLE treasury_treasuryfund DROP COLUMN IF EXISTS min_balance;
-                    """,
+                migrations.RunPython(
+                    # Perform DB-level operations only on PostgreSQL; SQLite can't run these statements
+                    code=lambda apps, schema_editor: (
+                        schema_editor.execute("""
+                            ALTER TABLE treasury_payment ADD COLUMN created_by_id integer;
+                            ALTER TABLE treasury_payment ADD COLUMN description text;
+                            ALTER TABLE treasury_payment ADD COLUMN voucher_number varchar(50);
+                            ALTER TABLE treasury_treasuryfund ADD COLUMN auto_replenish boolean;
+                            ALTER TABLE treasury_treasuryfund ADD COLUMN department_id integer;
+                            ALTER TABLE treasury_treasuryfund ADD COLUMN min_balance numeric(14,2);
+                        """)
+                        if schema_editor.connection.vendor == "postgresql"
+                        else print("Non-postgres DB detected: skipping Add Column DB-level operations")
+                    ),
+                    reverse_code=lambda apps, schema_editor: (
+                        schema_editor.execute("""
+                            ALTER TABLE treasury_payment DROP COLUMN IF EXISTS created_by_id;
+                            ALTER TABLE treasury_payment DROP COLUMN IF EXISTS description;
+                            ALTER TABLE treasury_payment DROP COLUMN IF EXISTS voucher_number;
+                            ALTER TABLE treasury_treasuryfund DROP COLUMN IF EXISTS auto_replenish;
+                            ALTER TABLE treasury_treasuryfund DROP COLUMN IF EXISTS department_id;
+                            ALTER TABLE treasury_treasuryfund DROP COLUMN IF EXISTS min_balance;
+                        """)
+                        if schema_editor.connection.vendor == "postgresql"
+                        else print("Non-postgres DB detected: skipping Drop Column DB-level operations")
+                    ),
                 )
             ],
             state_operations=[
@@ -111,23 +120,24 @@ class Migration(migrations.Migration):
                 to="transactions.requisition",
             ),
         ),
-        migrations.RunSQL(
-            sql="""
-                DO $$ 
-                BEGIN
-                    IF NOT EXISTS (
-                        SELECT 1 FROM pg_constraint 
-                        WHERE conname = 'treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq'
-                    ) THEN
-                        ALTER TABLE treasury_treasuryfund 
-                        ADD CONSTRAINT treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq 
-                        UNIQUE (company_id, region_id, branch_id, department_id);
-                    END IF;
-                END $$;
-            """,
-            reverse_sql="""
-                ALTER TABLE treasury_treasuryfund 
-                DROP CONSTRAINT IF EXISTS treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq;
-            """,
+        migrations.RunPython(
+            # Add unique constraint only on PostgreSQL
+            code=lambda apps, schema_editor: (
+                schema_editor.execute("""
+                    ALTER TABLE treasury_treasuryfund 
+                    ADD CONSTRAINT treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq 
+                    UNIQUE (company_id, region_id, branch_id, department_id);
+                """)
+                if schema_editor.connection.vendor == "postgresql"
+                else print("Non-postgres DB detected: skipping UNIQUE constraint addition")
+            ),
+            reverse_code=lambda apps, schema_editor: (
+                schema_editor.execute("""
+                    ALTER TABLE treasury_treasuryfund 
+                    DROP CONSTRAINT IF EXISTS treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq;
+                """)
+                if schema_editor.connection.vendor == "postgresql"
+                else print("Non-postgres DB detected: skipping UNIQUE constraint drop")
+            ),
         ),
     ]
