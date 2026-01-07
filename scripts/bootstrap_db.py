@@ -154,12 +154,12 @@ def create_admin_if_env_set():
                 if not User.objects.filter(username=\"{username}\").exclude(pk=u.pk).exists():
                     u.username = \"{username}\"
                 else:
-                    print(\"Desired username {username} is taken by another account; keeping existing username {keep}\".format(keep=u.username))
+                    print("Desired username {username} is taken by another account; keeping existing username " + u.username)
             if u.email != \"{email}\":
                 if not User.objects.filter(email=\"{email}\").exclude(pk=u.pk).exists():
                     u.email = \"{email}\"
                 else:
-                    print(\"Desired email {email} is used by another account; keeping existing email {keep}\".format(keep=u.email))
+                    print("Desired email {email} is used by another account; keeping existing email " + u.email)
             if \"{first_name}\" and u.first_name != \"{first_name}\": u.first_name = \"{first_name}\"
             if \"{last_name}\" and u.last_name != \"{last_name}\": u.last_name = \"{last_name}\"
             u.save(); print('Updated existing user and ensured superuser status')
@@ -169,7 +169,7 @@ def create_admin_if_env_set():
         other_superusers = User.objects.filter(is_superuser=True).exclude(pk=u.pk)
         if other_superusers.exists():
             deleted_count = other_superusers.delete()[0]
-            print('Deleted {deleted} other superuser(s) to ensure only one superuser exists'.format(deleted=deleted_count))
+            print('Deleted ' + str(deleted_count) + ' other superuser(s) to ensure only one superuser exists')
         else:
             print('No other superusers found')"
         """.format(
