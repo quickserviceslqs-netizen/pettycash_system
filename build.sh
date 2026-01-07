@@ -22,13 +22,11 @@ except:
     print('no')
 " 2>/dev/null || echo "no")
 
-if [ "$HAS_TABLES" = "yes" ]; then
-    echo "Database has existing tables, faking all migrations to avoid conflicts..."
-    python manage.py migrate --fake --no-input
-else
-    echo "Database is clean, running migrations normally..."
-    python manage.py migrate --no-input
-fi
+# Use a single bootstrap script to handle both fresh and existing DBs safely
+python scripts/bootstrap_db.py || {
+  echo "Bootstrap script failed — see output above for details";
+  exit 1;
+}
 
 # Optional post-deploy tasks (guarded to avoid running during build when DB is incomplete)
 if [ "${RUN_POST_DEPLOY_TASKS:-false}" = "true" ]; then
