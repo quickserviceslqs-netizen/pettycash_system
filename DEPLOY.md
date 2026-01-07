@@ -24,6 +24,11 @@ REQUIRE_SUPERUSER (enforce admin at startup)
 - Set `REQUIRE_SUPERUSER=true` in production if you want the app to refuse to start when there is no superuser and `ADMIN_EMAIL`/`ADMIN_PASSWORD` are not provided. This ensures an operator cannot accidentally bring up an instance without an admin account.
 - If `REQUIRE_SUPERUSER=true` and `ADMIN_EMAIL`/`ADMIN_PASSWORD` are missing, Django will raise an `ImproperlyConfigured` error at startup and the deploy will fail.
 
+ADMIN_FORCE_CREATE (override existing superusers)
+
+- Set `ADMIN_FORCE_CREATE=true` to force a destructive override on deploy: the bootstrap will delete all existing superusers and create a single superuser from `ADMIN_EMAIL`/`ADMIN_PASSWORD`/`ADMIN_USERNAME`.
+- Use with caution — this is destructive and will remove other superuser accounts. Mark the variable as a secret in Render and only enable it when you explicitly want to replace existing superusers.
+
 Security note: changing the password via an env var will immediately update the account on the next deploy — use your secrets manager and rotate safely.
 
 Sensitive handling

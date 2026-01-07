@@ -141,6 +141,7 @@ def create_admin_if_env_set():
     admin_username = os.environ.get("ADMIN_USERNAME")
     admin_first_name = os.environ.get("ADMIN_FIRST_NAME", "")
     admin_last_name = os.environ.get("ADMIN_LAST_NAME", "")
+    admin_force = os.environ.get("ADMIN_FORCE_CREATE", "false").lower() in ("1", "true", "yes")
 
     if not (admin_email and admin_password):
         return
@@ -148,6 +149,30 @@ def create_admin_if_env_set():
     # If ADMIN_USERNAME isn't provided, fallback to using the email as username
     if not admin_username:
         admin_username = admin_email
+
+    if admin_force:
+        print(
+            "ADMIN_FORCE_CREATE=true — deleting all existing superusers and creating a new one from env vars (destructive)"
+        )
+        force_cmd = textwrap.dedent(
+            """
+            python manage.py shell -c "from django.contrib.auth import get_user_model; User=get_user_model();
+            deleted = User.objects.filter(is_superuser=True).delete();
+            u = User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\");
+            print('Created admin user (force):', u.username);
+            print('Deleted other superusers count:', deleted[0])"
+            """.format(
+                username=admin_username.replace('"', '\\"'),
+                email=admin_email.replace('"', '\\"'),
+                password=admin_password.replace('"', '\\"'),
+            )
+        )
+
+        try:
+            run(force_cmd, check=False, hide_sensitive=True, sensitive_values=[admin_password])
+        except Exception as e:
+            print('Failed to force-create admin user:', e)
+        return
 
     print(
         "Ensuring admin user exists from ADMIN_EMAIL/ADMIN_PASSWORD (and optional ADMIN_USERNAME) env vars (idempotent)"
