@@ -16,11 +16,23 @@ import textwrap
 from contextlib import suppress
 
 
-def run(cmd, check=True, capture_output=False):
-    print('\n$ ' + cmd)
+def run(cmd, check=True, capture_output=False, hide_sensitive=False, sensitive_values=None):
+    """Run a shell command, optionally masking sensitive values in the printed command.
+    - hide_sensitive: if True, sensitive_values strings will be replaced with '***' in printed output.
+    - sensitive_values: list of strings to mask in printed command.
+    """
+    if hide_sensitive and sensitive_values:
+        masked_cmd = cmd
+        for s in sensitive_values:
+            if s:
+                masked_cmd = masked_cmd.replace(s, '***')
+        print('\n$ ' + masked_cmd)
+    else:
+        print('\n$ ' + cmd)
+
     proc = subprocess.run(cmd, shell=True, capture_output=capture_output, text=True)
     if check and proc.returncode != 0:
-        print('Command failed:', cmd)
+        print('Command failed')
         if capture_output:
             print('stdout:', proc.stdout)
             print('stderr:', proc.stderr)
@@ -170,7 +182,8 @@ def create_admin_if_env_set():
     )
 
     try:
-        run(safe_cmd, check=False)
+        # Mask the admin password from logs when running sensitive command
+        run(safe_cmd, check=False, hide_sensitive=True, sensitive_values=[admin_password])
     except Exception as e:
         print('Failed to ensure admin user:', e)
 

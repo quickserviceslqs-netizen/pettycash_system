@@ -21,6 +21,10 @@ Updating an existing superuser
 
 Security note: changing the password via an env var will immediately update the account on the next deploy — use your secrets manager and rotate safely.
 
+Sensitive handling
+- The bootstrap script avoids printing sensitive values (like `ADMIN_PASSWORD`) to logs. It masks such values when running commands.
+- Still, treat these env vars as secrets in Render (mark them secret/private) and do not paste them into logs or public places.
+
 How it works
 
 - After migrations succeed, the bootstrap script (`scripts/bootstrap_db.py`) ensures a superuser exists if `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set.
