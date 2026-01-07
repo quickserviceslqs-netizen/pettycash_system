@@ -10,7 +10,8 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(
             code=lambda apps, schema_editor: (
-                schema_editor.execute("""
+                schema_editor.execute(
+                    """
                     DO $$
                     BEGIN
                         IF NOT EXISTS (
@@ -21,17 +22,24 @@ class Migration(migrations.Migration):
                         END IF;
                     END
                     $$;
-                """)
+                """
+                )
                 if schema_editor.connection.vendor == "postgresql"
-                else print("Non-postgres DB detected: skipping unique_voucher_number constraint addition")
+                else print(
+                    "Non-postgres DB detected: skipping unique_voucher_number constraint addition"
+                )
             ),
             reverse_code=lambda apps, schema_editor: (
-                schema_editor.execute("""
+                schema_editor.execute(
+                    """
                     ALTER TABLE treasury_payment
                     DROP CONSTRAINT IF EXISTS unique_voucher_number;
-                """)
+                """
+                )
                 if schema_editor.connection.vendor == "postgresql"
-                else print("Non-postgres DB detected: skipping unique_voucher_number constraint drop")
+                else print(
+                    "Non-postgres DB detected: skipping unique_voucher_number constraint drop"
+                )
             ),
         ),
     ]

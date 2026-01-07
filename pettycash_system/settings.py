@@ -233,14 +233,20 @@ MPESA_CALLBACK_URL = os.environ.get(
 # ADMIN / SUPERUSER SETTINGS (read from environment)
 # ---------------------------------------------------------------------
 # These are used by the bootstrap script to create or update the site superuser.
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME")  # Optional (defaults to ADMIN_EMAIL when used)
+ADMIN_USERNAME = os.environ.get(
+    "ADMIN_USERNAME"
+)  # Optional (defaults to ADMIN_EMAIL when used)
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 ADMIN_FIRST_NAME = os.environ.get("ADMIN_FIRST_NAME")
 ADMIN_LAST_NAME = os.environ.get("ADMIN_LAST_NAME")
 
 # When True, Django will refuse to start if there is no superuser and ADMIN_EMAIL/ADMIN_PASSWORD are not provided.
-REQUIRE_SUPERUSER = os.environ.get("REQUIRE_SUPERUSER", "False").lower() in ("1", "true", "yes")
+REQUIRE_SUPERUSER = os.environ.get("REQUIRE_SUPERUSER", "False").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 # Enforce requirement at startup to fail early in production if configured
 if REQUIRE_SUPERUSER:

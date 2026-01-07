@@ -52,7 +52,9 @@ def check_and_add_fields(apps, schema_editor):
             else:
                 # SQLite: try creating index with IF NOT EXISTS
                 try:
-                    cursor.execute("CREATE INDEX IF NOT EXISTS treasury_payment_created_by_id_idx ON treasury_payment(created_by_id);")
+                    cursor.execute(
+                        "CREATE INDEX IF NOT EXISTS treasury_payment_created_by_id_idx ON treasury_payment(created_by_id);"
+                    )
                 except Exception:
                     pass
 
@@ -102,7 +104,9 @@ def make_requisition_optional(apps, schema_editor):
                 if col[1] == "requisition_id" and col[3] == 1:  # 1 means NOT NULL
                     # SQLite does not support altering column nullability (requires table rebuild).
                     # Skip this step on SQLite and warn so local dev doesn't fail migrations.
-                    print("SQLite detected: skipping altering requisition_id nullability (requires table rebuild)")
+                    print(
+                        "SQLite detected: skipping altering requisition_id nullability (requires table rebuild)"
+                    )
 
 
 class Migration(migrations.Migration):

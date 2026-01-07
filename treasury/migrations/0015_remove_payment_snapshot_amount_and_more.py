@@ -25,10 +25,10 @@ def remove_fields_if_exist(apps, schema_editor):
 
         fields_to_remove = [
             "snapshot_amount",
-            "snapshot_branch", 
+            "snapshot_branch",
             "snapshot_company",
             "snapshot_description",
-            "snapshot_destination"
+            "snapshot_destination",
         ]
 
         for field in fields_to_remove:
@@ -39,7 +39,9 @@ def remove_fields_if_exist(apps, schema_editor):
                     schema_editor.remove_field(Payment, Payment._meta.get_field(field))
                     print(f"Removed field {field} from Payment model")
             else:
-                print(f"Field {field} does not exist in treasury_payment table, skipping removal")
+                print(
+                    f"Field {field} does not exist in treasury_payment table, skipping removal"
+                )
 
 
 class Migration(migrations.Migration):
