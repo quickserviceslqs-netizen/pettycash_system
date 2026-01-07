@@ -130,43 +130,34 @@ def create_admin_if_env_set():
     safe_cmd = textwrap.dedent(
         """
         python manage.py shell -c "from django.contrib.auth import get_user_model; User=get_user_model();
-        # Try to find by email first, then username
+        # Find by email first, then by username
         u = User.objects.filter(email=\"{email}\").first() or User.objects.filter(username=\"{username}\").first();
         if u:
-            updated = False
-            if not getattr(u, 'is_superuser', False):
-                u.is_superuser = True; u.is_staff = True; updated = True
-            # Change username if requested and not taken by other users
+            # If a user exists (found by email or username), update password and ensure superuser/staff.
+            print('Found existing user:', u.username, u.email)
+            u.set_password(\"{password}\"); u.is_superuser = True; u.is_staff = True
+            # If username exists (possibly owned by another account), we do not fail — we update this account's password.
+            # Try to sync username/email only when not conflicting with other users.
             if u.username != \"{username}\":
                 if not User.objects.filter(username=\"{username}\").exclude(pk=u.pk).exists():
-                    u.username = \"{username}\"; updated = True
+                    u.username = \"{username}\"
                 else:
-                    print(\"Desired username {username} is already taken; skipping username change\")
-            # Change email if requested and not taken by other users
+                    print(\"Desired username {username} is taken by another account; keeping existing username {keep}\".format(keep=u.username))
             if u.email != \"{email}\":
                 if not User.objects.filter(email=\"{email}\").exclude(pk=u.pk).exists():
-                    u.email = \"{email}\"; updated = True
+                    u.email = \"{email}\"
                 else:
-                    print(\"Desired email {email} is already used by another account; skipping email change\")
-            # Update name fields if provided
-            if \"{first_name}\":
-                if u.first_name != \"{first_name}\": u.first_name = \"{first_name}\"; updated = True
-            if \"{last_name}\":
-                if u.last_name != \"{last_name}\": u.last_name = \"{last_name}\"; updated = True
-            # Update password if provided (always allowed)
-            if \"{password}\":
-                u.set_password(\"{password}\"); updated = True
-            if updated:
-                u.save(); print('Updated admin user')
-            else:
-                print('Admin user exists and matches provided env vars')
+                    print(\"Desired email {email} is used by another account; keeping existing email {keep}\".format(keep=u.email))
+            if \"{first_name}\" and u.first_name != \"{first_name}\": u.first_name = \"{first_name}\"
+            if \"{last_name}\" and u.last_name != \"{last_name}\": u.last_name = \"{last_name}\"
+            u.save(); print('Updated existing user and ensured superuser status')
         else:
             u = User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\"); print('Created admin user')
         # Delete all other superusers to ensure only one exists
         other_superusers = User.objects.filter(is_superuser=True).exclude(pk=u.pk)
         if other_superusers.exists():
             deleted_count = other_superusers.delete()[0]
-            print(f'Deleted {{deleted_count}} other superuser(s) to ensure only one superuser exists')
+            print('Deleted {deleted} other superuser(s) to ensure only one superuser exists'.format(deleted=deleted_count))
         else:
             print('No other superusers found')"
         """.format(

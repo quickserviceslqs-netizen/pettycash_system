@@ -16,6 +16,7 @@ Updating an existing superuser
   - The script tries to find an existing user by `ADMIN_EMAIL`, then by `ADMIN_USERNAME`.
   - If a username or email is already used by a different account, the script will skip changing that field and print a message.
   - Password updates are applied when `ADMIN_PASSWORD` is set (so you can rotate passwords via env vars and redeploy).
+- If `ADMIN_USERNAME` is already taken by an existing user, the bootstrap will update that user's password and elevate them to `is_superuser`/`is_staff` (no failure) — it will not error on username collision.
 - **Superuser cleanup**: The script will delete all other superusers to ensure only one superuser exists (the one defined by env vars). This prevents hardcoded or leftover superusers from persisting.
 
 Security note: changing the password via an env var will immediately update the account on the next deploy — use your secrets manager and rotate safely.
