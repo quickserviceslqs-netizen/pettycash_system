@@ -19,6 +19,11 @@ Updating an existing superuser
 - If `ADMIN_USERNAME` is already taken by an existing user, the bootstrap will update that user's password and elevate them to `is_superuser`/`is_staff` (no failure) — it will not error on username collision.
 - **Superuser cleanup**: The script will delete all other superusers to ensure only one superuser exists (the one defined by env vars). This prevents hardcoded or leftover superusers from persisting.
 
+REQUIRE_SUPERUSER (enforce admin at startup)
+
+- Set `REQUIRE_SUPERUSER=true` in production if you want the app to refuse to start when there is no superuser and `ADMIN_EMAIL`/`ADMIN_PASSWORD` are not provided. This ensures an operator cannot accidentally bring up an instance without an admin account.
+- If `REQUIRE_SUPERUSER=true` and `ADMIN_EMAIL`/`ADMIN_PASSWORD` are missing, Django will raise an `ImproperlyConfigured` error at startup and the deploy will fail.
+
 Security note: changing the password via an env var will immediately update the account on the next deploy — use your secrets manager and rotate safely.
 
 Sensitive handling
