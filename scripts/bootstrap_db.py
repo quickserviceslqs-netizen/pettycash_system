@@ -88,13 +88,18 @@ def create_admin_if_env_set():
     """
     admin_email = os.environ.get('ADMIN_EMAIL')
     admin_password = os.environ.get('ADMIN_PASSWORD')
+    admin_username = os.environ.get('ADMIN_USERNAME')
     admin_first_name = os.environ.get('ADMIN_FIRST_NAME', '')
     admin_last_name = os.environ.get('ADMIN_LAST_NAME', '')
 
     if not (admin_email and admin_password):
         return
 
-    print('Ensuring admin user exists from ADMIN_EMAIL/ADMIN_PASSWORD env vars (idempotent)')
+    # If ADMIN_USERNAME isn't provided, fallback to using the email as username
+    if not admin_username:
+        admin_username = admin_email
+
+    print('Ensuring admin user exists from ADMIN_EMAIL/ADMIN_PASSWORD (and optional ADMIN_USERNAME) env vars (idempotent)')
 
     # Use manage.py shell to create user in an idempotent way
     safe_cmd = textwrap.dedent(
@@ -102,11 +107,12 @@ def create_admin_if_env_set():
         python manage.py shell -c "from django.contrib.auth import get_user_model; User=get_user_model();
         u=User.objects.filter(email=\"{email}\").first();
         if not u:
-            u=User.objects.create_superuser(\"{email}\", \"{email}\", \"{password}\");
+            u=User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\");
             u.first_name=\"{first_name}\"; u.last_name=\"{last_name}\"; u.save();
         else:
             print('Admin user already exists, skipping creation')"
         """.format(
+            username=admin_username.replace('"', '\\"'),
             email=admin_email.replace('"', '\\"'),
             password=admin_password.replace('"', '\\"'),
             first_name=admin_first_name.replace('"', '\\"'),

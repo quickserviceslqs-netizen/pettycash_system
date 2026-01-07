@@ -6,6 +6,7 @@ You can configure an admin (superuser) to be created automatically during bootst
 
 - ADMIN_EMAIL: admin email (and username) to create
 - ADMIN_PASSWORD: admin password (must be a secure strong password)
+- Optional: ADMIN_USERNAME (defaults to `ADMIN_EMAIL` if omitted)
 - Optional: ADMIN_FIRST_NAME, ADMIN_LAST_NAME
 
 How it works
