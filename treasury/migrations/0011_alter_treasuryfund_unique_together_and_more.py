@@ -21,9 +21,6 @@ class Migration(migrations.Migration):
                     # Perform DB-level operations only on PostgreSQL; SQLite can't run these statements
                     code=lambda apps, schema_editor: (
                         schema_editor.execute("""
-                            ALTER TABLE treasury_payment ADD COLUMN created_by_id integer;
-                            ALTER TABLE treasury_payment ADD COLUMN description text;
-                            ALTER TABLE treasury_payment ADD COLUMN voucher_number varchar(50);
                             ALTER TABLE treasury_treasuryfund ADD COLUMN auto_replenish boolean;
                             ALTER TABLE treasury_treasuryfund ADD COLUMN department_id integer;
                             ALTER TABLE treasury_treasuryfund ADD COLUMN min_balance numeric(14,2);
@@ -46,35 +43,6 @@ class Migration(migrations.Migration):
                 )
             ],
             state_operations=[
-                migrations.AddField(
-                    model_name="payment",
-                    name="created_by",
-                    field=models.ForeignKey(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="created_payments",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-                migrations.AddField(
-                    model_name="payment",
-                    name="description",
-                    field=models.TextField(
-                        blank=True, help_text="Purpose of payment", null=True
-                    ),
-                ),
-                migrations.AddField(
-                    model_name="payment",
-                    name="voucher_number",
-                    field=models.CharField(
-                        blank=True,
-                        help_text="Unique voucher/document number for M-Pesa bulk payments",
-                        max_length=50,
-                        null=True,
-                        unique=True,
-                    ),
-                ),
                 migrations.AddField(
                     model_name="treasuryfund",
                     name="auto_replenish",

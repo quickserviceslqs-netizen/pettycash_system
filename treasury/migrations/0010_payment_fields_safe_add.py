@@ -31,7 +31,7 @@ def check_and_add_fields(apps, schema_editor):
                 """
                 ALTER TABLE treasury_payment 
                 ADD COLUMN created_by_id INTEGER NULL 
-                REFERENCES accounts_customuser(id) 
+                REFERENCES accounts_user(id) 
                 ON DELETE SET NULL;
             """
             )
