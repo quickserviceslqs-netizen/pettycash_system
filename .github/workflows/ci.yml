@@ -72,6 +72,16 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
         run: |
           python manage.py shell -c "from django.db import connection; cursor = connection.cursor(); cursor.execute(\"DELETE FROM django_migrations WHERE app='treasury'\"); print('Deleted treasury migration records')"
+      - name: Fake treasury migrations if treasury tables remain
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        run: |
+          python manage.py shell -c "from django.db import connection; cursor = connection.cursor(); cursor.execute(\"SELECT to_regclass('public.treasury_payment')\"); q=cursor.fetchone()[0]; import subprocess, sys
+          if q:
+              print('treasury tables detected — faking treasury migrations')
+              subprocess.check_call(['python','manage.py','migrate','treasury','--fake'])
+          else:
+              print('No treasury tables detected — no fake needed')"
       - name: Re-run migrations to ensure idempotency
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
