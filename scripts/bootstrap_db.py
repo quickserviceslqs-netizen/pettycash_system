@@ -82,10 +82,35 @@ def run_post_deploy_tasks():
 
 
 
+def migrate_legacy_env_vars():
+    """Migrate old DJANGO_SUPERUSER_* env vars to ADMIN_* and warn the operator.
+    This keeps backward compatibility but prints a clear deprecation warning.
+    """
+    legacy_keys = {
+        'DJANGO_SUPERUSER_USERNAME': 'ADMIN_USERNAME',
+        'DJANGO_SUPERUSER_EMAIL': 'ADMIN_EMAIL',
+        'DJANGO_SUPERUSER_PASSWORD': 'ADMIN_PASSWORD',
+    }
+    found = False
+    for old, new in legacy_keys.items():
+        if os.environ.get(old):
+            found = True
+            if not os.environ.get(new):
+                os.environ[new] = os.environ[old]
+                print(f"Migrated {old} -> {new} for this run (please remove {old} from your environment)")
+            else:
+                print(f"Both {old} and {new} are set; using {new}")
+    if found:
+        print("WARNING: DJANGO_SUPERUSER_* env vars are deprecated. Remove them and use ADMIN_* vars instead.")
+
+
 def create_admin_if_env_set():
     """Create an admin user if ADMIN_EMAIL and ADMIN_PASSWORD are provided.
     This is idempotent: it will not create a duplicate user if one already exists.
     """
+    # Migrate legacy env vars if present (non-destructive)
+    migrate_legacy_env_vars()
+
     admin_email = os.environ.get('ADMIN_EMAIL')
     admin_password = os.environ.get('ADMIN_PASSWORD')
     admin_username = os.environ.get('ADMIN_USERNAME')
