@@ -9,17 +9,14 @@ pip install -r requirements.txt
 # Collect static files
 python manage.py collectstatic --no-input
 
-# Reset migration state for clean start on new DB
-echo "Clearing django_migrations table for fresh migration start..."
-python manage.py shell -c "
-from django.db import connection
-cursor = connection.cursor()
-try:
-    cursor.execute('DELETE FROM django_migrations')
-    print('Cleared django_migrations table')
-except Exception as e:
-    print(f'Failed to clear migrations: {e}')
-" 2>/dev/null || echo "Could not clear migrations table"
+# Drop all tables to ensure clean state for migration
+echo "Dropping all tables for clean migration start..."
+python manage.py dbshell <<EOF 2>/dev/null || echo "Could not drop tables"
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+GRANT ALL ON SCHEMA public TO postgres;
+GRANT ALL ON SCHEMA public TO public;
+EOF
 
 # Run migrations with conflict resolution
 echo "Starting migration process..."
