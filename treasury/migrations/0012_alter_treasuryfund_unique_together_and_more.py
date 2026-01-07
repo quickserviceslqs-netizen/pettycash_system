@@ -188,9 +188,17 @@ class Migration(migrations.Migration):
         migrations.RunPython(
             code=lambda apps, schema_editor: (
                 schema_editor.execute("""
-                    ALTER TABLE treasury_treasuryfund 
-                    ADD CONSTRAINT treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq 
-                    UNIQUE (company_id, region_id, branch_id, department_id);
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_constraint WHERE conname = 'treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq'
+                        ) THEN
+                            ALTER TABLE treasury_treasuryfund 
+                            ADD CONSTRAINT treasury_treasuryfund_company_id_region_id_branch_id_department_id_uniq 
+                            UNIQUE (company_id, region_id, branch_id, department_id);
+                        END IF;
+                    END
+                    $$;
                 """)
                 if schema_editor.connection.vendor == "postgresql"
                 else print("Non-postgres DB detected: skipping UNIQUE constraint addition")

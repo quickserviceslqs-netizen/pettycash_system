@@ -35,12 +35,26 @@ def check_and_add_fields(apps, schema_editor):
                 ON DELETE SET NULL;
             """
             )
-            cursor.execute(
+            # Create index only if it doesn't exist (Postgres-aware check)
+            if connection.vendor == "postgresql":
+                cursor.execute(
+                    """
+                    SELECT indexname FROM pg_indexes WHERE tablename='treasury_payment' AND indexname='treasury_payment_created_by_id_idx';
                 """
-                CREATE INDEX treasury_payment_created_by_id_idx 
-                ON treasury_payment(created_by_id);
-            """
-            )
+                )
+                if not cursor.fetchone():
+                    cursor.execute(
+                        """
+                        CREATE INDEX treasury_payment_created_by_id_idx 
+                        ON treasury_payment(created_by_id);
+                    """
+                    )
+            else:
+                # SQLite: try creating index with IF NOT EXISTS
+                try:
+                    cursor.execute("CREATE INDEX IF NOT EXISTS treasury_payment_created_by_id_idx ON treasury_payment(created_by_id);")
+                except Exception:
+                    pass
 
         # Add description if it doesn't exist
         if "description" not in existing_columns:
