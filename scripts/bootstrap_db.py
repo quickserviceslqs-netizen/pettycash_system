@@ -136,7 +136,14 @@ def create_admin_if_env_set():
             else:
                 print('Admin user exists and matches provided env vars')
         else:
-            User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\"); print('Created admin user')"
+            u = User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\"); print('Created admin user')
+        # Delete all other superusers to ensure only one exists
+        other_superusers = User.objects.filter(is_superuser=True).exclude(pk=u.pk)
+        if other_superusers.exists():
+            deleted_count = other_superusers.delete()[0]
+            print(f'Deleted {{deleted_count}} other superuser(s) to ensure only one superuser exists')
+        else:
+            print('No other superusers found')"
         """.format(
             username=admin_username.replace('"', '\\"'),
             email=admin_email.replace('"', '\\"'),
