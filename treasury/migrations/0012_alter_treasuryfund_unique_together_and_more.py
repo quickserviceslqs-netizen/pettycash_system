@@ -20,17 +20,17 @@ class Migration(migrations.Migration):
                 migrations.RunPython(
                     code=lambda apps, schema_editor: (
                         schema_editor.execute("""
-                            ALTER TABLE treasury_payment ADD COLUMN created_by_id integer;
-                            ALTER TABLE treasury_payment ADD COLUMN description text;
-                            ALTER TABLE treasury_payment ADD COLUMN snapshot_amount numeric(14,2);
-                            ALTER TABLE treasury_payment ADD COLUMN snapshot_branch_id integer;
-                            ALTER TABLE treasury_payment ADD COLUMN snapshot_company_id integer;
-                            ALTER TABLE treasury_payment ADD COLUMN snapshot_description text;
-                            ALTER TABLE treasury_payment ADD COLUMN snapshot_destination varchar(255);
-                            ALTER TABLE treasury_payment ADD COLUMN voucher_number varchar(50);
-                            ALTER TABLE treasury_treasuryfund ADD COLUMN auto_replenish boolean;
-                            ALTER TABLE treasury_treasuryfund ADD COLUMN department_id integer;
-                            ALTER TABLE treasury_treasuryfund ADD COLUMN min_balance numeric(14,2);
+                            ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS created_by_id integer;
+                            ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS description text;
+                            ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS snapshot_amount numeric(14,2);
+                            ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS snapshot_branch_id integer;
+                            ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS snapshot_company_id integer;
+                            ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS snapshot_description text;
+                            ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS snapshot_destination varchar(255);
+                            ALTER TABLE treasury_payment ADD COLUMN IF NOT EXISTS voucher_number varchar(50);
+                            ALTER TABLE treasury_treasuryfund ADD COLUMN IF NOT EXISTS auto_replenish boolean;
+                            ALTER TABLE treasury_treasuryfund ADD COLUMN IF NOT EXISTS department_id integer;
+                            ALTER TABLE treasury_treasuryfund ADD COLUMN IF NOT EXISTS min_balance numeric(14,2);
                         """)
                         if schema_editor.connection.vendor == "postgresql"
                         else print(
