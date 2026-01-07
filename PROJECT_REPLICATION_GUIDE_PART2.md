@@ -740,8 +740,8 @@ User = get_user_model()
 # Deprecated: DJANGO_SUPERUSER_* env vars were previously used. Use ADMIN_* env vars instead.
 # For compatibility the bootstrap migrates these values at runtime, but please remove them from your environment.
 username = os.environ.get('ADMIN_USERNAME', 'admin')
-email = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
-password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+email = os.environ.get('ADMIN_EMAIL')
+password = os.environ.get('ADMIN_PASSWORD')  # required
 
 if not User.objects.filter(username=username).exists():
     User.objects.create_superuser(

@@ -11,27 +11,41 @@ django.setup()
 
 from accounts.models import User
 
-# Create a new fresh superuser
-username = "superadmin"
-email = "superadmin@pettycash.com"
-password = "Super@123456"
+# Create a new superuser from environment variables (safe & idempotent)
+admin_email = os.environ.get("ADMIN_EMAIL")
+admin_password = os.environ.get("ADMIN_PASSWORD")
+admin_username = os.environ.get("ADMIN_USERNAME") or admin_email
+admin_first_name = os.environ.get("ADMIN_FIRST_NAME", "")
+admin_last_name = os.environ.get("ADMIN_LAST_NAME", "")
 
-# Delete if exists
-User.objects.filter(username=username).delete()
+if not (admin_email and admin_password):
+    print("ADMIN_EMAIL and ADMIN_PASSWORD are required to create a superuser. Exiting without creating one.")
+    raise SystemExit(1)
 
-# Create new superuser
-superuser = User.objects.create_superuser(
-    username=username,
-    email=email,
-    password=password,
-    first_name="Super",
-    last_name="Admin",
-)
+# Remove any existing user with the same username to avoid conflicts
+User.objects.filter(username=admin_username).exclude(email=admin_email).delete()
 
-print(f"✓ Superuser created successfully!")
-print(f"Username: {username}")
-print(f"Password: {password}")
-print(f"Email: {email}")
-print(f"Is superuser: {superuser.is_superuser}")
-print(f"Is staff: {superuser.is_staff}")
-print(f"Is active: {superuser.is_active}")
+# If a user with same email exists, update it
+existing = User.objects.filter(email=admin_email).first()
+if existing:
+    existing.username = admin_username
+    existing.set_password(admin_password)
+    existing.is_staff = True
+    existing.is_superuser = True
+    if admin_first_name:
+        existing.first_name = admin_first_name
+    if admin_last_name:
+        existing.last_name = admin_last_name
+    existing.save()
+    print("Updated existing user to be superuser:", existing.username)
+else:
+    superuser = User.objects.create_superuser(
+        username=admin_username,
+        email=admin_email,
+        password=admin_password,
+        first_name=admin_first_name,
+        last_name=admin_last_name,
+    )
+    print("Created superuser:", superuser.username)
+
+print("Done. Ensure ADMIN_* env vars are set on your host and marked as secrets.")
