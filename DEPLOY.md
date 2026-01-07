@@ -9,6 +9,16 @@ You can configure an admin (superuser) to be created automatically during bootst
 - Optional: ADMIN_USERNAME (defaults to `ADMIN_EMAIL` if omitted)
 - Optional: ADMIN_FIRST_NAME, ADMIN_LAST_NAME
 
+Updating an existing superuser
+
+- If you change `ADMIN_EMAIL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_FIRST_NAME` or `ADMIN_LAST_NAME` and redeploy, the bootstrap script will attempt to update the existing admin user to match those values (idempotent).
+- Rules:
+  - The script tries to find an existing user by `ADMIN_EMAIL`, then by `ADMIN_USERNAME`.
+  - If a username or email is already used by a different account, the script will skip changing that field and print a message.
+  - Password updates are applied when `ADMIN_PASSWORD` is set (so you can rotate passwords via env vars and redeploy).
+
+Security note: changing the password via an env var will immediately update the account on the next deploy — use your secrets manager and rotate safely.
+
 How it works
 
 - After migrations succeed, the bootstrap script (`scripts/bootstrap_db.py`) ensures a superuser exists if `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set.

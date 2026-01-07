@@ -101,16 +101,42 @@ def create_admin_if_env_set():
 
     print('Ensuring admin user exists from ADMIN_EMAIL/ADMIN_PASSWORD (and optional ADMIN_USERNAME) env vars (idempotent)')
 
-    # Use manage.py shell to create user in an idempotent way
+    # Use manage.py shell to create or update user in an idempotent way
     safe_cmd = textwrap.dedent(
         """
         python manage.py shell -c "from django.contrib.auth import get_user_model; User=get_user_model();
-        u=User.objects.filter(email=\"{email}\").first();
-        if not u:
-            u=User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\");
-            u.first_name=\"{first_name}\"; u.last_name=\"{last_name}\"; u.save();
+        # Try to find by email first, then username
+        u = User.objects.filter(email=\"{email}\").first() or User.objects.filter(username=\"{username}\").first();
+        if u:
+            updated = False
+            if not getattr(u, 'is_superuser', False):
+                u.is_superuser = True; u.is_staff = True; updated = True
+            # Change username if requested and not taken by other users
+            if u.username != \"{username}\":
+                if not User.objects.filter(username=\"{username}\").exclude(pk=u.pk).exists():
+                    u.username = \"{username}\"; updated = True
+                else:
+                    print(\"Desired username {username} is already taken; skipping username change\")
+            # Change email if requested and not taken by other users
+            if u.email != \"{email}\":
+                if not User.objects.filter(email=\"{email}\").exclude(pk=u.pk).exists():
+                    u.email = \"{email}\"; updated = True
+                else:
+                    print(\"Desired email {email} is already used by another account; skipping email change\")
+            # Update name fields if provided
+            if \"{first_name}\":
+                if u.first_name != \"{first_name}\": u.first_name = \"{first_name}\"; updated = True
+            if \"{last_name}\":
+                if u.last_name != \"{last_name}\": u.last_name = \"{last_name}\"; updated = True
+            # Update password if provided (always allowed)
+            if \"{password}\":
+                u.set_password(\"{password}\"); updated = True
+            if updated:
+                u.save(); print('Updated admin user')
+            else:
+                print('Admin user exists and matches provided env vars')
         else:
-            print('Admin user already exists, skipping creation')"
+            User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\"); print('Created admin user')"
         """.format(
             username=admin_username.replace('"', '\\"'),
             email=admin_email.replace('"', '\\"'),
