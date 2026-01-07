@@ -31,20 +31,21 @@ Your code is already pushed to GitHub. Render should automatically deploy if you
 
 ### 2. Create Superuser on Render
 
+Recommended: Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` (and optional `ADMIN_USERNAME`) as environment variables in Render (dashboard → Environment) and redeploy — `scripts/bootstrap_db.py` will create or update the superuser automatically.
+
+If you need to do it manually in a pinch (not recommended):
+
 **Option A: Using Render Shell**
 ```bash
 # Open Render Shell from dashboard
 cd /opt/render/project/src
-python create_superuser.py
-```
-
-**Option B: Using Django Shell**
-```bash
 python manage.py shell
 >>> from django.contrib.auth import get_user_model
 >>> User = get_user_model()
->>> User.objects.create_superuser('admin', 'admin@example.com', 'YourSecurePassword123!')
+>>> # Deprecated: don't use hardcoded credentials. Instead set ADMIN_EMAIL and ADMIN_PASSWORD as environment variables and rely on scripts/bootstrap_db.py to create/update the superuser during deploy.
 ```
+
+**Note:** If you use manual creation, avoid leaving hardcoded credentials in scripts or docs; prefer environment variables and the bootstrap script.
 
 ### 3. Create Apps in Production Database
 

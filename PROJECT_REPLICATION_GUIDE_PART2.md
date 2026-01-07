@@ -724,8 +724,25 @@ class UserAdmin(BaseUserAdmin):
 
 ### Step 11.1: Create Superuser Script
 
-Create `create_superuser.py`:
+Create an admin via environment variables and the bootstrap script (recommended):
 
+```bash
+# Set env vars in your environment or hosting provider
+export ADMIN_EMAIL="admin@example.com"
+export ADMIN_PASSWORD="YourSecurePassword123!"
+export ADMIN_USERNAME="admin" # optional
+# Redeploy or run the bootstrap script manually
+python scripts/bootstrap_db.py
+```
+
+**Note:** `create_superuser.py` is deprecated. Instead, set `ADMIN_*` env vars and rely on `scripts/bootstrap_db.py` (recommended). Example:
+
+```bash
+export ADMIN_EMAIL="admin@example.com"
+export ADMIN_PASSWORD="YourSecurePassword123!"
+export ADMIN_USERNAME="admin" # optional
+python scripts/bootstrap_db.py
+```
 ```python
 import os
 import django
@@ -898,8 +915,8 @@ python manage.py makemigrations
 # Apply migrations
 python manage.py migrate
 
-# Create superuser
-python create_superuser.py
+# Create superuser (recommended: set env vars and let bootstrap handle it)
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` (and optional `ADMIN_USERNAME`) as environment variables and redeploy — `scripts/bootstrap_db.py` will create or update the superuser automatically.
 
 # Load test data
 python manage.py load_comprehensive_data
@@ -931,7 +948,7 @@ set -o errexit
 pip install -r requirements.txt
 python manage.py collectstatic --no-input
 python manage.py migrate --no-input
-python create_superuser.py
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` (and optional `ADMIN_USERNAME`) as environment variables and redeploy — `scripts/bootstrap_db.py` will create or update the superuser automatically.
 python manage.py load_comprehensive_data
 ```
 

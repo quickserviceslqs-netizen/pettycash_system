@@ -222,7 +222,7 @@ def execute(self, request, payment_id=None):
 
 ### Immediate Actions
 1. ✅ Deploy to production/Render
-2. ✅ Create superuser on Render using `create_superuser.py`
+2. ✅ Create superuser on Render by setting `ADMIN_EMAIL` and `ADMIN_PASSWORD` env vars and redeploy (bootstrap will create/update admin).
 3. ✅ Test with test users in production environment
 
 ### Future Enhancements
