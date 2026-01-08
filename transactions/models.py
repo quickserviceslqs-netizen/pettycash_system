@@ -8,7 +8,6 @@ from pettycash_system.managers import RequisitionManager
 from workflow.models import ApprovalThreshold
 from workflow.services.resolver import find_approval_threshold
 
-User = get_user_model()
 
 
 def generate_transaction_id():
