@@ -30,6 +30,10 @@ python manage.py migrate accounts 0001 --noinput || echo "accounts 0001 migrate 
 python manage.py migrate accounts --noinput || echo "accounts migrate failed, continuing"
 
 
+
+# Fake treasury migrations up to 0012 to resolve 'auto_replenish already exists' error
+python manage.py migrate treasury 0012 --fake || echo "Faked treasury up to 0012"
+
 # Run all migrations (new ones will apply, existing ones are faked)
 python manage.py migrate --no-input
 
