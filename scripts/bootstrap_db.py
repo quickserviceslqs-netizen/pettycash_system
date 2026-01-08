@@ -161,17 +161,18 @@ def create_admin_if_env_set():
         print(
             "ADMIN_FORCE_CREATE=true — deleting all existing superusers and creating a new one from env vars (destructive)"
         )
+        # Escape single quotes in values and wrap the -c argument in single quotes to avoid shell splitting
         force_cmd = textwrap.dedent(
             """
-            python manage.py shell -c "from django.contrib.auth import get_user_model; User=get_user_model();
+            python manage.py shell -c 'from django.contrib.auth import get_user_model; User=get_user_model();
             deleted = User.objects.filter(is_superuser=True).delete();
-            u = User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\");
-            print('Created admin user (force):', u.username);
-            print('Deleted other superusers count:', deleted[0])"
+            u = User.objects.create_superuser("{username}", "{email}", "{password}");
+            print("Created admin user (force):", u.username);
+            print("Deleted other superusers count:", deleted[0])'
             """.format(
-                username=admin_username.replace('"', '\\"'),
-                email=admin_email.replace('"', '\\"'),
-                password=admin_password.replace('"', '\\"'),
+                username=admin_username.replace("'", "\\'"),
+                email=admin_email.replace("'", "\\'"),
+                password=admin_password.replace("'", "\\'"),
             )
         )
 
@@ -190,45 +191,46 @@ def create_admin_if_env_set():
     )
 
     # Use manage.py shell to create or update user in an idempotent way
+    # Use single-quote wrapper for -c and escape single quotes in all injected values to avoid shell splitting
     safe_cmd = textwrap.dedent(
         """
-        python manage.py shell -c "from django.contrib.auth import get_user_model; User=get_user_model();
+        python manage.py shell -c 'from django.contrib.auth import get_user_model; User=get_user_model();
         # Find by email first, then by username
-        u = User.objects.filter(email=\"{email}\").first() or User.objects.filter(username=\"{username}\").first();
+        u = User.objects.filter(email="{email}").first() or User.objects.filter(username="{username}").first();
         if u:
             # If a user exists (found by email or username), update password and ensure superuser/staff.
-            print('Found existing user:', u.username, u.email)
-            u.set_password(\"{password}\"); u.is_superuser = True; u.is_staff = True
+            print("Found existing user:", u.username, u.email)
+            u.set_password("{password}"); u.is_superuser = True; u.is_staff = True
             # If username exists (possibly owned by another account), we do not fail — we update this account's password.
             # Try to sync username/email only when not conflicting with other users.
-            if u.username != \"{username}\":
-                if not User.objects.filter(username=\"{username}\").exclude(pk=u.pk).exists():
-                    u.username = \"{username}\"
+            if u.username != "{username}":
+                if not User.objects.filter(username="{username}").exclude(pk=u.pk).exists():
+                    u.username = "{username}"
                 else:
                     print("Desired username {username} is taken by another account; keeping existing username " + u.username)
-            if u.email != \"{email}\":
-                if not User.objects.filter(email=\"{email}\").exclude(pk=u.pk).exists():
-                    u.email = \"{email}\"
+            if u.email != "{email}":
+                if not User.objects.filter(email="{email}").exclude(pk=u.pk).exists():
+                    u.email = "{email}"
                 else:
                     print("Desired email {email} is used by another account; keeping existing email " + u.email)
-            if \"{first_name}\" and u.first_name != \"{first_name}\": u.first_name = \"{first_name}\"
-            if \"{last_name}\" and u.last_name != \"{last_name}\": u.last_name = \"{last_name}\"
+            if "{first_name}" and u.first_name != "{first_name}": u.first_name = "{first_name}"
+            if "{last_name}" and u.last_name != "{last_name}": u.last_name = "{last_name}"
             u.save(); print('Updated existing user and ensured superuser status')
         else:
-            u = User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\"); print('Created admin user')
+            u = User.objects.create_superuser("{username}", "{email}", "{password}"); print('Created admin user')
         # Delete all other superusers to ensure only one exists
         other_superusers = User.objects.filter(is_superuser=True).exclude(pk=u.pk)
         if other_superusers.exists():
             deleted_count = other_superusers.delete()[0]
             print('Deleted ' + str(deleted_count) + ' other superuser(s) to ensure only one superuser exists')
         else:
-            print('No other superusers found')"
+            print('No other superusers found')'
         """.format(
-            username=admin_username.replace('"', '\\"'),
-            email=admin_email.replace('"', '\\"'),
-            password=admin_password.replace('"', '\\"'),
-            first_name=admin_first_name.replace('"', '\\"'),
-            last_name=admin_last_name.replace('"', '\\"'),
+            username=admin_username.replace("'", "\\'"),
+            email=admin_email.replace("'", "\\'"),
+            password=admin_password.replace("'", "\\'"),
+            first_name=admin_first_name.replace("'", "\\'"),
+            last_name=admin_last_name.replace("'", "\\'"),
         )
     )
 
