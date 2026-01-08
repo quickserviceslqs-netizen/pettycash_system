@@ -115,6 +115,33 @@ def create_admin_if_env_set():
     admin_last_name = os.environ.get("DJANGO_SUPERUSER_LAST_NAME", "")
     admin_force = os.environ.get("ADMIN_FORCE_CREATE", "false").lower() in ("1", "true", "yes")
 
+    # Backwards-compatible support for Render env vars named ADMIN_*
+    used_admin_fallback = False
+    if not admin_email:
+        admin_email = os.environ.get("ADMIN_EMAIL")
+        if admin_email:
+            used_admin_fallback = True
+    if not admin_password:
+        admin_password = os.environ.get("ADMIN_PASSWORD")
+        if admin_password:
+            used_admin_fallback = True
+    if not admin_username:
+        admin_username = os.environ.get("ADMIN_USERNAME")
+        if admin_username:
+            used_admin_fallback = True
+    # Optional names
+    if not admin_first_name:
+        admin_first_name = os.environ.get("ADMIN_FIRST_NAME", "")
+        if admin_first_name:
+            used_admin_fallback = True
+    if not admin_last_name:
+        admin_last_name = os.environ.get("ADMIN_LAST_NAME", "")
+        if admin_last_name:
+            used_admin_fallback = True
+
+    if used_admin_fallback:
+        print("Using ADMIN_* environment variables as fallback for superuser creation")
+
     # Provide clear logging about why we might skip creating an admin
     if not admin_email and not admin_password:
         print("No DJANGO_SUPERUSER_EMAIL or DJANGO_SUPERUSER_PASSWORD provided — skipping admin creation")
