@@ -58,12 +58,13 @@ def resolve_workflow(requisition):
     # 2️⃣ Treasury special case override
     is_treasury_request = requisition.requested_by.role.lower() == "treasury"
     if is_treasury_request:
-        tier = requisition.tier
-        if tier in ["Tier 1", "Tier1"]:
+        tier = (requisition.tier or "").lower()
+        # Use startswith checks to match names like 'Tier 1 - Small Amounts'
+        if tier.startswith("tier 1"):
             base_roles = ["department_head", "group_finance_manager"]
-        elif tier in ["Tier 2", "Tier2", "Tier 3", "Tier3"]:
+        elif tier.startswith("tier 2") or tier.startswith("tier 3"):
             base_roles = ["group_finance_manager", "cfo"]
-        elif tier in ["Tier 4", "Tier4"]:
+        elif tier.startswith("tier 4"):
             base_roles = ["cfo", "ceo"]
 
     # 3️⃣ Loop through roles in order
@@ -73,7 +74,8 @@ def resolve_workflow(requisition):
             continue
 
         # Candidate users (case-insensitive, normalize role to lowercase for DB lookup)
-        normalized_role = role.lower().replace("_", "_")  # Keep as-is for DB
+# Normalize role name (case-insensitive, replace spaces/dashes with underscore)
+    normalized_role = role.lower().replace(" ", "_").replace("-", "_")
         candidates = User.objects.filter(role=normalized_role, is_active=True).exclude(
             id=requisition.requested_by.id
         )
@@ -154,8 +156,10 @@ def resolve_workflow(requisition):
                     f"Auto-escalated {requisition.transaction_id}: {r['escalation_reason']}"
                 )
             else:
-                # Last resort: escalate to admin
-                admin = User.objects.filter(is_superuser=True, is_active=True).first()
+                # Last resort: escalate to admin (role='admin')
+                admin = User.objects.filter(role="admin", is_active=True).first()
+                if not admin:
+                    raise ValueError("No ADMIN user exists. Please create one with role='admin'.")
                 r["user_id"] = admin.id
                 r["role"] = "ADMIN"
                 r["auto_escalated"] = True
