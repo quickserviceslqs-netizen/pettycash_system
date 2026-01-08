@@ -283,6 +283,10 @@ def main():
         if not ok:
             raise SystemExit(1)
 
+    # Run a read-only seed audit so logs show which seeds (if any) are missing
+    # This is safe to run in all environments and will not modify DB state.
+    run("python scripts/audit_seeds.py", check=False)
+
     if os.environ.get("RUN_POST_DEPLOY_TASKS", "false").lower() in ("1", "true", "yes"):
         run_post_deploy_tasks()
     else:
