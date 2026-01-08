@@ -115,7 +115,15 @@ def create_admin_if_env_set():
     admin_last_name = os.environ.get("DJANGO_SUPERUSER_LAST_NAME", "")
     admin_force = os.environ.get("ADMIN_FORCE_CREATE", "false").lower() in ("1", "true", "yes")
 
-    if not (admin_email and admin_password):
+    # Provide clear logging about why we might skip creating an admin
+    if not admin_email and not admin_password:
+        print("No DJANGO_SUPERUSER_EMAIL or DJANGO_SUPERUSER_PASSWORD provided — skipping admin creation")
+        return
+    if not admin_email:
+        print("DJANGO_SUPERUSER_EMAIL not set — skipping admin creation")
+        return
+    if not admin_password:
+        print("DJANGO_SUPERUSER_PASSWORD not set — skipping admin creation")
         return
 
     # If ADMIN_USERNAME isn't provided, fallback to using the email as username
@@ -141,7 +149,11 @@ def create_admin_if_env_set():
         )
 
         try:
-            run(force_cmd, check=False, hide_sensitive=True, sensitive_values=[admin_password])
+            proc = run(force_cmd, check=False, hide_sensitive=True, sensitive_values=[admin_password])
+            if proc.returncode == 0:
+                print(f"Force-created admin user: {admin_username} <{admin_email}> (password masked)")
+            else:
+                print(f"Force-create admin command exited with code {proc.returncode}; check logs above.")
         except Exception as e:
             print('Failed to force-create admin user:', e)
         return
@@ -195,12 +207,16 @@ def create_admin_if_env_set():
 
     try:
         # Mask the admin password from logs when running sensitive command
-        run(
+        proc = run(
             safe_cmd,
             check=False,
             hide_sensitive=True,
             sensitive_values=[admin_password],
         )
+        if proc.returncode == 0:
+            print(f"Ensured admin user exists: {admin_username} <{admin_email}>")
+        else:
+            print(f"Admin ensure command exited with code {proc.returncode}; check logs above.")
     except Exception as e:
         print("Failed to ensure admin user:", e)
 
