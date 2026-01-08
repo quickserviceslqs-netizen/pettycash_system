@@ -161,14 +161,17 @@ def create_admin_if_env_set():
         print(
             "ADMIN_FORCE_CREATE=true — deleting all existing superusers and creating a new one from env vars (destructive)"
         )
-        # Escape single quotes in values and wrap the -c argument in single quotes to avoid shell splitting
+        # Use a here-doc to pass multi-line Python to manage.py shell to avoid shell-quoting issues
         force_cmd = textwrap.dedent(
             """
-            python manage.py shell -c 'from django.contrib.auth import get_user_model; User=get_user_model();
-            deleted = User.objects.filter(is_superuser=True).delete();
-            u = User.objects.create_superuser("{username}", "{email}", "{password}");
-            print("Created admin user (force):", u.username);
-            print("Deleted other superusers count:", deleted[0])'
+            python manage.py shell <<'PY'
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            deleted = User.objects.filter(is_superuser=True).delete()
+            u = User.objects.create_superuser("{username}", "{email}", "{password}")
+            print('Created admin user (force):', u.username)
+            print('Deleted other superusers count:', deleted[0])
+            PY
             """.format(
                 username=admin_username.replace("'", "\\'"),
                 email=admin_email.replace("'", "\\'"),
@@ -177,11 +180,17 @@ def create_admin_if_env_set():
         )
 
         try:
-            proc = run(force_cmd, check=False, hide_sensitive=True, sensitive_values=[admin_password])
+            proc = run(force_cmd, check=False, capture_output=True, hide_sensitive=True, sensitive_values=[admin_password])
             if proc.returncode == 0:
                 print(f"Force-created admin user: {admin_username} <{admin_email}> (password masked)")
+                if proc.stdout:
+                    print('Command stdout:', proc.stdout)
+                if proc.stderr:
+                    print('Command stderr:', proc.stderr)
             else:
-                print(f"Force-create admin command exited with code {proc.returncode}; check logs above.")
+                print(f"Force-create admin command exited with code {proc.returncode}; stdout/stderr below:")
+                print('stdout:', proc.stdout)
+                print('stderr:', proc.stderr)
         except Exception as e:
             print('Failed to force-create admin user:', e)
         return
@@ -191,15 +200,17 @@ def create_admin_if_env_set():
     )
 
     # Use manage.py shell to create or update user in an idempotent way
-    # Use single-quote wrapper for -c and escape single quotes in all injected values to avoid shell splitting
+    # Use a here-doc for the safe create/update flow to avoid quoting problems and capture output for diagnostics
     safe_cmd = textwrap.dedent(
         """
-        python manage.py shell -c 'from django.contrib.auth import get_user_model; User=get_user_model();
+        python manage.py shell <<'PY'
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
         # Find by email first, then by username
-        u = User.objects.filter(email="{email}").first() or User.objects.filter(username="{username}").first();
+        u = User.objects.filter(email="{email}").first() or User.objects.filter(username="{username}").first()
         if u:
             # If a user exists (found by email or username), update password and ensure superuser/staff.
-            print("Found existing user:", u.username, u.email)
+            print('Found existing user:', u.username, u.email)
             u.set_password("{password}"); u.is_superuser = True; u.is_staff = True
             # If username exists (possibly owned by another account), we do not fail — we update this account's password.
             # Try to sync username/email only when not conflicting with other users.
@@ -207,12 +218,12 @@ def create_admin_if_env_set():
                 if not User.objects.filter(username="{username}").exclude(pk=u.pk).exists():
                     u.username = "{username}"
                 else:
-                    print("Desired username {username} is taken by another account; keeping existing username " + u.username)
+                    print('Desired username {username} is taken by another account; keeping existing username ' + u.username)
             if u.email != "{email}":
                 if not User.objects.filter(email="{email}").exclude(pk=u.pk).exists():
                     u.email = "{email}"
                 else:
-                    print("Desired email {email} is used by another account; keeping existing email " + u.email)
+                    print('Desired email {email} is used by another account; keeping existing email ' + u.email)
             if "{first_name}" and u.first_name != "{first_name}": u.first_name = "{first_name}"
             if "{last_name}" and u.last_name != "{last_name}": u.last_name = "{last_name}"
             u.save(); print('Updated existing user and ensured superuser status')
@@ -224,7 +235,8 @@ def create_admin_if_env_set():
             deleted_count = other_superusers.delete()[0]
             print('Deleted ' + str(deleted_count) + ' other superuser(s) to ensure only one superuser exists')
         else:
-            print('No other superusers found')'
+            print('No other superusers found')
+        PY
         """.format(
             username=admin_username.replace("'", "\\'"),
             email=admin_email.replace("'", "\\'"),
@@ -235,17 +247,24 @@ def create_admin_if_env_set():
     )
 
     try:
-        # Mask the admin password from logs when running sensitive command
+        # Run the safe create/update flow and capture stdout/stderr for debugging
         proc = run(
             safe_cmd,
             check=False,
+            capture_output=True,
             hide_sensitive=True,
             sensitive_values=[admin_password],
         )
         if proc.returncode == 0:
             print(f"Ensured admin user exists: {admin_username} <{admin_email}>")
+            if proc.stdout:
+                print('Command stdout:', proc.stdout)
+            if proc.stderr:
+                print('Command stderr:', proc.stderr)
         else:
-            print(f"Admin ensure command exited with code {proc.returncode}; check logs above.")
+            print(f"Admin ensure command exited with code {proc.returncode}; stdout/stderr below:")
+            print('stdout:', proc.stdout)
+            print('stderr:', proc.stderr)
     except Exception as e:
         print("Failed to ensure admin user:", e)
 
