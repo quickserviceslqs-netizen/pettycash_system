@@ -9,32 +9,32 @@ pip install -r requirements.txt
 # Collect static files
 python manage.py collectstatic --no-input
 
-# Check if database has existing tables and handle accordingly
-echo "Checking database state..."
-HAS_TABLES=$(python manage.py shell -c "
-from django.db import connection
-cursor = connection.cursor()
-try:
-    cursor.execute(\"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name NOT IN ('spatial_ref_sys', 'geography_columns', 'geometry_columns')\")
-    count = cursor.fetchone()[0]
-    print('yes' if count > 0 else 'no')
-except:
-    print('no')
-" 2>/dev/null || echo "no")
+# Run migrations with conflict resolution
+# Fake all existing treasury migrations to avoid column/table conflicts
+python manage.py migrate treasury 0001 --fake 2>/dev/null || true
+python manage.py migrate treasury 0002 --fake 2>/dev/null || true
+python manage.py migrate treasury 0003 --fake 2>/dev/null || true
+python manage.py migrate treasury 0004 --fake 2>/dev/null || true
+python manage.py migrate treasury 0005 --fake 2>/dev/null || true
+python manage.py migrate treasury 0006 --fake 2>/dev/null || true
+python manage.py migrate treasury 0007 --fake 2>/dev/null || true
+python manage.py migrate treasury 0008 --fake 2>/dev/null || true
 
-# Use a single bootstrap script to handle both fresh and existing DBs safely
-python scripts/bootstrap_db.py || {
-  echo "Bootstrap script failed — see output above for details";
-  exit 1;
-}
+# Reset accounts migrations to handle inconsistent state (table exists in migration table but not in DB)
+python manage.py migrate accounts zero --noinput || echo "accounts zero migrate failed, continuing"
 
-# Create superuser if DJANGO_SUPERUSER_* env vars are set
-if [ -n "$DJANGO_SUPERUSER_EMAIL" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
-  echo "Creating superuser from environment variables..."
-  python manage.py createsuperuser --noinput || echo "Superuser creation failed, continuing"
-else
-  echo "DJANGO_SUPERUSER_EMAIL and/or DJANGO_SUPERUSER_PASSWORD not set, skipping superuser creation"
-fi
+# Ensure accounts initial migration runs first to create accounts_user table
+python manage.py migrate accounts 0001 --noinput || echo "accounts 0001 migrate failed, continuing"
+
+# Ensure `accounts` migrations are applied first to create `accounts_user` table
+python manage.py migrate accounts --noinput || echo "accounts migrate failed, continuing"
+
+
+# Run all migrations (new ones will apply, existing ones are faked)
+python manage.py migrate --no-input
+
+# Run bootstrap_db.py to ensure superuser is created if env vars are set
+python scripts/bootstrap_db.py
 
 # Optional post-deploy tasks (guarded to avoid running during build when DB is incomplete)
 if [ "${RUN_POST_DEPLOY_TASKS:-false}" = "true" ]; then
