@@ -69,10 +69,7 @@ class SystemSetting(models.Model):
     )
 
     last_modified_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="settings_modified",
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="settings_modified"
     )
     last_modified_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -160,10 +157,7 @@ class ActivityLog(models.Model):
     ]
 
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="activity_logs",
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="activity_logs"
     )
     action = models.CharField(max_length=50, choices=ACTION_CHOICES)
     content_type = models.CharField(
