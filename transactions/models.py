@@ -3,8 +3,6 @@ import uuid
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-
-User = settings.AUTH_USER_MODEL
 from organization.models import Branch, Company, CostCenter, Department, Region
 from pettycash_system.managers import RequisitionManager
 from workflow.models import ApprovalThreshold
