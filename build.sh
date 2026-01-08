@@ -28,6 +28,14 @@ python scripts/bootstrap_db.py || {
   exit 1;
 }
 
+# Create superuser if DJANGO_SUPERUSER_* env vars are set
+if [ -n "$DJANGO_SUPERUSER_EMAIL" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
+  echo "Creating superuser from environment variables..."
+  python manage.py createsuperuser --noinput || echo "Superuser creation failed, continuing"
+else
+  echo "DJANGO_SUPERUSER_EMAIL and/or DJANGO_SUPERUSER_PASSWORD not set, skipping superuser creation"
+fi
+
 # Optional post-deploy tasks (guarded to avoid running during build when DB is incomplete)
 if [ "${RUN_POST_DEPLOY_TASKS:-false}" = "true" ]; then
   echo "RUN_POST_DEPLOY_TASKS=true — running post-deploy tasks"

@@ -103,44 +103,16 @@ def run_post_deploy_tasks():
         run("python manage.py reresolve_workflows", check=False)
 
 
-def migrate_legacy_env_vars():
-    """Migrate old DJANGO_SUPERUSER_* env vars to ADMIN_* and warn the operator.
-    This keeps backward compatibility but prints a clear deprecation warning.
-    """
-    legacy_keys = {
-        "DJANGO_SUPERUSER_USERNAME": "ADMIN_USERNAME",
-        "DJANGO_SUPERUSER_EMAIL": "ADMIN_EMAIL",
-        "DJANGO_SUPERUSER_PASSWORD": "ADMIN_PASSWORD",
-    }
-    found = False
-    for old, new in legacy_keys.items():
-        if os.environ.get(old):
-            found = True
-            if not os.environ.get(new):
-                os.environ[new] = os.environ[old]
-                print(
-                    f"Migrated {old} -> {new} for this run (please remove {old} from your environment)"
-                )
-            else:
-                print(f"Both {old} and {new} are set; using {new}")
-    if found:
-        print(
-            "WARNING: DJANGO_SUPERUSER_* env vars are deprecated. Remove them and use ADMIN_* vars instead."
-        )
-
 
 def create_admin_if_env_set():
-    """Create an admin user if ADMIN_EMAIL and ADMIN_PASSWORD are provided.
+    """Create an admin user if DJANGO_SUPERUSER_EMAIL and DJANGO_SUPERUSER_PASSWORD are provided.
     This is idempotent: it will not create a duplicate user if one already exists.
     """
-    # Migrate legacy env vars if present (non-destructive)
-    migrate_legacy_env_vars()
-
-    admin_email = os.environ.get("ADMIN_EMAIL")
-    admin_password = os.environ.get("ADMIN_PASSWORD")
-    admin_username = os.environ.get("ADMIN_USERNAME")
-    admin_first_name = os.environ.get("ADMIN_FIRST_NAME", "")
-    admin_last_name = os.environ.get("ADMIN_LAST_NAME", "")
+    admin_email = os.environ.get("DJANGO_SUPERUSER_EMAIL")
+    admin_password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
+    admin_username = os.environ.get("DJANGO_SUPERUSER_USERNAME")
+    admin_first_name = os.environ.get("DJANGO_SUPERUSER_FIRST_NAME", "")
+    admin_last_name = os.environ.get("DJANGO_SUPERUSER_LAST_NAME", "")
     admin_force = os.environ.get("ADMIN_FORCE_CREATE", "false").lower() in ("1", "true", "yes")
 
     if not (admin_email and admin_password):
@@ -175,7 +147,7 @@ def create_admin_if_env_set():
         return
 
     print(
-        "Ensuring admin user exists from ADMIN_EMAIL/ADMIN_PASSWORD (and optional ADMIN_USERNAME) env vars (idempotent)"
+        "Ensuring admin user exists from DJANGO_SUPERUSER_EMAIL/DJANGO_SUPERUSER_PASSWORD (and optional DJANGO_SUPERUSER_USERNAME) env vars (idempotent)"
     )
 
     # Use manage.py shell to create or update user in an idempotent way

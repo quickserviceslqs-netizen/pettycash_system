@@ -234,14 +234,14 @@ MPESA_CALLBACK_URL = os.environ.get(
 # ---------------------------------------------------------------------
 # These are used by the bootstrap script to create or update the site superuser.
 ADMIN_USERNAME = os.environ.get(
-    "ADMIN_USERNAME"
+    "DJANGO_SUPERUSER_USERNAME"
 )  # Optional (defaults to ADMIN_EMAIL when used)
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
-ADMIN_FIRST_NAME = os.environ.get("ADMIN_FIRST_NAME")
-ADMIN_LAST_NAME = os.environ.get("ADMIN_LAST_NAME")
+ADMIN_EMAIL = os.environ.get("DJANGO_SUPERUSER_EMAIL")
+ADMIN_PASSWORD = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
+ADMIN_FIRST_NAME = os.environ.get("DJANGO_SUPERUSER_FIRST_NAME", "")
+ADMIN_LAST_NAME = os.environ.get("DJANGO_SUPERUSER_LAST_NAME", "")
 
-# When True, Django will refuse to start if there is no superuser and ADMIN_EMAIL/ADMIN_PASSWORD are not provided.
+# When True, Django will refuse to start if there is no superuser and DJANGO_SUPERUSER_EMAIL/DJANGO_SUPERUSER_PASSWORD are not provided.
 REQUIRE_SUPERUSER = os.environ.get("REQUIRE_SUPERUSER", "False").lower() in (
     "1",
     "true",
@@ -254,5 +254,5 @@ if REQUIRE_SUPERUSER:
 
     if not (ADMIN_EMAIL and ADMIN_PASSWORD):
         raise ImproperlyConfigured(
-            "REQUIRE_SUPERUSER is set but ADMIN_EMAIL/ADMIN_PASSWORD are not provided in the environment."
+            "REQUIRE_SUPERUSER is set but DJANGO_SUPERUSER_EMAIL/DJANGO_SUPERUSER_PASSWORD are not provided in the environment."
         )
