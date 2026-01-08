@@ -44,7 +44,10 @@ python manage.py migrate --no-input
 python scripts/bootstrap_db.py
 
 # Optional post-deploy tasks (guarded to avoid running during build when DB is incomplete)
-if [ "${RUN_POST_DEPLOY_TASKS:-false}" = "true" ]; then
+# Enable post-deploy tasks by default for Render deployments. To opt-out, set RUN_POST_DEPLOY_TASKS=false in your environment.
+export RUN_POST_DEPLOY_TASKS=${RUN_POST_DEPLOY_TASKS:-true}
+
+if [ "${RUN_POST_DEPLOY_TASKS}" = "true" ]; then
   echo "RUN_POST_DEPLOY_TASKS=true — running post-deploy tasks"
   # Create default approval thresholds (workflow app)
   python create_approval_thresholds.py || echo "create_approval_thresholds.py failed, continuing"
@@ -55,8 +58,12 @@ if [ "${RUN_POST_DEPLOY_TASKS:-false}" = "true" ]; then
   # Note: Create superuser manually via Django Admin or Render shell
   # python manage.py createsuperuser
 
-  # Load comprehensive test data with all roles (safe to run multiple times)
-  python manage.py load_comprehensive_data || echo "load_comprehensive_data failed, continuing"
+  # Load comprehensive test data with all roles (safe to run multiple times) — SKIP_LOAD_COMPREHENSIVE_DATA defaults to true to avoid demo data in production
+  if [ "${SKIP_LOAD_COMPREHENSIVE_DATA:-true}" != "true" ]; then
+    python manage.py load_comprehensive_data || echo "load_comprehensive_data failed, continuing"
+  else
+    echo "SKIP_LOAD_COMPREHENSIVE_DATA=true — skipping load_comprehensive_data"
+  fi
 
   # Fix any pending requisitions with missing next_approver (bug fix)
   python manage.py fix_pending_requisitions || echo "fix_pending_requisitions failed, continuing"

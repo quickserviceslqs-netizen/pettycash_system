@@ -94,9 +94,15 @@ def run_post_deploy_tasks():
         run("python create_approval_thresholds.py", check=False)
     with suppress(Exception):
         run("python manage.py seed_settings", check=False)
-    # Optional data load (safe to run multiple times)
-    with suppress(Exception):
-        run("python manage.py load_comprehensive_data", check=False)
+
+    # Optional data load (safe to run multiple times). Skip by default in production to avoid demo/test data.
+    skip_demo = os.environ.get("SKIP_LOAD_COMPREHENSIVE_DATA", "true").lower() in ("1", "true", "yes")
+    if skip_demo:
+        print("SKIP_LOAD_COMPREHENSIVE_DATA=true — skipping load_comprehensive_data")
+    else:
+        with suppress(Exception):
+            run("python manage.py load_comprehensive_data", check=False)
+
     with suppress(Exception):
         run("python manage.py fix_pending_requisitions", check=False)
     with suppress(Exception):
