@@ -46,7 +46,7 @@ def db_has_tables():
     # Returns True if the public schema has base tables (excluding common spatial ones)
     try:
         out = run(
-            "python manage.py shell -c \"from django.db import connection; cursor = connection.cursor(); cursor.execute(\"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type='BASE TABLE' AND table_name NOT IN ('spatial_ref_sys','geography_columns','geometry_columns')\"); print(cursor.fetchone()[0])\"",
+            "python manage.py shell -c 'from django.db import connection; cursor = connection.cursor(); cursor.execute(\"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = \'public\' AND table_type=\'BASE TABLE\' AND table_name NOT IN (\'spatial_ref_sys\',\'geometry_columns\',\'geometry_columns\')\"); print(cursor.fetchone()[0])'",
             capture_output=True,
             check=False,
         )
