@@ -735,12 +735,12 @@ export ADMIN_USERNAME="admin" # optional
 python scripts/bootstrap_db.py
 ```
 
-**Note:** `create_superuser.py` is deprecated. Instead, set `ADMIN_*` env vars and rely on `scripts/bootstrap_db.py` (recommended). Example:
+**Superuser Creation:** Set `DJANGO_SUPERUSER_*` env vars and run `scripts/bootstrap_db.py` (recommended). The build script will automatically create the superuser. Example:
 
 ```bash
-export ADMIN_EMAIL="admin@example.com"
-export ADMIN_PASSWORD="YourSecurePassword123!"
-export ADMIN_USERNAME="admin" # optional
+export DJANGO_SUPERUSER_EMAIL="admin@example.com"
+export DJANGO_SUPERUSER_PASSWORD="YourSecurePassword123!"
+export DJANGO_SUPERUSER_USERNAME="admin" # optional
 python scripts/bootstrap_db.py
 ```
 ```python
