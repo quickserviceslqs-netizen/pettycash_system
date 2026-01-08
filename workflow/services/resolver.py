@@ -74,8 +74,8 @@ def resolve_workflow(requisition):
             continue
 
         # Candidate users (case-insensitive, normalize role to lowercase for DB lookup)
-# Normalize role name (case-insensitive, replace spaces/dashes with underscore)
-    normalized_role = role.lower().replace(" ", "_").replace("-", "_")
+        # Normalize role name (case-insensitive, replace spaces/dashes with underscore)
+        normalized_role = role.lower().replace(" ", "_").replace("-", "_")
         candidates = User.objects.filter(role=normalized_role, is_active=True).exclude(
             id=requisition.requested_by.id
         )

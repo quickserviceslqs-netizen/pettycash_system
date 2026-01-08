@@ -103,18 +103,34 @@ class BackupService:
 
         try:
             # Use Django's dumpdata command
-            with open(temp_file.name, "w", encoding="utf-8") as f:
-                call_command(
-                    "dumpdata",
-                    exclude=[
-                        "contenttypes",
-                        "auth.permission",
-                        "sessions.session",
-                        "admin.logentry",
-                    ],
-                    indent=2,
-                    stdout=f,
-                )
+            import time
+            dump_success = False
+            for attempt in range(1, 4):
+                try:
+                    with open(temp_file.name, "w", encoding="utf-8") as f:
+                        call_command(
+                            "dumpdata",
+                            exclude=[
+                                "contenttypes",
+                                "auth.permission",
+                                "sessions.session",
+                                "admin.logentry",
+                            ],
+                            indent=2,
+                            stdout=f,
+                        )
+                    dump_success = True
+                    break
+                except Exception as e:
+                    # Retry transient serialization/connection errors a few times
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"dumpdata attempt {attempt} failed: {e}")
+                    if attempt < 3:
+                        time.sleep(2 ** attempt)
+                    else:
+                        raise
 
             # Get file size
             file_size = os.path.getsize(temp_file.name)
