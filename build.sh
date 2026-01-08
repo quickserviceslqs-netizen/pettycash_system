@@ -32,9 +32,10 @@ python manage.py migrate accounts --noinput || echo "accounts migrate failed, co
 
 
 
-# Fake treasury migrations up to 0015 to resolve constraint/column errors
+# Fake treasury migrations up to 0016 to resolve constraint/column errors
 python manage.py migrate treasury 0012 --fake || echo "Faked treasury up to 0012"
 python manage.py migrate treasury 0015 --fake || echo "Faked treasury 0015"
+python manage.py migrate treasury 0016 --fake || echo "Faked treasury 0016"
 
 # Run all migrations (new ones will apply, existing ones are faked)
 python manage.py migrate --no-input
