@@ -81,6 +81,8 @@ INSTALLED_APPS = [
     "reports",
     "settings_manager",
     "system_maintenance",
+    # Local apps
+    "notifications",
 ]
 
 # ---------------------------------------------------------------------
@@ -256,3 +258,21 @@ if REQUIRE_SUPERUSER:
         raise ImproperlyConfigured(
             "REQUIRE_SUPERUSER is set but DJANGO_SUPERUSER_EMAIL/DJANGO_SUPERUSER_PASSWORD are not provided in the environment."
         )
+
+
+# ---------------------------------------------------------------------
+# EMAIL / SMTP SETTINGS
+# ---------------------------------------------------------------------
+# These values are read from environment variables and can be set per-deployment.
+# Default backend is SMTP; use environment to switch to e.g. console or locmem in tests.
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 25))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "False").lower() in ("1", "true", "yes")
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False").lower() in ("1", "true", "yes")
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL", f"no-reply@{SITE_URL.replace('http://','').replace('https://','')}")

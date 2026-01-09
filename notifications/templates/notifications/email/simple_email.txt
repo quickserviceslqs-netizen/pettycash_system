@@ -1,0 +1,4 @@
+{{ body }}
+
+Regards,
+Petty Cash System

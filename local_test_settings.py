@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     "transactions.apps.TransactionsConfig",
     "treasury.apps.TreasuryConfig",
     "reports.apps.ReportsConfig",
+    # Notifications app for email testing
+    "notifications.apps.NotificationsConfig",
 ]
 
 MIDDLEWARE = [
@@ -133,3 +135,7 @@ REST_FRAMEWORK = {
 
 # Test Runner
 TEST_RUNNER = "django.test.runner.DiscoverRunner"
+
+# Email settings for tests (use locmem so emails are captured in `django.core.mail.outbox`)
+EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+DEFAULT_FROM_EMAIL = "test-no-reply@example.com"
