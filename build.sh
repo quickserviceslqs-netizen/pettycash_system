@@ -36,14 +36,13 @@ else
   echo "DJANGO_SUPERUSER_EMAIL and/or DJANGO_SUPERUSER_PASSWORD not set, skipping superuser creation"
 fi
 
+# Seed default system settings (always run, safe to execute multiple times)
+echo "Seeding system settings..."
+python manage.py seed_settings || echo "seed_settings failed, continuing"
+
 # Optional post-deploy tasks (guarded to avoid running during build when DB is incomplete)
 if [ "${RUN_POST_DEPLOY_TASKS:-false}" = "true" ]; then
   echo "RUN_POST_DEPLOY_TASKS=true — running post-deploy tasks"
-  # Create default approval thresholds (workflow app)
-  python create_approval_thresholds.py || echo "create_approval_thresholds.py failed, continuing"
-
-  # Seed default system settings (settings_manager app)
-  python manage.py seed_settings || echo "seed_settings failed, continuing"
 
   # Note: Create superuser manually via Django Admin or Render shell
   # python manage.py createsuperuser
