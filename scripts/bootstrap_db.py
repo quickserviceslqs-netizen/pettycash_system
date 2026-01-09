@@ -46,7 +46,7 @@ def db_has_tables():
     # Returns True if the public schema has base tables (excluding common spatial ones)
     try:
         out = run(
-            "python manage.py shell -c 'from django.db import connection; cursor = connection.cursor(); cursor.execute(\"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = \'public\' AND table_type=\'BASE TABLE\' AND table_name NOT IN (\'spatial_ref_sys\',\'geometry_columns\',\'geometry_columns\')\"); print(cursor.fetchone()[0])'",
+            "python manage.py shell -c \"from django.db import connection; cursor = connection.cursor(); cursor.execute(\"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type='BASE TABLE' AND table_name NOT IN ('spatial_ref_sys','geography_columns','geometry_columns')\"); print(cursor.fetchone()[0])\"",
             capture_output=True,
             check=False,
         )
@@ -94,15 +94,9 @@ def run_post_deploy_tasks():
         run("python create_approval_thresholds.py", check=False)
     with suppress(Exception):
         run("python manage.py seed_settings", check=False)
-
-    # Optional data load (safe to run multiple times). Skip by default in production to avoid demo/test data.
-    skip_demo = os.environ.get("SKIP_LOAD_COMPREHENSIVE_DATA", "true").lower() in ("1", "true", "yes")
-    if skip_demo:
-        print("SKIP_LOAD_COMPREHENSIVE_DATA=true — skipping load_comprehensive_data")
-    else:
-        with suppress(Exception):
-            run("python manage.py load_comprehensive_data", check=False)
-
+    # Optional data load (safe to run multiple times)
+    with suppress(Exception):
+        run("python manage.py load_comprehensive_data", check=False)
     with suppress(Exception):
         run("python manage.py fix_pending_requisitions", check=False)
     with suppress(Exception):
@@ -121,42 +115,7 @@ def create_admin_if_env_set():
     admin_last_name = os.environ.get("DJANGO_SUPERUSER_LAST_NAME", "")
     admin_force = os.environ.get("ADMIN_FORCE_CREATE", "false").lower() in ("1", "true", "yes")
 
-    # Backwards-compatible support for Render env vars named ADMIN_*
-    used_admin_fallback = False
-    if not admin_email:
-        admin_email = os.environ.get("ADMIN_EMAIL")
-        if admin_email:
-            used_admin_fallback = True
-    if not admin_password:
-        admin_password = os.environ.get("ADMIN_PASSWORD")
-        if admin_password:
-            used_admin_fallback = True
-    if not admin_username:
-        admin_username = os.environ.get("ADMIN_USERNAME")
-        if admin_username:
-            used_admin_fallback = True
-    # Optional names
-    if not admin_first_name:
-        admin_first_name = os.environ.get("ADMIN_FIRST_NAME", "")
-        if admin_first_name:
-            used_admin_fallback = True
-    if not admin_last_name:
-        admin_last_name = os.environ.get("ADMIN_LAST_NAME", "")
-        if admin_last_name:
-            used_admin_fallback = True
-
-    if used_admin_fallback:
-        print("Using ADMIN_* environment variables as fallback for superuser creation")
-
-    # Provide clear logging about why we might skip creating an admin
-    if not admin_email and not admin_password:
-        print("No DJANGO_SUPERUSER_EMAIL or DJANGO_SUPERUSER_PASSWORD provided — skipping admin creation")
-        return
-    if not admin_email:
-        print("DJANGO_SUPERUSER_EMAIL not set — skipping admin creation")
-        return
-    if not admin_password:
-        print("DJANGO_SUPERUSER_PASSWORD not set — skipping admin creation")
+    if not (admin_email and admin_password):
         return
 
     # If ADMIN_USERNAME isn't provided, fallback to using the email as username
@@ -167,36 +126,22 @@ def create_admin_if_env_set():
         print(
             "ADMIN_FORCE_CREATE=true — deleting all existing superusers and creating a new one from env vars (destructive)"
         )
-        # Use a here-doc to pass multi-line Python to manage.py shell to avoid shell-quoting issues
         force_cmd = textwrap.dedent(
             """
-            python manage.py shell <<'PY'
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            deleted = User.objects.filter(is_superuser=True).delete()
-            u = User.objects.create_superuser("{username}", "{email}", "{password}")
-            print('Created admin user (force):', u.username)
-            print('Deleted other superusers count:', deleted[0])
-            PY
+            python manage.py shell -c "from django.contrib.auth import get_user_model; User=get_user_model();
+            deleted = User.objects.filter(is_superuser=True).delete();
+            u = User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\");
+            print('Created admin user (force):', u.username);
+            print('Deleted other superusers count:', deleted[0])"
             """.format(
-                username=admin_username.replace("'", "\\'"),
-                email=admin_email.replace("'", "\\'"),
-                password=admin_password.replace("'", "\\'"),
+                username=admin_username.replace('"', '\\"'),
+                email=admin_email.replace('"', '\\"'),
+                password=admin_password.replace('"', '\\"'),
             )
         )
 
         try:
-            proc = run(force_cmd, check=False, capture_output=True, hide_sensitive=True, sensitive_values=[admin_password])
-            if proc.returncode == 0:
-                print(f"Force-created admin user: {admin_username} <{admin_email}> (password masked)")
-                if proc.stdout:
-                    print('Command stdout:', proc.stdout)
-                if proc.stderr:
-                    print('Command stderr:', proc.stderr)
-            else:
-                print(f"Force-create admin command exited with code {proc.returncode}; stdout/stderr below:")
-                print('stdout:', proc.stdout)
-                print('stderr:', proc.stderr)
+            run(force_cmd, check=False, hide_sensitive=True, sensitive_values=[admin_password])
         except Exception as e:
             print('Failed to force-create admin user:', e)
         return
@@ -206,71 +151,56 @@ def create_admin_if_env_set():
     )
 
     # Use manage.py shell to create or update user in an idempotent way
-    # Use a here-doc for the safe create/update flow to avoid quoting problems and capture output for diagnostics
     safe_cmd = textwrap.dedent(
         """
-        python manage.py shell <<'PY'
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
+        python manage.py shell -c "from django.contrib.auth import get_user_model; User=get_user_model();
         # Find by email first, then by username
-        u = User.objects.filter(email="{email}").first() or User.objects.filter(username="{username}").first()
+        u = User.objects.filter(email=\"{email}\").first() or User.objects.filter(username=\"{username}\").first();
         if u:
             # If a user exists (found by email or username), update password and ensure superuser/staff.
             print('Found existing user:', u.username, u.email)
-            u.set_password("{password}"); u.is_superuser = True; u.is_staff = True
+            u.set_password(\"{password}\"); u.is_superuser = True; u.is_staff = True
             # If username exists (possibly owned by another account), we do not fail — we update this account's password.
             # Try to sync username/email only when not conflicting with other users.
-            if u.username != "{username}":
-                if not User.objects.filter(username="{username}").exclude(pk=u.pk).exists():
-                    u.username = "{username}"
+            if u.username != \"{username}\":
+                if not User.objects.filter(username=\"{username}\").exclude(pk=u.pk).exists():
+                    u.username = \"{username}\"
                 else:
-                    print('Desired username {username} is taken by another account; keeping existing username ' + u.username)
-            if u.email != "{email}":
-                if not User.objects.filter(email="{email}").exclude(pk=u.pk).exists():
-                    u.email = "{email}"
+                    print("Desired username {username} is taken by another account; keeping existing username " + u.username)
+            if u.email != \"{email}\":
+                if not User.objects.filter(email=\"{email}\").exclude(pk=u.pk).exists():
+                    u.email = \"{email}\"
                 else:
-                    print('Desired email {email} is used by another account; keeping existing email ' + u.email)
-            if "{first_name}" and u.first_name != "{first_name}": u.first_name = "{first_name}"
-            if "{last_name}" and u.last_name != "{last_name}": u.last_name = "{last_name}"
+                    print("Desired email {email} is used by another account; keeping existing email " + u.email)
+            if \"{first_name}\" and u.first_name != \"{first_name}\": u.first_name = \"{first_name}\"
+            if \"{last_name}\" and u.last_name != \"{last_name}\": u.last_name = \"{last_name}\"
             u.save(); print('Updated existing user and ensured superuser status')
         else:
-            u = User.objects.create_superuser("{username}", "{email}", "{password}"); print('Created admin user')
+            u = User.objects.create_superuser(\"{username}\", \"{email}\", \"{password}\"); print('Created admin user')
         # Delete all other superusers to ensure only one exists
         other_superusers = User.objects.filter(is_superuser=True).exclude(pk=u.pk)
         if other_superusers.exists():
             deleted_count = other_superusers.delete()[0]
             print('Deleted ' + str(deleted_count) + ' other superuser(s) to ensure only one superuser exists')
         else:
-            print('No other superusers found')
-        PY
+            print('No other superusers found')"
         """.format(
-            username=admin_username.replace("'", "\\'"),
-            email=admin_email.replace("'", "\\'"),
-            password=admin_password.replace("'", "\\'"),
-            first_name=admin_first_name.replace("'", "\\'"),
-            last_name=admin_last_name.replace("'", "\\'"),
+            username=admin_username.replace('"', '\\"'),
+            email=admin_email.replace('"', '\\"'),
+            password=admin_password.replace('"', '\\"'),
+            first_name=admin_first_name.replace('"', '\\"'),
+            last_name=admin_last_name.replace('"', '\\"'),
         )
     )
 
     try:
-        # Run the safe create/update flow and capture stdout/stderr for debugging
-        proc = run(
+        # Mask the admin password from logs when running sensitive command
+        run(
             safe_cmd,
             check=False,
-            capture_output=True,
             hide_sensitive=True,
             sensitive_values=[admin_password],
         )
-        if proc.returncode == 0:
-            print(f"Ensured admin user exists: {admin_username} <{admin_email}>")
-            if proc.stdout:
-                print('Command stdout:', proc.stdout)
-            if proc.stderr:
-                print('Command stderr:', proc.stderr)
-        else:
-            print(f"Admin ensure command exited with code {proc.returncode}; stdout/stderr below:")
-            print('stdout:', proc.stdout)
-            print('stderr:', proc.stderr)
     except Exception as e:
         print("Failed to ensure admin user:", e)
 
@@ -288,10 +218,6 @@ def main():
         ok = run_migrate_and_handle()
         if not ok:
             raise SystemExit(1)
-
-    # Run a read-only seed audit so logs show which seeds (if any) are missing
-    # This is safe to run in all environments and will not modify DB state.
-    run("python scripts/audit_seeds.py", check=False)
 
     if os.environ.get("RUN_POST_DEPLOY_TASKS", "false").lower() in ("1", "true", "yes"):
         run_post_deploy_tasks()
