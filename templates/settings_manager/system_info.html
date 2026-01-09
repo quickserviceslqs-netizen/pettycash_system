@@ -41,6 +41,12 @@
                                 
                                 <dt class="col-sm-4">Database:</dt>
                                 <dd class="col-sm-8"><code>{{ database_engine }}</code></dd>
+
+                                <dt class="col-sm-4">DB Name:</dt>
+                                <dd class="col-sm-8"><code>{{ database_name }}</code></dd>
+
+                                <dt class="col-sm-4">DB Host:</dt>
+                                <dd class="col-sm-8"><code>{{ database_host }}{% if database_port %}:{{ database_port }}{% endif %}</code></dd>
                             </dl>
                         </div>
                         <div class="col-md-6">
@@ -54,7 +60,7 @@
                                 <dt class="col-sm-4">Secret Key:</dt>
                                 <dd class="col-sm-8">
                                     <span class="text-muted">
-                                        <i class="bi bi-shield-lock-fill"></i> ••••••••••••••••
+                                        <i class="bi bi-shield-lock-fill"></i> {{ secret_key_length }} characters
                                     </span>
                                 </dd>
                             </dl>
@@ -115,6 +121,150 @@
                             </dl>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Cache Configuration -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-memory"></i> Cache Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Backend:</dt>
+                        <dd class="col-sm-9"><code>{{ cache_backend }}</code></dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Email Configuration -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-envelope"></i> Email Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Backend:</dt>
+                                <dd class="col-sm-8"><code>{{ email_backend }}</code></dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Host:</dt>
+                                <dd class="col-sm-8"><code>{{ email_host }}</code></dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Settings -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-shield-check"></i> Security Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">CSRF Secure:</dt>
+                                <dd class="col-sm-8">
+                                    {% if csrf_cookie_secure %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Enabled
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-exclamation-triangle"></i> Disabled
+                                        </span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Session Secure:</dt>
+                                <dd class="col-sm-8">
+                                    {% if session_cookie_secure %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Enabled
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-exclamation-triangle"></i> Disabled
+                                        </span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Resources -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-speedometer2"></i> System Resources</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="text-center mb-3">Memory</h6>
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ memory_percent }}%" 
+                                     aria-valuenow="{{ memory_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ memory_percent }}%
+                                </div>
+                            </div>
+                            <small class="text-muted text-center d-block">
+                                {{ memory_used }} GB / {{ memory_total }} GB
+                            </small>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-center mb-3">Disk Space</h6>
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: {{ disk_percent }}%" 
+                                     aria-valuenow="{{ disk_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ disk_percent }}%
+                                </div>
+                            </div>
+                            <small class="text-muted text-center d-block">
+                                {{ disk_used }} GB / {{ disk_total }} GB
+                            </small>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-center mb-3">CPU Usage</h6>
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar bg-danger" role="progressbar" style="width: {{ cpu_percent }}%" 
+                                     aria-valuenow="{{ cpu_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ cpu_percent }}%
+                                </div>
+                            </div>
+                            <small class="text-muted text-center d-block">
+                                {{ cpu_count }} cores
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Environment Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Environment</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Environment:</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge bg-info">{{ environment|title }}</span>
+                        </dd>
+                        
+                        <dt class="col-sm-3">Server Software:</dt>
+                        <dd class="col-sm-9"><code>{{ server_software }}</code></dd>
+                    </dl>
                 </div>
             </div>
 

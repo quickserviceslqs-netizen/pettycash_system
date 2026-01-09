@@ -280,9 +280,12 @@ def system_info(request):
     """Display system information and diagnostics"""
     import platform
     import sys
+    from datetime import datetime
 
     from django import get_version as django_version
     from django.conf import settings as django_settings
+    from django.db.models import Count
+    from django.utils import timezone
 
     # Log activity
     log_activity(
@@ -293,14 +296,106 @@ def system_info(request):
         request=request,
     )
 
+    # Get additional system information
+    import psutil
+    import os
+    
+    # Memory information
+    memory = psutil.virtual_memory()
+    memory_total = round(memory.total / (1024**3), 2)  # GB
+    memory_used = round(memory.used / (1024**3), 2)    # GB
+    memory_percent = memory.percent
+    
+    # Disk information
+    disk = psutil.disk_usage('/')
+    disk_total = round(disk.total / (1024**3), 2)      # GB
+    disk_used = round(disk.used / (1024**3), 2)        # GB
+    disk_percent = disk.percent
+    
+    # CPU information
+    cpu_count = psutil.cpu_count()
+    cpu_percent = psutil.cpu_percent(interval=1)
+    
+    # Environment
+    environment = os.environ.get("DJANGO_ENV", "development")
+    server_software = os.environ.get("SERVER_SOFTWARE", "Unknown")
+
+    # Get system statistics
+    from accounts.models import User
+    from settings_manager.models import ActivityLog, SystemSetting
+
+    total_users = User.objects.count()
+    active_users = User.objects.filter(is_active=True).count()
+    total_settings = SystemSetting.objects.filter(is_active=True).count()
+    total_logs = ActivityLog.objects.count()
+
+    # Get database configuration (safely)
+    db_config = django_settings.DATABASES.get("default", {})
+    db_name = db_config.get("NAME", "Not configured")
+    db_host = db_config.get("HOST", "localhost")
+    db_port = db_config.get("PORT", "")
+
+    # Get cache configuration
+    cache_config = django_settings.CACHES.get("default", {})
+    cache_backend = cache_config.get("BACKEND", "Not configured")
+
+    # Get email configuration
+    email_backend = django_settings.EMAIL_BACKEND
+    email_host = getattr(django_settings, "EMAIL_HOST", "Not configured")
+
+    # Get security settings
+    secret_key_length = len(django_settings.SECRET_KEY) if hasattr(django_settings, "SECRET_KEY") else 0
+    csrf_cookie_secure = getattr(django_settings, "CSRF_COOKIE_SECURE", False)
+    session_cookie_secure = getattr(django_settings, "SESSION_COOKIE_SECURE", False)
+
     context = {
-        "python_version": sys.version,
+        # Django Information
         "django_version": django_version(),
-        "platform": platform.platform(),
         "debug_mode": django_settings.DEBUG,
         "database_engine": django_settings.DATABASES["default"]["ENGINE"],
+        "database_name": db_name,
+        "database_host": db_host,
+        "database_port": db_port,
+        "timezone": django_settings.TIME_ZONE,
+        "language": django_settings.LANGUAGE_CODE,
         "installed_apps": django_settings.INSTALLED_APPS,
         "middleware": django_settings.MIDDLEWARE,
+        "cache_backend": cache_backend,
+        "email_backend": email_backend,
+        "email_host": email_host,
+        "secret_key_length": secret_key_length,
+        "csrf_cookie_secure": csrf_cookie_secure,
+        "session_cookie_secure": session_cookie_secure,
+        "environment": environment,
+        "server_software": server_software,
+
+        # Python Information
+        "python_version": sys.version,
+        "python_implementation": platform.python_implementation(),
+        "python_executable": sys.executable,
+
+        # System Information
+        "platform": platform.platform(),
+        "platform_system": platform.system(),
+        "platform_release": platform.release(),
+        "platform_machine": platform.machine(),
+        "platform_processor": platform.processor(),
+
+        # System Resources
+        "memory_total": memory_total,
+        "memory_used": memory_used,
+        "memory_percent": memory_percent,
+        "disk_total": disk_total,
+        "disk_used": disk_used,
+        "disk_percent": disk_percent,
+        "cpu_count": cpu_count,
+        "cpu_percent": cpu_percent,
+
+        # Statistics
+        "total_users": total_users,
+        "active_users": active_users,
+        "total_settings": total_settings,
+        "total_logs": total_logs,
     }
 
     return render(request, "settings_manager/system_info.html", context)

@@ -548,12 +548,12 @@
                         </div>
 
                         <!-- Pagination and Per-Page Controls -->
-                        {% if page_obj.paginator.count >= 5 %}
+                        {% if page_obj.paginator.count > 0 %}
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
                             <!-- Per-page selector -->
                             <div class="d-flex align-items-center gap-2">
                                 <label for="per_page_{{ cat_key }}" class="form-label mb-0 small">Show:</label>
-                                <select class="form-select form-select-sm" id="per_page_{{ cat_key }}" style="width: auto;" onchange="changePerPage('{{ cat_key }}', this.value)">
+                                <select class="form-select form-select-sm" id="per_page_{{ cat_key }}" style="width: auto;" onchange="changePerPage(this.value)">
                                     <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
                                     <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
                                     <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
@@ -797,7 +797,7 @@ function buildUrlWithParams(params) {
 }
 
 // Change items per page
-function changePerPage(category, perPage) {
+function changePerPage(perPage) {
     window.location.href = buildUrlWithParams({
         'per_page': perPage,
         'page': 1  // Reset to page 1 when changing per_page
