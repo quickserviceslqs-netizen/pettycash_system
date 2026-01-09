@@ -779,23 +779,36 @@ function clearAllFilters() {
     window.location.href = '{% url "settings_manager:dashboard" %}';
 }
 
+// Helper function to build URL with current parameters
+function buildUrlWithParams(params) {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Update with new parameters
+    Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+            urlParams.set(key, params[key]);
+        } else {
+            urlParams.delete(key);
+        }
+    });
+    
+    const queryString = urlParams.toString();
+    return queryString ? '?' + queryString : '';
+}
+
 // Change items per page
 function changePerPage(category, perPage) {
-    // Build URL with current parameters
-    let url = '?per_page=' + perPage;
-    
-    {% if selected_category %}
-        url += '&category={{ selected_category }}';
-    {% endif %}
-    
-    {% if text_filter %}
-        url += '&filter={{ text_filter|urlencode }}';
-    {% endif %}
-    
-    // Reset to page 1 when changing per_page
-    url += '&page=1';
-    
-    window.location.href = url;
+    window.location.href = buildUrlWithParams({
+        'per_page': perPage,
+        'page': 1  // Reset to page 1 when changing per_page
+    });
+}
+
+// Navigate to specific page
+function goToPage(pageNum) {
+    window.location.href = buildUrlWithParams({
+        'page': pageNum
+    });
 }
 </script>
 {% endblock %}
