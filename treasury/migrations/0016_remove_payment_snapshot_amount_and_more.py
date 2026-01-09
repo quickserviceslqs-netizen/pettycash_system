@@ -3,6 +3,47 @@
 from django.db import migrations
 
 
+def remove_fields_if_exist(apps, schema_editor):
+    """
+    Remove snapshot fields from Payment model if they exist.
+    """
+    from django.db import connection
+
+    with connection.cursor() as cursor:
+        # Check if columns exist, backend-aware
+        if connection.vendor == "postgresql":
+            cursor.execute(
+                """
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name='treasury_payment'
+            """
+            )
+            existing_columns = {row[0] for row in cursor.fetchall()}
+        else:
+            cursor.execute("PRAGMA table_info('treasury_payment')")
+            existing_columns = {row[1] for row in cursor.fetchall()}
+
+        fields_to_remove = [
+            "snapshot_amount",
+            "snapshot_branch",
+            "snapshot_company",
+            "snapshot_description",
+            "snapshot_destination",
+        ]
+
+        for field in fields_to_remove:
+            if field in existing_columns:
+                # Use schema_editor to remove the field safely
+                Payment = apps.get_model("treasury", "Payment")
+                if hasattr(Payment, field):
+                    schema_editor.remove_field(Payment, Payment._meta.get_field(field))
+                    print(f"Removed field {field} from Payment model")
+            else:
+                print(
+                    f"Field {field} does not exist in treasury_payment table, skipping removal"
+                )
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,24 +51,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="payment",
-            name="snapshot_amount",
-        ),
-        migrations.RemoveField(
-            model_name="payment",
-            name="snapshot_branch",
-        ),
-        migrations.RemoveField(
-            model_name="payment",
-            name="snapshot_company",
-        ),
-        migrations.RemoveField(
-            model_name="payment",
-            name="snapshot_description",
-        ),
-        migrations.RemoveField(
-            model_name="payment",
-            name="snapshot_destination",
+        migrations.RunPython(
+            remove_fields_if_exist,
+            reverse_code=migrations.RunPython.noop,
         ),
     ]
