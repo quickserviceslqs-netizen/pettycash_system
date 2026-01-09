@@ -60,6 +60,12 @@ def settings_dashboard(request):
     category_counts = {}
     paginated_settings = {}
 
+    # Always calculate counts for all categories (for the category cards)
+    for category_key, category_name in categories:
+        category_counts[category_key] = SystemSetting.objects.filter(
+            category=category_key, is_active=True
+        ).count()
+
     if category_filter:
         # Show only the filtered category
         for category_key, category_name in categories:
@@ -77,8 +83,6 @@ def settings_dashboard(request):
                     )
 
                 if all_settings.exists():
-                    category_counts[category_key] = all_settings.count()
-
                     # Create paginator for this category
                     paginator = Paginator(all_settings, per_page)
                     page_obj = paginator.get_page(page_number)
@@ -107,8 +111,6 @@ def settings_dashboard(request):
                 )
 
             if all_settings.exists():
-                category_counts[category_key] = all_settings.count()
-
                 # Create paginator for this category
                 paginator = Paginator(all_settings, per_page)
                 page_obj = paginator.get_page(page_number)
