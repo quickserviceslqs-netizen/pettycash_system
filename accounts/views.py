@@ -293,10 +293,14 @@ def terminate_my_other_sessions(request):
     if request.method == "POST":
         current_key = request.session.session_key
         deleted = 0
+        corrupted = 0
         for s in Session.objects.all():
             try:
                 data = s.get_decoded()
             except Exception:
+                # Delete corrupted sessions
+                s.delete()
+                corrupted += 1
                 continue
             uid = str(data.get("_auth_user_id")) if data else None
             if uid and int(uid) == request.user.id and s.session_key != current_key:
@@ -304,6 +308,8 @@ def terminate_my_other_sessions(request):
                 deleted += 1
         if deleted:
             messages.success(request, f"Terminated {deleted} other session(s).")
-        else:
+        if corrupted:
+            messages.info(request, f"Cleaned up {corrupted} corrupted session(s).")
+        if not deleted and not corrupted:
             messages.info(request, "No other active sessions found.")
     return redirect("dashboard")

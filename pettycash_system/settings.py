@@ -138,7 +138,7 @@ WSGI_APPLICATION = "pettycash_system.wsgi.application"
 DATABASES = {
     "default": dj_database_url.config(
         default=os.environ["DATABASE_URL"],
-        conn_max_age=600,
+        conn_max_age=0,  # Disable persistent connections to avoid pool exhaustion
         conn_health_checks=True,
     )
 }
