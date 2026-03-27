@@ -47,15 +47,21 @@ ALLOWED_HOSTS = .onrender.com
 CSRF_TRUSTED_ORIGINS = https://*.onrender.com
 DATABASE_URL = [paste Internal Database URL]
 PYTHON_VERSION = 3.11.7
+DJANGO_SUPERUSER_EMAIL = admin@yourcompany.com
+DJANGO_SUPERUSER_PASSWORD = [strong password]
+DJANGO_SUPERUSER_USERNAME = admin
 ```
 
 ### 6. Deploy! (1 min)
 - Click **"Create Web Service"**
 - Wait 3-5 minutes for deployment
 
-### 7. Create Admin (1 min)
-- Go to service → **"Shell"** tab
-- Run: `python manage.py createsuperuser`
+### 7. Admin User (auto-created)
+- If `DJANGO_SUPERUSER_EMAIL` and `DJANGO_SUPERUSER_PASSWORD` are set,
+  bootstrap creates or updates the admin automatically during deploy.
+- Optional manual fallback:
+  - Go to service → **"Shell"** tab
+  - Run: `python manage.py createsuperuser`
 
 ---
 
@@ -63,6 +69,17 @@ PYTHON_VERSION = 3.11.7
 
 **Your app:** `https://pettycash-system.onrender.com`
 **Admin:** `https://pettycash-system.onrender.com/admin`
+
+---
+
+## Optional One-Click Blueprint Deploy
+
+This repository includes `render.yaml` for Render Blueprint deployments.
+
+- In Render, select **New +** → **Blueprint**
+- Choose this repository
+- Fill in secrets for variables marked in Render as manual values
+- Deploy
 
 ---
 
