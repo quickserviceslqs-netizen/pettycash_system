@@ -29,7 +29,7 @@ git push -u origin main
   - **Name:** `pettycash-system`
   - **Runtime:** Python 3
   - **Build Command:** `./build.sh`
-  - **Start Command:** `gunicorn pettycash_system.wsgi:application`
+  - **Start Command:** `python scripts/bootstrap_db.py && gunicorn pettycash_system.wsgi:application --log-file -`
   - **Plan:** Free
 
 ### 5. Set Environment Variables (2 min)

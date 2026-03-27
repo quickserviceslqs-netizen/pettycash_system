@@ -108,14 +108,29 @@ def create_admin_if_env_set():
     """Create an admin user if DJANGO_SUPERUSER_EMAIL and DJANGO_SUPERUSER_PASSWORD are provided.
     This is idempotent: it will not create a duplicate user if one already exists.
     """
-    admin_email = os.environ.get("DJANGO_SUPERUSER_EMAIL")
-    admin_password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
-    admin_username = os.environ.get("DJANGO_SUPERUSER_USERNAME")
-    admin_first_name = os.environ.get("DJANGO_SUPERUSER_FIRST_NAME", "")
-    admin_last_name = os.environ.get("DJANGO_SUPERUSER_LAST_NAME", "")
+    # Support both new DJANGO_SUPERUSER_* and legacy ADMIN_* variable names.
+    admin_email = os.environ.get("DJANGO_SUPERUSER_EMAIL") or os.environ.get(
+        "ADMIN_EMAIL"
+    )
+    admin_password = os.environ.get("DJANGO_SUPERUSER_PASSWORD") or os.environ.get(
+        "ADMIN_PASSWORD"
+    )
+    admin_username = os.environ.get("DJANGO_SUPERUSER_USERNAME") or os.environ.get(
+        "ADMIN_USERNAME"
+    )
+    admin_first_name = os.environ.get("DJANGO_SUPERUSER_FIRST_NAME") or os.environ.get(
+        "ADMIN_FIRST_NAME", ""
+    )
+    admin_last_name = os.environ.get("DJANGO_SUPERUSER_LAST_NAME") or os.environ.get(
+        "ADMIN_LAST_NAME", ""
+    )
     admin_force = os.environ.get("ADMIN_FORCE_CREATE", "false").lower() in ("1", "true", "yes")
 
     if not (admin_email and admin_password):
+        print(
+            "Admin env vars not found. Set DJANGO_SUPERUSER_EMAIL/DJANGO_SUPERUSER_PASSWORD "
+            "(or legacy ADMIN_EMAIL/ADMIN_PASSWORD)."
+        )
         return
 
     # If ADMIN_USERNAME isn't provided, fallback to using the email as username
@@ -147,7 +162,8 @@ def create_admin_if_env_set():
         return
 
     print(
-        "Ensuring admin user exists from DJANGO_SUPERUSER_EMAIL/DJANGO_SUPERUSER_PASSWORD (and optional DJANGO_SUPERUSER_USERNAME) env vars (idempotent)"
+        "Ensuring admin user exists from environment variables "
+        "(DJANGO_SUPERUSER_* preferred, ADMIN_* supported)"
     )
 
     # Use manage.py shell to create or update user in an idempotent way

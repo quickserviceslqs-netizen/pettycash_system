@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: ./build.sh
-    startCommand: gunicorn pettycash_system.wsgi:application --log-file -
+    startCommand: python scripts/bootstrap_db.py && gunicorn pettycash_system.wsgi:application --log-file -
     healthCheckPath: /maintenance/health/
     autoDeploy: true
     envVars:

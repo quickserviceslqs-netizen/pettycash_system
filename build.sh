@@ -28,12 +28,20 @@ python scripts/bootstrap_db.py || {
   exit 1;
 }
 
-# Create superuser if DJANGO_SUPERUSER_* env vars are set
+# Create superuser if DJANGO_SUPERUSER_* or legacy ADMIN_* env vars are set
 if [ -n "$DJANGO_SUPERUSER_EMAIL" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
   echo "Creating superuser from environment variables..."
   python manage.py createsuperuser --noinput || echo "Superuser creation failed, continuing"
+elif [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
+  echo "Creating superuser from legacy ADMIN_* environment variables..."
+  export DJANGO_SUPERUSER_EMAIL="$ADMIN_EMAIL"
+  export DJANGO_SUPERUSER_PASSWORD="$ADMIN_PASSWORD"
+  if [ -n "$ADMIN_USERNAME" ]; then
+    export DJANGO_SUPERUSER_USERNAME="$ADMIN_USERNAME"
+  fi
+  python manage.py createsuperuser --noinput || echo "Superuser creation failed, continuing"
 else
-  echo "DJANGO_SUPERUSER_EMAIL and/or DJANGO_SUPERUSER_PASSWORD not set, skipping superuser creation"
+  echo "No superuser environment variables found (DJANGO_SUPERUSER_* or ADMIN_*), skipping superuser creation"
 fi
 
 # Seed default system settings (always run, safe to execute multiple times)
