@@ -1,0 +1,10 @@
+title: Petty Cash System
+description: Petty Cash System repository documentation landing page.
+
+# This repository contains Django templates inside Markdown guides.
+# GitHub Pages/Jekyll parses Markdown with Liquid by default, which fails on
+# template tags such as {% load static %}. Exclude Markdown to avoid build
+# failures and serve a static landing page instead.
+exclude:
+  - "*.md"
+  - "**/*.md"
